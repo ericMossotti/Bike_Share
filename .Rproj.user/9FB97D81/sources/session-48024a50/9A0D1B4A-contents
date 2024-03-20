@@ -1,0 +1,18 @@
+/*-- sass:defaults --*/
+
+// Colors
+
+$color: #000 !default
+$light: lighten($color, 15%) !default
+$dark: darken($color, 15%) !default
+
+p 
+    color: $color
+    font-family: "Times New Roman", serif
+    font-size: medium
+    &.light
+        color: $light
+    &.dark
+        color: $dark
+
+/*-- sass:rules --*/
