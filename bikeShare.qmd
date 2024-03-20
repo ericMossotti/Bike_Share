@@ -34,7 +34,7 @@ df_print: paged
 [@divvyme]
 
 |                    |       Single Ride       |           Day Pass            |            Divvy             |          Lyft Pink           |
-|---------------|:-------------:|:-------------:|:-------------:|:-------------:|
+|--------------------|:-----------------------:|:-----------------------------:|:----------------------------:|:----------------------------:|
 |                    |    \$1 + \$0.18/min     |          \$18.10/day          |        \$143.90/year         |          \$199/year          |
 | Classic bike       | \$1 unlock + \$0.18/min | 3 hours free, then \$0.18/min | 45 min free, then \$0.18/min | 45 min free, then \$0.18/min |
 | Scooter            | \$1 unlock + \$0.44/min |   Free unlocks + \$0.44/min   |  Free unlocks + \$0.29/min   |  Free unlocks + \$0.29/min   |
