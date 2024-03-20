@@ -1,0 +1,11 @@
+"0","cat(""Files in ~/tripdata: "",
+    ""\n\n"",
+    fileList)
+"
+"1","Files in ~/tripdata: "
+"1"," "
+"1","
+
+"
+"1"," "
+"1","tripdata/part-0.parquet"

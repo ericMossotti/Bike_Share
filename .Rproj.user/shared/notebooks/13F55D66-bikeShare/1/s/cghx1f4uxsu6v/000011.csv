@@ -1,0 +1,12 @@
+"0","grouped_byDay <- dplyr::tbl(dbconn,
+                            ""fltrd_data"") |>
+    dplyr::select(started_at,
+                  member_casual) |>
+    dplyr::collect() |>
+    dplyr::mutate(started_at = as.Date(started_at)) |>
+    dplyr::group_by(started_at,
+                    member_casual) |>
+    dplyr::summarize(n = dplyr::n(),
+                     sdev = stats::sd(n))
+"
+"2","`summarise()` has grouped output by 'started_at'. You can override using the `.groups` argument."

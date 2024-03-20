@@ -1,0 +1,19 @@
+"0","# to make use of supplied trip interval data
+tripTibble |>
+    
+    dplyr::mutate(""trip_time"" = lubridate::time_length(
+        lubridate::interval(started_at,
+                            ended_at),
+        unit = ""minute""), 
+        .keep = ""all""
+    ) |>
+    arrow::write_dataset(""tempFiles"",
+                         existing_data_behavior = ""delete"")
+"
+"1","[1m[33mError[39m in `dplyr::mutate()`:[22m
+[33m![39m tidypolars doesn't work when expressions contain `<pkg>::`.
+[36m•[39m Use `library(<pkg>)` in your script instead.
+Backtrace:
+[90m 1. [39m[1marrow[22m::write_dataset(...)
+[90m 3. [39m[1m[94mtidypolars:::mutate.RPolarsLazyFrame([39m[22m...[1m[94m)[39m[22m
+"

@@ -1,0 +1,9 @@
+"0","tripTibble <- 
+    tidypolars::as_polars_df() |>
+    purrr::map(tempfile_paths[1:12],
+                         arrow::read_csv_arrow) |>
+    purrr::list_rbind()
+"
+"2","Error in as_polars_df.default() : 
+  argument ""x"" is missing, with no default
+"

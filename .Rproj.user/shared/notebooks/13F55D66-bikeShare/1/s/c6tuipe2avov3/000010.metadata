@@ -1,0 +1,1 @@
+{"classes":["tbl_duckdb_connection","tbl_dbi","tbl_sql","tbl_lazy","tbl"],"nrow":null,"ncol":16,"summary":{"Source":["table<fltrd_tripData> [?? x 16]"],"Database":["DuckDB v0.10.0 [ecmos@Windows 10 x64:R 4.3.3/:memory:]"]}}
