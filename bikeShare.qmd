@@ -6,11 +6,11 @@ bibliography: references.bib
 
 repo: https://github.com/ericMossotti/Bike_Share
 
-#source: https://github.com/ericMossotti/Bike_Share.qmd
+source: bikeShare.qmd
 
-#code-links:
-#    - text: Project Code
-#      href: bikeShare.qmd
+code-links:
+    - text: Project Code
+      href: source
       
 code-fold: true
 code-copy: hover
@@ -24,7 +24,7 @@ smooth-scroll: true
 echo: false
 warning: false
 
-df_print: paged
+#df_print: paged
 
 #font: merriweather, futura
 ---
@@ -34,7 +34,7 @@ df_print: paged
 [@divvyme]
 
 |                    |       Single Ride       |           Day Pass            |            Divvy             |          Lyft Pink           |
-|--------------------|:-----------------------:|:-----------------------------:|:----------------------------:|:----------------------------:|
+|---------------|:-------------:|:-------------:|:-------------:|:-------------:|
 |                    |    \$1 + \$0.18/min     |          \$18.10/day          |        \$143.90/year         |          \$199/year          |
 | Classic bike       | \$1 unlock + \$0.18/min | 3 hours free, then \$0.18/min | 45 min free, then \$0.18/min | 45 min free, then \$0.18/min |
 | Scooter            | \$1 unlock + \$0.44/min |   Free unlocks + \$0.44/min   |  Free unlocks + \$0.29/min   |  Free unlocks + \$0.29/min   |
@@ -169,7 +169,10 @@ unlink("tempZips",
 ```{r}
 #|label: 'create tibble from temp CSV'
 
-tripTibble <- purrr::map(tempfile_paths[1:12],
+
+
+tripTibble <- 
+    purrr::map(tempfile_paths[1:12],
                          arrow::read_csv_arrow) |>
     purrr::list_rbind()
 ```
@@ -188,6 +191,7 @@ tripTibble <- tripTibble |>
 
 # to make use of supplied trip interval data
 tripTibble |>
+    
     dplyr::mutate("trip_time" = lubridate::time_length(
         lubridate::interval(started_at,
                             ended_at),
@@ -263,7 +267,7 @@ cat("Files in ~/tripdata: ",
 ```{r}
 #|label: 'dbplyr pkg load, Quarto Publishing fix'
 
-library(dbplyr)
+#library(dbplyr)
 ```
 
 ```{r}
@@ -437,6 +441,9 @@ dbconn <- DBI::dbConnect(duckdb::duckdb())
 duckdb::duckdb_register_arrow(dbconn,
                               "unfltrd_tripData",
                               tripset)
+
+dplyr::tbl(dbconn,
+           "unfltrd_tripData")
 ```
 
 ## Filtering Data, Smartly
@@ -451,7 +458,8 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 dplyr::tbl(dbconn,
            "unfltrd_tripData") |>
     dplyr::filter(trip_time > 1,
-                  trip_time < 480) |>
+                  trip_time < 480,
+                  rideable_type != "docked_bike") |>
     dplyr::collect() |>
     dplyr::mutate(
         miles = geosphere::distGeo(
@@ -477,9 +485,6 @@ Writing the Filtered Parquet File
 ```{r}
 #|label: 'write fltrdData parquet'
 
-dplyr::tbl(dbconn,
-           "fltrd_tripData")
-
 dir.create("fltrdData")
 
 dplyr::tbl(dbconn,
@@ -489,13 +494,30 @@ dplyr::tbl(dbconn,
 
 # Now we have a filtered data file. 
 unlink('tripdata', recursive = TRUE)
+
+
+```
+
+```{r}
+
+duckdb::dbDisconnect(dbconn, shutdown = TRUE)
+
+tripset <- arrow::open_dataset("fltrdData",
+                               format = "parquet")
+
+dbconn <- DBI::dbConnect(duckdb::duckdb())
+
+# For querying the arrow dataset with the benefits of an OLAP database. 
+duckdb::duckdb_register_arrow(dbconn,
+                              "fltrd_data",
+                              tripset)
 ```
 
 ```{r}
 #|label: 'rider count by hour table'
 
 hours_of_Riders <- dplyr::tbl(dbconn,
-                           "fltrd_tripData") |>
+                           "fltrd_data") |>
     dplyr::select(started_at) |>
     dplyr::mutate("hour" = lubridate::hour(started_at)) |>
     dplyr::group_by(hour) |>
@@ -556,7 +578,7 @@ ggplot2::ggplot(data = hours_of_Riders,
 #|label: "column plot"
 
 memberCasuals_monthly  <- dplyr::tbl(dbconn,
-           "fltrd_tripData") |>
+           "fltrd_data") |>
     dplyr::select(started_at,
                   member_casual) |>
     dplyr::mutate('month' = lubridate::month(started_at)) |>
@@ -583,29 +605,9 @@ dplyr::collect(memberCasuals_monthly) |>
     tag = "Figure 1.b")
 ```
 
-```{r}
-#|label: "duckDB shutdown"
-
-duckdb::dbDisconnect(dbconn, shutdown = TRUE)
-```
-
 ## Visualizations
 
 for quick reference with using Tsibble syntax
-
-```{r}
-#|label: 'register fltrd data to duckDB'
-
-tripset <- arrow::open_dataset("fltrdData",
-                               format = "parquet")
-
-dbconn <- DBI::dbConnect(duckdb::duckdb())
-
-# For querying the arrow dataset with the benefits of an OLAP database. 
-duckdb::duckdb_register_arrow(dbconn,
-                              "fltrd_data",
-                              tripset)
-```
 
 ```{r}
 #|label: 'grouped tibb'
@@ -935,15 +937,21 @@ groupedStats_tsib |>
 ```{r}
 #|label: "dygraph"
 
-newdf <- groupedStats_byDay |>
-    dplyr::ungroup() |>
-    dplyr::select(started_at, 
-                  n)
 
-dygraphs::dygraph(newdf, main = "ever",
-                  ylab = "what")
+sumDF <- groupedStats_byDay |>
+    dplyr::select(started_at,
+                  n) |>
+    dplyr::group_by(started_at,
+                    member_casual) |>
+    dplyr::summarise("count" = sum(n)) |>
+    tidyr::pivot_wider(names_from = member_casual,
+                       values_from = count)
 
-#predicted <- predict(df, n.ahead = 72, prediction.interval = TRUE )
+
+dygraphs::dygraph(sumDF2, main = "ever",
+                  ylab = "what") |>
+    dygraphs::dyGroup(name = c("member", "casual"),
+                       color = c("orange", "green")
 ```
 
 These maps track bike-sharing activity going on worldwide and in Chicago.
