@@ -5,6 +5,7 @@ author: "Eric Mossotti"
 bibliography: references.bib
 
 repo: https://github.com/ericMossotti/Bike_Share
+page-layout: article
 
 source: bikeShare.qmd
 
@@ -343,7 +344,8 @@ cat("Count of distinct observations: ", n)
 ```
 
 ```{r}
-#|label: 'count distinct duplicates'
+#| label: 'count distinct duplicates'
+
 
 # The issue is, we need to get rid of not all of these rows, but just the extra duplicate observations. 
 
@@ -395,8 +397,10 @@ correctDistinct <- tripset |>
 ```
 
 ```{r}
-#|label: 'duplicate correction tibb'
-#|fig-cap: Observation Table
+#| label: 'duplicate correction tibb'
+#| fig-cap: Observation Table
+#| fig-cap-location: bottom
+#| column: body-outset
 
 tibble::tibble(
     "Original Obs" = original_nobs,
@@ -409,8 +413,8 @@ tibble::tibble(
 The incorrect number of observations (nobs) was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed.
 
 ```{r}
-#|label: 'overwrite file with correct obs'
-
+#| label: 'overwrite file with correct obs'
+#| column: body-outset
 tripset |>
     dplyr::select(ride_id:trip_time) |>
     arrow::to_duckdb() |>
@@ -431,6 +435,7 @@ tripset |>
 Noting that it was useful for me to retain certain rows at first to determine if there were duplicates.
 
 ```{r}
+#| column: page
 
 tripset <- arrow::open_dataset("tripdata",
                                format = "parquet")
@@ -529,8 +534,15 @@ hours_of_Riders <- dplyr::tbl(dbconn,
                   "index" = seq(1:24))
 ```
 
+:::{.column-page}
 ```{r}
-#|label: 'radial-column plot'
+#| label: 'radial-column plot'
+#| fig-column: page
+#| fig-cap: "The time of day people tend to be riding."
+#| fig-cap-location: margin
+#| title: "Time of Day and Volume of Cyclers"
+#| fig-width: 15
+#| fig-height: 12
 
 ggplot2::ggplot(data = hours_of_Riders,
                 mapping = ggplot2::aes(
@@ -573,6 +585,7 @@ ggplot2::ggplot(data = hours_of_Riders,
         legend.direction = "vertical"
     )
 ```
+:::
 
 ```{r}
 #|label: "column plot"
@@ -781,6 +794,7 @@ grouped_tsi |> ggplot2::ggplot(
 
 ```{r}
 #|label: 'area plot'
+#|fig-width: fit
 
 grouped_tsi |> ggplot2::ggplot(
     mapping = ggplot2::aes(x = started_at, 
@@ -948,10 +962,10 @@ sumDF <- groupedStats_byDay |>
                        values_from = count)
 
 
-dygraphs::dygraph(sumDF2, main = "ever",
+dygraphs::dygraph(sumDF, main = "ever",
                   ylab = "what") |>
     dygraphs::dyGroup(name = c("member", "casual"),
-                       color = c("orange", "green")
+                       color = c("green", "red"))
 ```
 
 These maps track bike-sharing activity going on worldwide and in Chicago.
