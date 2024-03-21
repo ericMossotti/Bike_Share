@@ -3,15 +3,13 @@ title: "BikeShare"
 author: "Eric Mossotti"
 
 bibliography: references.bib
-
 repo: https://github.com/ericMossotti/Bike_Share
 page-layout: article
-
 source: bikeShare.qmd
 
 code-links:
-    - text: Project Code
-      href: source
+    - text: "Project Repo"
+      href: repo
       
 code-fold: true
 code-copy: hover
@@ -22,28 +20,13 @@ toc: true
 toc_float: false
 smooth-scroll: true
 
-echo: false
-warning: false
+echo: true
 
-#df_print: paged
 
 #font: merriweather, futura
 ---
 
 # Case Study: Bike-Sharing, Rethought
-
-[@divvyme]
-
-|                    |       Single Ride       |           Day Pass            |            Divvy             |          Lyft Pink           |
-|---------------|:-------------:|:-------------:|:-------------:|:-------------:|
-|                    |    \$1 + \$0.18/min     |          \$18.10/day          |        \$143.90/year         |          \$199/year          |
-| Classic bike       | \$1 unlock + \$0.18/min | 3 hours free, then \$0.18/min | 45 min free, then \$0.18/min | 45 min free, then \$0.18/min |
-| Scooter            | \$1 unlock + \$0.44/min |   Free unlocks + \$0.44/min   |  Free unlocks + \$0.29/min   |  Free unlocks + \$0.29/min   |
-| Ebike              | \$1 unlock + \$0.44/min |   Free unlocks + \$0.44/min   |  Free unlocks + \$0.18/min   |  Free unlocks + \$0.18/min   |
-| Bike Angels        |                         |                               |              y               |              y               |
-| Rideshare Benefits |                         |                               |                              |              y               |
-
-: Compare options
 
 #### References:
 
@@ -92,7 +75,8 @@ knitr::opts_chunk$set(message = FALSE,
 ```
 
 ```{r}
-#|label: 'create lists, download zips'
+#| label: 'create lists, download zips'
+#| output: false
 
 durls <-
     sprintf("https://divvy-tripdata.s3.amazonaws.com/%d-divvy-tripdata.zip",
@@ -132,7 +116,9 @@ fileNames <- sprintf("%d-divvy-tripdata.csv",
 ```
 
 ```{r}
-#|label: 'view the new directory-file lists'
+#| label: 'view the new directory-file lists'
+#| eval: false
+#| include: false
 
 # review address info that was just created
 tibble::tibble("URLs" = durls,
@@ -170,8 +156,6 @@ unlink("tempZips",
 ```{r}
 #|label: 'create tibble from temp CSV'
 
-
-
 tripTibble <- 
     purrr::map(tempfile_paths[1:12],
                          arrow::read_csv_arrow) |>
@@ -181,6 +165,7 @@ tripTibble <-
 ```{r}
 #|label: 'count raw obs, then drop NAs'
 
+# Need to save this count for later before I drop the incomplete obs
 original_nobs <- nrow(tripTibble)
 
 tripTibble <- tripTibble |>
@@ -190,9 +175,8 @@ tripTibble <- tripTibble |>
 ```{r}
 #|label: 'new calculated column for trip time'
 
-# to make use of supplied trip interval data
+# To make use of supplied trip interval data
 tripTibble |>
-    
     dplyr::mutate("trip_time" = lubridate::time_length(
         lubridate::interval(started_at,
                             ended_at),
@@ -215,7 +199,12 @@ rm(tripTibble)
 fileList <- list.files(path = "tempFiles",
                               full.names = TRUE,
                               recursive = TRUE)
+```
 
+```{r}
+#| eval: false
+#| include: false
+#| collapse: true
 cat("Files now in tempFiles: ",
     "\n\n",
     fileList)
@@ -232,10 +221,12 @@ tripset |> arrow::write_dataset(path = "tripdata",
 ```
 
 ```{r}
-#|label: 'view arrow dataset content'
+#| label: 'view arrow dataset content'
+#| column: page
 
 tripset |>
-    dplyr::collect()
+    dplyr::collect() |>
+    polars::as_polars_df()
 ```
 
 ```{r}
@@ -259,16 +250,16 @@ tripset <- arrow::open_dataset(sources = "tripdata",
 fileList <- list.files(path = "tripdata",
                               full.names = TRUE,
                               recursive = TRUE)
+```
+
+```{r}
+#| include: false
+#| eval: false
+#| collapse: true
 
 cat("Files in ~/tripdata: ",
     "\n\n",
     fileList)
-```
-
-```{r}
-#|label: 'dbplyr pkg load, Quarto Publishing fix'
-
-#library(dbplyr)
 ```
 
 ```{r}
@@ -343,37 +334,12 @@ n <- undupedTable |>
 cat("Count of distinct observations: ", n)
 ```
 
-```{r}
-#| label: 'count distinct duplicates'
-
-
-# The issue is, we need to get rid of not all of these rows, but just the extra duplicate observations. 
-
-# If there were 2 rows of duplicates, we would want to end up with 1 row after removing the extras.
-undupedTable <- dupeTable |>
-    arrow::to_duckdb() |>
-    dplyr::distinct(started_at,
-                     start_station_name,
-                     ended_at,
-                     end_station_name,
-                     .keep_all = TRUE) |>
-    dplyr::collect()
-
-n <- undupedTable |>
-    dplyr::select(started_at) |>
-    dplyr::distinct() |>
-    dplyr::count() |>
-    as.integer()
-
-cat("Count of distinct observations: ", n)
-```
-
 The count of observed distinct values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount.
 
 ```{r}
 #|label: 'incorrect/correct distinct observations'
 
-# Run a count on how many rows or observations there are in the dataset.
+# Run an incorrect count on how many rows or observations there are in the dataset.
 incorrectDistinct <- tripset |>
     arrow::to_duckdb() |>
     dplyr::distinct(dplyr::pick("ride_id")) |>
@@ -381,6 +347,7 @@ incorrectDistinct <- tripset |>
     dplyr::collect() |>
     as.integer()
 
+# For the correct count of obs
 correctDistinct <- tripset |>
     arrow::to_duckdb() |>
     dplyr::distinct(
@@ -398,16 +365,18 @@ correctDistinct <- tripset |>
 
 ```{r}
 #| label: 'duplicate correction tibb'
-#| fig-cap: Observation Table
-#| fig-cap-location: bottom
+#| fig-cap: "Summary of observations removed by processing."
+#| fig-cap-location: margin
 #| column: body-outset
 
+# To visualize a summary of what we just determined regarding obs
 tibble::tibble(
     "Original Obs" = original_nobs,
     "Uncorrected Complete Obs" = incorrectDistinct,
     "Corrected Complete Obs" = correctDistinct,
     "Removed Obs" = (incorrectDistinct - correctDistinct)
-)
+) |>
+    polars::as_polars_df()
 ```
 
 The incorrect number of observations (nobs) was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed.
@@ -415,6 +384,8 @@ The incorrect number of observations (nobs) was 4,331,707. The correct nobs afte
 ```{r}
 #| label: 'overwrite file with correct obs'
 #| column: body-outset
+
+# Saving the data to a file to ensure we have a copy free from incomplete and duplicated obs.
 tripset |>
     dplyr::select(ride_id:trip_time) |>
     arrow::to_duckdb() |>
@@ -497,25 +468,40 @@ dplyr::tbl(dbconn,
     arrow::to_arrow() |>
     arrow::write_parquet(sink = "fltrdData/fltrd.parquet")
 
-# Now we have a filtered data file. 
+# Now that we have a filtered data file, time to remove the old folder/files.
 unlink('tripdata', recursive = TRUE)
-
-
 ```
 
 ```{r}
 
 duckdb::dbDisconnect(dbconn, shutdown = TRUE)
+rm(dbconn)
 
 tripset <- arrow::open_dataset("fltrdData",
                                format = "parquet")
 
-dbconn <- DBI::dbConnect(duckdb::duckdb())
+dir.create("duck_fltr")
+
+# Helpful to create a persistent database file. 
+dbconn <- DBI::dbConnect(duckdb::duckdb(),
+                         dbdir = "duck_fltr/fltrd_data.duckdb",
+                         read_only = FALSE)
 
 # For querying the arrow dataset with the benefits of an OLAP database. 
-duckdb::duckdb_register_arrow(dbconn,
-                              "fltrd_data",
-                              tripset)
+#duckdb::duckdb_register_arrow(dbconn,
+#                              "fltrd_data",
+#                              tripset)
+
+tripset |>
+    as.data.frame() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "fltrd_data")
+
+dplyr::tbl(dbconn,
+           "fltrd_data")
+
+# No longer need parquet files
+unlink("fltrdData", recursive = TRUE)
 ```
 
 ```{r}
@@ -534,12 +520,12 @@ hours_of_Riders <- dplyr::tbl(dbconn,
                   "index" = seq(1:24))
 ```
 
-:::{.column-page}
+::: column-page
 ```{r}
 #| label: 'radial-column plot'
 #| fig-column: page
 #| fig-cap: "The time of day people tend to be riding."
-#| fig-cap-location: margin
+#| fig-cap-location: bottom
 #| title: "Time of Day and Volume of Cyclers"
 #| fig-width: 15
 #| fig-height: 12
@@ -588,7 +574,11 @@ ggplot2::ggplot(data = hours_of_Riders,
 :::
 
 ```{r}
-#|label: "column plot"
+#| label: "column plot"
+#| column: body-outset
+#| include: false
+#| eval: false
+#| collapse: true
 
 memberCasuals_monthly  <- dplyr::tbl(dbconn,
            "fltrd_data") |>
@@ -649,7 +639,10 @@ grouped_tsi <- grouped_byDay |>
 ```
 
 ```{r}
-#|label: 'scatter plot'
+#| label: 'scatter plot'
+#| include: false
+#| eval: false
+#| collapse: true
 
 grouped_tsi |> ggplot2::ggplot(
     mapping = ggplot2::aes(x = started_at, 
@@ -700,7 +693,11 @@ coordQry_small <- dplyr::tbl(dbconn,
 ```
 
 ```{r}
-#|label: "leaflet"
+#| label: "leaflet"
+#| eval: false
+#| include: false
+#| collapse: true
+
 
 leaflet::leaflet() |>
     leaflet::addTiles() |>
@@ -722,7 +719,10 @@ coordQry_small |>
 ```
 
 ```{r}
-#|label: "tmap"
+#| label: "tmap"
+#| eval: false
+#| include: false
+#| collapse: true
 
 illi <- subset(spData::us_states, NAME == "Illinois")
 tmap::tmap_mode("view")
@@ -742,6 +742,7 @@ ojs_define(js_tsi = grouped_tsi)
 jsData = transpose(js_tsi)
 ```
 
+::: column-page
 ```{ojs}
 Plot.plot({
     grid: true,
@@ -751,17 +752,7 @@ Plot.plot({
 ]
 })
 ```
-
-```{ojs}
-Plot.plot({
-    grid: true,
-    color: {legend: true},
-    marks: [
-        Plot.dot(jsData, {x: 'started_at', y: 'n', fill: 'member_casual' })
-]
-})
-```
-
+:::
 ```{ojs}
 Plot.lineY(jsData, {x: "started_at", y: "n"}).plot()
 ```
@@ -773,7 +764,10 @@ rows: 20
 ```
 
 ```{r}
-#|label: 'line plot'
+#| label: 'line plot'
+#| eval: false
+#| include: false
+#| collapse: true
 
 grouped_tsi |> ggplot2::ggplot(
     mapping = ggplot2::aes(x = started_at, 
@@ -793,8 +787,10 @@ grouped_tsi |> ggplot2::ggplot(
 ```
 
 ```{r}
-#|label: 'area plot'
-#|fig-width: fit
+#| label: 'area plot'
+#| column: body-outset
+#| eval: false
+#| include: false
 
 grouped_tsi |> ggplot2::ggplot(
     mapping = ggplot2::aes(x = started_at, 
@@ -812,7 +808,9 @@ grouped_tsi |> ggplot2::ggplot(
 ```
 
 ```{r}
-#|label: 'histogram plot'
+#| label: 'histogram plot'
+#| include: false
+#| eval: false
 
 # query for the histogram plot
 qry4_histo <- dplyr::tbl(dbconn,
@@ -843,6 +841,7 @@ qry4_histo |> ggplot2::ggplot(
 ```{r}
 #|label: 'grouped stats tibb'
 
+# Need a useful data frame for basic aggregations
 groupedStats_byDay <- dplyr::tbl(dbconn,
                             "fltrd_data") |>
     dplyr::select(started_at,
@@ -868,6 +867,7 @@ groupedStats_byDay <- dplyr::tbl(dbconn,
 ```{r}
 #|label: 'grouped stats tsibb'
 
+# Would prefer to work with a tsibble for time-series data
 groupedStats_tsib <- groupedStats_byDay |>
     tsibble::as_tsibble(key = c(member_casual:mph_stDev),
                         index = started_at) |>
@@ -875,7 +875,10 @@ groupedStats_tsib <- groupedStats_byDay |>
 ```
 
 ```{r}
-#|label: 'Ribbon-Line Plot'
+#| eval: false
+#| label: 'Ribbon-Line Plot'
+#| include: false
+
 groupedStats_tsib |> 
     ggplot2::ggplot(ggplot2::aes(started_at,
                                  group =  rideable_type)) +
@@ -897,33 +900,12 @@ groupedStats_tsib |>
 ```
 
 ```{r}
-#|label: 'Facet-Wrap Plot' 
-groupedStats_byDay <- dplyr::tbl(dbconn,
-                            "fltrd_data") |>
-    dplyr::select(started_at,
-                  member_casual,
-                  rideable_type,
-                  trip_time,
-                  miles,
-                  mph) |>
-    dplyr::collect() |>
-    dplyr::mutate(started_at = as.Date(started_at)) |>
-    dplyr::group_by(started_at,
-                    member_casual,
-                    rideable_type) |>
-    dplyr::summarize(n = dplyr::n(),
-                     trip_time_Mean = mean(trip_time),
-                     trip_time_stDev = stats::sd(trip_time),
-                     miles_Mean = mean(miles),
-                     miles_stDev = stats::sd(miles),
-                     mph_Mean = mean(miles),
-                     mph_stDev = stats::sd(mph))
+#| label: 'Facet-Wrap Plot'
+#| column: page
+#| fig-width: 14
+#| fig-height: 12
 
-groupedStats_tsib <- groupedStats_byDay |>
-    tsibble::as_tsibble(key = c(member_casual:mph_stDev),
-                        index = started_at) |>
-    dplyr::arrange(started_at)
-
+# A solution to help visualize these mutli-dimensional relationships of membership and bike type to time.
 groupedStats_tsib |>
     ggplot2::ggplot(ggplot2::aes(x = started_at,
                                  y = trip_time_Mean,
@@ -951,7 +933,6 @@ groupedStats_tsib |>
 ```{r}
 #|label: "dygraph"
 
-
 sumDF <- groupedStats_byDay |>
     dplyr::select(started_at,
                   n) |>
@@ -960,7 +941,6 @@ sumDF <- groupedStats_byDay |>
     dplyr::summarise("count" = sum(n)) |>
     tidyr::pivot_wider(names_from = member_casual,
                        values_from = count)
-
 
 dygraphs::dygraph(sumDF, main = "ever",
                   ylab = "what") |>
