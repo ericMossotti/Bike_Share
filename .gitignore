@@ -1,7 +1,5 @@
 .RData
 .Rhistory
-.Rproj.user
 .Ruserdata
-.Rproj.user/
-
+.Rproj.user/**
 /.quarto/
