@@ -1,8 +1,0 @@
-"0","#|label: 'to grouped tsibb'"
-"0",""
-"0","# tsibble, time-series table/tibble seems to make time series plots more straightforward"
-"0","grouped_tsi <- grouped_byDay |>"
-"0","    tsibble::as_tsibble(key = c(member_casual,"
-"0","                                n),"
-"0","                        index = started_at) |>"
-"0","    dplyr::arrange(started_at)"

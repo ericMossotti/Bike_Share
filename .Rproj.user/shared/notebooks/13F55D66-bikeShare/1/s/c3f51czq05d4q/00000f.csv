@@ -1,5 +1,0 @@
-"0","#|label: 'remove zips folder from working directory'"
-"0",""
-"0","# To remove stored files"
-"0","unlink(""tempZips"","
-"0","       recursive = TRUE)"

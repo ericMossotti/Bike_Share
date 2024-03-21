@@ -1,6 +1,0 @@
-"0","#|label: 'grouped stats tsibb'"
-"0",""
-"0","groupedStats_tsib <- groupedStats_byDay |>"
-"0","    tsibble::as_tsibble(key = c(member_casual:mph_stDev),"
-"0","                        index = started_at) |>"
-"0","    dplyr::arrange(started_at)"
