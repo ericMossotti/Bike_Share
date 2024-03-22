@@ -405,23 +405,6 @@ tripset |>
 
 Noting that it was useful for me to retain certain rows at first to determine if there were duplicates.
 
-```{r}
-#| column: page
-
-tripset <- arrow::open_dataset("tripdata",
-                               format = "parquet")
-
-dbconn <- DBI::dbConnect(duckdb::duckdb())
-
-# For querying the arrow dataset with the benefits of an OLAP database. 
-duckdb::duckdb_register_arrow(dbconn,
-                              "unfltrd_tripData",
-                              tripset)
-
-dplyr::tbl(dbconn,
-           "unfltrd_tripData")
-```
-
 ## Filtering Data, Smartly
 
 To ensure the conclusions are accurate, outliers should be filtered. Negative and very low trip times might skew trends. The underlying reason for very low trip times is somewhat of an unknown. Perhaps people often change their minds?
@@ -431,8 +414,8 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 
 # imposing sensible limits on the data we wish to include moving forward
 # might as well calculate distance traveled while at it
-dplyr::tbl(dbconn,
-           "unfltrd_tripData") |>
+tripset |>
+    arrow::to_duckdb() |>
     dplyr::filter(trip_time > 1,
                   trip_time < 480,
                   rideable_type != "docked_bike") |>
@@ -444,71 +427,56 @@ dplyr::tbl(dbconn,
         ) / 1000 * 0.62137119,
         mph = (miles / (trip_time / 60))
     ) |>
-    # It's somewhat nonsensical to rent a bike for distances easily walked. 
+    # It's somewhat nonsensical to rent a bike for distances easily walked.
     # Also, there could be randomly generated data.
     dplyr::filter(miles > 0.1,
-                  # Seems that pro cyclists average around 20 mph, 
+                  # Seems that pro cyclists average around 20 mph,
                   # so I set that as the ceiling.
                   mph < 21,
                   # To account for time spent idling, stoplights and traffic.
                   mph > 1) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "fltrd_tripData")
-```
-
-Writing the Filtered Parquet File
-
-```{r}
-#|label: 'write fltrdData parquet'
-
-dir.create("fltrdData")
-
-dplyr::tbl(dbconn,
-           "fltrd_tripData") |>
-    arrow::to_arrow() |>
-    arrow::write_parquet(sink = "fltrdData/fltrd.parquet")
-
-# Now that we have a filtered data file, time to remove the old folder/files.
-unlink('tripdata', recursive = TRUE)
+    arrow::write_dataset(path = "tripdata",
+                         format = "parquet",
+                         existing_data_behavior = "overwrite")
 ```
 
 ```{r}
 
-duckdb::dbDisconnect(dbconn, shutdown = TRUE)
-rm(dbconn)
-
-tripset <- arrow::open_dataset("fltrdData",
+tripset <- arrow::open_dataset("tripdata",
                                format = "parquet")
 
-dir.create("duck_fltr")
+dir.create("db_files")
 
 # Helpful to create a persistent database file. 
 dbconn <- DBI::dbConnect(duckdb::duckdb(),
-                         dbdir = "duck_fltr/fltrd_data.duckdb",
+                         dbdir = "db_files/fltrd_data.db",
                          read_only = FALSE)
-
-# For querying the arrow dataset with the benefits of an OLAP database. 
-#duckdb::duckdb_register_arrow(dbconn,
-#                              "fltrd_data",
-#                              tripset)
 
 tripset |>
     as.data.frame() |>
     duckdb::dbWriteTable(conn = dbconn,
-                         name = "fltrd_data")
+                         name = "db_files/fltrd_data.db",
+                         overwrite = TRUE)
+
+duckdb::dbListTables(dbconn)
 
 dplyr::tbl(dbconn,
-           "fltrd_data")
+           "db_files/fltrd_data.db")
 
-# No longer need parquet files
-unlink("fltrdData", recursive = TRUE)
+db_path <- "db_files/fltrd_data.db"
+
+unlink('tripdata', recursive = TRUE)
+rm(tripset)
 ```
+
+
 
 ```{r}
 #|label: 'rider count by hour table'
 
 hours_of_Riders <- dplyr::tbl(dbconn,
-                           "fltrd_data") |>
+                              "db_files/fltrd_data.db",
+                              check_from = FALSE) |>
     dplyr::select(started_at) |>
     dplyr::mutate("hour" = lubridate::hour(started_at)) |>
     dplyr::group_by(hour) |>
@@ -530,7 +498,8 @@ hours_of_Riders <- dplyr::tbl(dbconn,
 #| fig-width: 15
 #| fig-height: 12
 
-ggplot2::ggplot(data = hours_of_Riders,
+
+hoursAnimate <- ggplot2::ggplot(data = hours_of_Riders,
                 mapping = ggplot2::aes(
                     x = reorder(hour, .data$index),
                     y = riding,
@@ -569,8 +538,17 @@ ggplot2::ggplot(data = hours_of_Riders,
         legend.position = "right",
         legend.justification = "center",
         legend.direction = "vertical"
-    )
+    ) +
+    gganimate::transition_reveal(along = seq(length(hour))) +
+    gganimate::view_step(pause_length = 5,
+                         )
+
+my_anim <- gganimate::animate(hoursAnimate,
+                              renderer = gganimate::gifski_renderer())
+
+my_anim
 ```
+
 :::
 
 ```{r}
@@ -581,7 +559,7 @@ ggplot2::ggplot(data = hours_of_Riders,
 #| collapse: true
 
 memberCasuals_monthly  <- dplyr::tbl(dbconn,
-           "fltrd_data") |>
+           db_path) |>
     dplyr::select(started_at,
                   member_casual) |>
     dplyr::mutate('month' = lubridate::month(started_at)) |>
@@ -616,7 +594,7 @@ for quick reference with using Tsibble syntax
 #|label: 'grouped tibb'
 
 grouped_byDay <- dplyr::tbl(dbconn,
-                            "fltrd_data") |>
+                            db_path) |>
     dplyr::select(started_at,
                   member_casual) |>
     dplyr::collect() |>
@@ -670,7 +648,7 @@ chicago <- maps::us.cities |>
 
 # full dataset coordinates, might need to sample
 coordQry <- dplyr::tbl(dbconn,
-                       "fltrd_data") |>
+                       db_path) |>
     dplyr::select(start_lng,
                   start_lat) |>
     dplyr::add_count(start_lng,
@@ -681,7 +659,7 @@ coordQry <- dplyr::tbl(dbconn,
 
 
 coordQry_small <- dplyr::tbl(dbconn,
-                       "fltrd_data") |>
+                       db_path) |>
     dplyr::select(start_lng,
                   start_lat) |>
     dplyr::add_count(start_lng,
@@ -814,7 +792,7 @@ grouped_tsi |> ggplot2::ggplot(
 
 # query for the histogram plot
 qry4_histo <- dplyr::tbl(dbconn,
-           "fltrd_data") |>
+           db_path) |>
     dplyr::select(started_at, member_casual) |>
     dplyr::collect() |>
     dplyr::mutate(started_at = as.Date(started_at)) |>
@@ -843,7 +821,7 @@ qry4_histo |> ggplot2::ggplot(
 
 # Need a useful data frame for basic aggregations
 groupedStats_byDay <- dplyr::tbl(dbconn,
-                            "fltrd_data") |>
+                            db_path) |>
     dplyr::select(started_at,
                   member_casual,
                   rideable_type,
@@ -980,8 +958,10 @@ paths[]
 #|label: 'duckDB Shutdown'
 
 duckdb::dbDisconnect(dbconn, shutdown = TRUE)
+rm(dbconn)
 ```
 
 ```{r}
-unlink("fltrdData", recursive = TRUE)
+#unlink("fltrdData", recursive = TRUE)
+#unlink("duck_fltr", recursive = TRUE)
 ```
