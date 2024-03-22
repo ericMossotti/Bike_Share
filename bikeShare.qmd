@@ -75,179 +75,19 @@ knitr::opts_chunk$set(message = FALSE,
 ```
 
 ```{r}
-#| label: 'create lists, download zips'
-#| output: false
-
-durls <-
-    sprintf("https://divvy-tripdata.s3.amazonaws.com/%d-divvy-tripdata.zip",
-            202301:202312)
-
-# Need some directories to store the files. 
-dir.create("tempZips")
-
-tempZipPaths <- sprintf("tempZips/%d-divvy-tripdata.zip",
-                     202301:202312)
-
-# A simple way to download and relocate several files. 
-curl::multi_download(durls,
-                     destfiles = tempZipPaths)
-```
-
-```{r}
-#|label: 'dir + lists for unz function'
-
-# create tempFile directory
-dir.create("tempFiles")
-
-# create list of tempFile directory paths
-tempfile_paths <- sprintf("tempFiles/%d-divvy-tripdata.csv",
-                      202301:202312)
-
-# create CSV file relocation directory
-dir.create("tripdata")
-
-# create CSV file relocation paths
-fileList <- sprintf("tripdata/%d-divvy-tripdata.csv",
-                       202301:202312)
-
-# create CSV list to specify for unzipping
-fileNames <- sprintf("%d-divvy-tripdata.csv",
-                      202301:202312)
-```
-
-```{r}
-#| label: 'view the new directory-file lists'
-#| eval: false
-#| include: false
-
-# review address info that was just created
-tibble::tibble("URLs" = durls,
-               "Zip File Paths" = tempZipPaths,
-               "File Names" = fileNames,
-               "Parquet File Paths" = tempfile_paths)
-```
-
-```{r}
-#|label: 'unzip and relocate function'
-
-# A custom function that makes unzipping, converting and relocating files all at once, simple. 
-unz_relocate <- function (x = tempfile_paths,
-                          y = tempZipPaths,
-                          z = fileNames) {
-    for (i in seq(x)) {
-        utils::unzip(y[i],
-                     z[i])
-        file.rename(z[i],
-                    x[i])
-    }
+if(dir.exists("db")) {
+    NULL
+} else {
+    source("import_clean_initial.R")
 }
-
-unz_relocate()
 ```
 
-```{r}
-#|label: 'remove zips folder from working directory'
-
-# To remove stored files
-unlink("tempZips",
-       recursive = TRUE)
-```
-
-```{r}
-#|label: 'create tibble from temp CSV'
-
-tripTibble <- 
-    purrr::map(tempfile_paths[1:12],
-                         arrow::read_csv_arrow) |>
-    purrr::list_rbind()
-```
-
-```{r}
-#|label: 'count raw obs, then drop NAs'
-
-# Need to save this count for later before I drop the incomplete obs
-original_nobs <- nrow(tripTibble)
-
-tripTibble <- tripTibble |>
-    tidyr::drop_na()
-```
-
-```{r}
-#|label: 'new calculated column for trip time'
-
-# To make use of supplied trip interval data
-tripTibble |>
-    dplyr::mutate("trip_time" = lubridate::time_length(
-        lubridate::interval(started_at,
-                            ended_at),
-        unit = "minute"), 
-        .keep = "all"
-    ) |>
-    arrow::write_dataset("tempFiles",
-                         existing_data_behavior = "delete")
-```
-
-```{r}
-#|label: 'removing large tibble from memory'
-
-rm(tripTibble)
-```
-
-```{r}
-#|label: 'create and view list of files'
-
-fileList <- list.files(path = "tempFiles",
-                              full.names = TRUE,
-                              recursive = TRUE)
-```
-
-```{r}
-#| eval: false
-#| include: false
-#| collapse: true
-cat("Files now in tempFiles: ",
-    "\n\n",
-    fileList)
-```
-
-```{r}
-#|label: 'create/write a parquet file dataset'
-
-tripset <- arrow::open_dataset(sources = fileList[1],
-                               format = "parquet")
-
-tripset |> arrow::write_dataset(path = "tripdata",
-                                format = "parquet")
-```
-
-```{r}
-#| label: 'view arrow dataset content'
-#| column: page
-
-tripset |>
-    dplyr::collect() |>
-    polars::as_polars_df()
-```
-
-```{r}
-#|label: 'delete CSV directory'
-
-# all files and folders
-unlink("tempFiles", recursive = TRUE)
-```
-
-```{r}
-#|label: 'open parquet file dataset'
-
-tripset <- arrow::open_dataset(sources = "tripdata",
-                              format = "parquet")
-```
 
 ```{r}
 #|label: 'create/view list of parquets'
 
 # To verify the location of the extracted data.
-fileList <- list.files(path = "tripdata",
+fileList <- list.files(path = "db",
                               full.names = TRUE,
                               recursive = TRUE)
 ```
@@ -257,24 +97,27 @@ fileList <- list.files(path = "tripdata",
 #| eval: false
 #| collapse: true
 
-cat("Files in ~/tripdata: ",
+cat("Files in ~db/: ",
     "\n\n",
     fileList)
 ```
+
+
+Can script up to this point?
 
 ```{r}
 #|label: 'create dupe-table, count n distinct'
 
 # This is a separate table used to analyze the observations returned as not distinct (n > 1). This adds an extra column labeled "n".
-dupeTable <- tripset |>
-    arrow::to_duckdb() |>
+dupeTable <- dplyr::tbl(dbconn,
+                        tblPath) |>
     dplyr::select(started_at:end_station_name) |>
     # Counts of unique rows added for column 'n'
     dplyr::add_count(started_at,
                      ended_at,
                      start_station_name,
                      end_station_name) |>
-    # Only observations that have been duplicated 1 or more 
+    # Only observations that have been duplicated 1 or more
     # times are shown
     dplyr::filter(n > 1) |>
     # We want to see all rows, not just one row for each obs
@@ -285,6 +128,8 @@ dupeTable <- tripset |>
 n <- dupeTable |> 
     dplyr::distinct(n) |>
     as.integer()
+
+n
 ```
 
 We started with 5,719,877 observations (obs) for dates spanning January to December, 2023, then removed 1,388,170 incomplete obs.
@@ -313,13 +158,11 @@ Number of rows in the dupeTable is 36. Because each duplicated observation has o
 
 # If there were 2 rows of duplicates, we would want to end up with 1 row after removing the extras.
 undupedTable <- dupeTable |>
-    arrow::to_duckdb() |>
     dplyr::distinct(started_at,
                      start_station_name,
                      ended_at,
                      end_station_name,
-                     .keep_all = TRUE) |>
-    dplyr::collect()
+                     .keep_all = TRUE)
 
 n <- undupedTable |>
     dplyr::select(started_at) |>
@@ -340,16 +183,16 @@ The count of observed distinct values for the un-duplicated table was indeed 18.
 #|label: 'incorrect/correct distinct observations'
 
 # Run an incorrect count on how many rows or observations there are in the dataset.
-incorrectDistinct <- tripset |>
-    arrow::to_duckdb() |>
+incorrectDistinct <- dplyr::tbl(dbconn,
+                                tblPath) |>
     dplyr::distinct(dplyr::pick("ride_id")) |>
     dplyr::count(name = "Incorrect Distinct Observations") |>
     dplyr::collect() |>
     as.integer()
 
 # For the correct count of obs
-correctDistinct <- tripset |>
-    arrow::to_duckdb() |>
+correctDistinct <- dplyr::tbl(dbconn,
+                              tblPath) |>
     dplyr::distinct(
         dplyr::pick(
             "started_at",
@@ -386,21 +229,19 @@ The incorrect number of observations (nobs) was 4,331,707. The correct nobs afte
 #| column: body-outset
 
 # Saving the data to a file to ensure we have a copy free from incomplete and duplicated obs.
-tripset |>
+dplyr::tbl(dbconn,
+           tblPath) |>
     dplyr::select(ride_id:trip_time) |>
-    arrow::to_duckdb() |>
-    dplyr::distinct(started_at, 
-                    start_station_name, 
+    dplyr::distinct(started_at,
+                    start_station_name,
                     ended_at,
-                    end_station_name, 
+                    end_station_name,
                     .keep_all = TRUE) |>
     dplyr::arrange(started_at) |>
     dplyr::collect() |>
-    arrow::write_dataset(
-        path = "tripdata",
-        format = "parquet",
-        existing_data_behavior = "overwrite"
-    )
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = tblPath,
+                         overwrite = TRUE)
 ```
 
 Noting that it was useful for me to retain certain rows at first to determine if there were duplicates.
@@ -414,8 +255,8 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 
 # imposing sensible limits on the data we wish to include moving forward
 # might as well calculate distance traveled while at it
-tripset |>
-    arrow::to_duckdb() |>
+dplyr::tbl(dbconn,
+           tblPath) |>
     dplyr::filter(trip_time > 1,
                   trip_time < 480,
                   rideable_type != "docked_bike") |>
@@ -435,38 +276,39 @@ tripset |>
                   mph < 21,
                   # To account for time spent idling, stoplights and traffic.
                   mph > 1) |>
-    arrow::write_dataset(path = "tripdata",
-                         format = "parquet",
-                         existing_data_behavior = "overwrite")
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = tblPath,
+                         overwrite = TRUE)
 ```
 
+
 ```{r}
+#| results: false
 
-tripset <- arrow::open_dataset("tripdata",
-                               format = "parquet")
-
-dir.create("db_files")
-
-# Helpful to create a persistent database file. 
-dbconn <- DBI::dbConnect(duckdb::duckdb(),
-                         dbdir = "db_files/fltrd_data.db",
-                         read_only = FALSE)
-
-tripset |>
-    as.data.frame() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db_files/fltrd_data.db",
-                         overwrite = TRUE)
+if(dir.exists("db_fltrd")) {
+    NULL
+} else {
+    dir.create("db_fltrd")
+    
+    tblPath_fltrd <- "db_fltrd/fltrd.db"
+    
+    dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
+                              dbdir = tblPath_fltrd,
+                              read_only = FALSE)
+    
+    dplyr::tbl(dbconn,
+               tblPath) |>
+        dplyr::collect() |>
+        duckdb::dbWriteTable(conn = dbconn_fltrd,
+                             name = tblPath_fltrd,
+                             overwrite = FALSE)
+    
+    #duckdb::dbDisconnect(dbconn, shutdown = TRUE)
+    
+   # unlink("db", recursive = TRUE)
+}
 
 duckdb::dbListTables(dbconn)
-
-dplyr::tbl(dbconn,
-           "db_files/fltrd_data.db")
-
-db_path <- "db_files/fltrd_data.db"
-
-unlink('tripdata', recursive = TRUE)
-rm(tripset)
 ```
 
 
@@ -474,8 +316,8 @@ rm(tripset)
 ```{r}
 #|label: 'rider count by hour table'
 
-hours_of_Riders <- dplyr::tbl(dbconn,
-                              "db_files/fltrd_data.db",
+hours_of_Riders <- dplyr::tbl(dbconn_fltrd,
+                              tblPath_fltrd,
                               check_from = FALSE) |>
     dplyr::select(started_at) |>
     dplyr::mutate("hour" = lubridate::hour(started_at)) |>
@@ -539,9 +381,7 @@ hoursAnimate <- ggplot2::ggplot(data = hours_of_Riders,
         legend.justification = "center",
         legend.direction = "vertical"
     ) +
-    gganimate::transition_reveal(along = seq(length(hour))) +
-    gganimate::view_step(pause_length = 5,
-                         )
+    gganimate::transition_reveal(along = seq(length(hour)))
 
 my_anim <- gganimate::animate(hoursAnimate,
                               renderer = gganimate::gifski_renderer())
@@ -958,7 +798,9 @@ paths[]
 #|label: 'duckDB Shutdown'
 
 duckdb::dbDisconnect(dbconn, shutdown = TRUE)
+duckdb::dbDisconnect(dbcon2, shutdown = TRUE)
 rm(dbconn)
+
 ```
 
 ```{r}
