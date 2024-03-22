@@ -3,3 +3,5 @@
 .Ruserdata
 .Rproj.user/**
 /.quarto/
+.Rproj.user
+db*/**

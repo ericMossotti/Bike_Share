@@ -76,30 +76,16 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```{r}
 if(dir.exists("db")) {
-    NULL
+    
+    tblPath <- "db/data.db"
+    
+    dbconn <- DBI::dbConnect(duckdb::duckdb(),
+                             dbdir = tblPath,
+                             read_only = FALSE)
 } else {
     source("import_clean_initial.R")
 }
-```
 
-
-```{r}
-#|label: 'create/view list of parquets'
-
-# To verify the location of the extracted data.
-fileList <- list.files(path = "db",
-                              full.names = TRUE,
-                              recursive = TRUE)
-```
-
-```{r}
-#| include: false
-#| eval: false
-#| collapse: true
-
-cat("Files in ~db/: ",
-    "\n\n",
-    fileList)
 ```
 
 
@@ -214,7 +200,7 @@ correctDistinct <- dplyr::tbl(dbconn,
 
 # To visualize a summary of what we just determined regarding obs
 tibble::tibble(
-    "Original Obs" = original_nobs,
+    #"Original Obs" = original_nobs,
     "Uncorrected Complete Obs" = incorrectDistinct,
     "Corrected Complete Obs" = correctDistinct,
     "Removed Obs" = (incorrectDistinct - correctDistinct)
@@ -253,62 +239,57 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 ```{r}
 #|label: 'add/filter distances and speed'
 
-# imposing sensible limits on the data we wish to include moving forward
-# might as well calculate distance traveled while at it
-dplyr::tbl(dbconn,
-           tblPath) |>
-    dplyr::filter(trip_time > 1,
-                  trip_time < 480,
-                  rideable_type != "docked_bike") |>
-    dplyr::collect() |>
-    dplyr::mutate(
-        miles = geosphere::distGeo(
-            p1 = cbind(start_lng, start_lat),
-            p2 = cbind(end_lng, end_lat)
-        ) / 1000 * 0.62137119,
-        mph = (miles / (trip_time / 60))
-    ) |>
-    # It's somewhat nonsensical to rent a bike for distances easily walked.
-    # Also, there could be randomly generated data.
-    dplyr::filter(miles > 0.1,
-                  # Seems that pro cyclists average around 20 mph,
-                  # so I set that as the ceiling.
-                  mph < 21,
-                  # To account for time spent idling, stoplights and traffic.
-                  mph > 1) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = tblPath,
-                         overwrite = TRUE)
+
 ```
 
 
 ```{r}
-#| results: false
 
 if(dir.exists("db_fltrd")) {
-    NULL
-} else {
-    dir.create("db_fltrd")
     
     tblPath_fltrd <- "db_fltrd/fltrd.db"
     
     dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
                               dbdir = tblPath_fltrd,
                               read_only = FALSE)
+} else {
+    dir.create("db_fltrd")
     
+    tblPath_fltrd <- "db_fltrd/fltrd.db"
+    
+    dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
+                                   dbdir = tblPath_fltrd,
+                                   read_only = FALSE)
+    
+    # Imposing sensible limits on the data we wish to include moving forward.
     dplyr::tbl(dbconn,
                tblPath) |>
+        dplyr::filter(trip_time > 1,
+                      trip_time < 480,
+                      rideable_type != "docked_bike") |>
         dplyr::collect() |>
+        # Might as well calculate distance traveled while at it.
+        dplyr::mutate(
+            miles = geosphere::distGeo(
+                p1 = cbind(start_lng, start_lat),
+                p2 = cbind(end_lng, end_lat)
+            ) / 1000 * 0.62137119,
+            mph = (miles / (trip_time / 60))
+        ) |>
+        # It's nonsensical to rent a bike for distances easily walked.
+        # Also, there could be randomly generated data.
+        dplyr::filter(miles > 0.1,
+                      # Seems that pro cyclists average around 20 mph,
+                      # so I set that as the ceiling.
+                      mph < 21,
+                     # To account for time spent idling, stoplights and
+                     # traffic.
+                      mph > 1) |>
         duckdb::dbWriteTable(conn = dbconn_fltrd,
                              name = tblPath_fltrd,
-                             overwrite = FALSE)
-    
-    #duckdb::dbDisconnect(dbconn, shutdown = TRUE)
-    
-   # unlink("db", recursive = TRUE)
+                             overwrite = TRUE,
+                             check_from = FALSE)
 }
-
-duckdb::dbListTables(dbconn)
 ```
 
 
@@ -433,8 +414,8 @@ for quick reference with using Tsibble syntax
 ```{r}
 #|label: 'grouped tibb'
 
-grouped_byDay <- dplyr::tbl(dbconn,
-                            db_path) |>
+grouped_byDay <- dplyr::tbl(dbconn_fltrd,
+                            tblPath_fltrd) |>
     dplyr::select(started_at,
                   member_casual) |>
     dplyr::collect() |>
@@ -487,8 +468,8 @@ chicago <- maps::us.cities |>
     dplyr::filter(name == "Chicago IL")
 
 # full dataset coordinates, might need to sample
-coordQry <- dplyr::tbl(dbconn,
-                       db_path) |>
+coordQry <- dplyr::tbl(dbconn_fltrd,
+                       tblPath_fltrd) |>
     dplyr::select(start_lng,
                   start_lat) |>
     dplyr::add_count(start_lng,
@@ -498,8 +479,8 @@ coordQry <- dplyr::tbl(dbconn,
     dplyr::collect()
 
 
-coordQry_small <- dplyr::tbl(dbconn,
-                       db_path) |>
+coordQry_small <- dplyr::tbl(dbconn_fltrd,
+                             tblPath_fltrd) |>
     dplyr::select(start_lng,
                   start_lat) |>
     dplyr::add_count(start_lng,
@@ -631,8 +612,8 @@ grouped_tsi |> ggplot2::ggplot(
 #| eval: false
 
 # query for the histogram plot
-qry4_histo <- dplyr::tbl(dbconn,
-           db_path) |>
+qry4_histo <- dplyr::tbl(dbconn_fltrd,
+                         tblPath_fltrd) |>
     dplyr::select(started_at, member_casual) |>
     dplyr::collect() |>
     dplyr::mutate(started_at = as.Date(started_at)) |>
@@ -660,8 +641,8 @@ qry4_histo |> ggplot2::ggplot(
 #|label: 'grouped stats tibb'
 
 # Need a useful data frame for basic aggregations
-groupedStats_byDay <- dplyr::tbl(dbconn,
-                            db_path) |>
+groupedStats_byDay <- dplyr::tbl(dbconn_fltrd,
+                                 tblPath_fltrd) |>
     dplyr::select(started_at,
                   member_casual,
                   rideable_type,
@@ -796,14 +777,7 @@ paths[]
 
 ```{r}
 #|label: 'duckDB Shutdown'
-
+duckdb::dbDisconnect(dbconn_fltrd, shutdown = TRUE)
 duckdb::dbDisconnect(dbconn, shutdown = TRUE)
-duckdb::dbDisconnect(dbcon2, shutdown = TRUE)
-rm(dbconn)
-
 ```
 
-```{r}
-#unlink("fltrdData", recursive = TRUE)
-#unlink("duck_fltr", recursive = TRUE)
-```
