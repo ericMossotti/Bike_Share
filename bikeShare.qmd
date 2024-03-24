@@ -303,12 +303,33 @@ hours_of_Riders <- dplyr::tbl(dbconn_fltrd,
     dplyr::select(started_at) |>
     dplyr::mutate("hour" = lubridate::hour(started_at)) |>
     dplyr::group_by(hour) |>
-    dplyr::summarise("riding" = dplyr::count(started_at)) |>
+    dplyr::summarise("Total_Riders" = dplyr::count(started_at)) |>
     dplyr::arrange(hour) |>
     dplyr::collect() |>
     dplyr::mutate("hour" = hms::hms(hours = hour),
                   "hour" = format(strptime(hour, format = "%H"), "%r"),
                   "index" = seq(1:24))
+```
+
+```{r}
+
+x <-
+    stringr::str_sub_all(hours_of_Riders[[1]],
+                         start = 1,
+                         end = 2) |>
+    as.character() |>
+    stringr::str_remove(pattern = "^0")
+
+y <- stringr::str_sub(hours_of_Riders[[1]],
+                      start = -2,
+                      end = -1) |>
+    stringr::str_to_lower()
+
+simpleTimes <- stringr::str_c(x, sep = " ", y)
+
+hours_of_Riders[[1]] <- simpleTimes
+
+hours_of_Riders
 ```
 
 ::: column-page
@@ -321,53 +342,74 @@ hours_of_Riders <- dplyr::tbl(dbconn_fltrd,
 #| fig-width: 15
 #| fig-height: 12
 
-
 hoursAnimate <- ggplot2::ggplot(data = hours_of_Riders,
                 mapping = ggplot2::aes(
                     x = reorder(hour, .data$index),
-                    y = riding,
-                    fill = riding
-                )) +
+                    y = Total_Riders,
+                    fill = Total_Riders)) +
     ggplot2::geom_col() +
     ggplot2::coord_radial(start = 2 * pi,
                           inner.radius = .2) +
     ggplot2::xlab(NULL) +
     ggplot2::ylab(NULL) +
-    ggplot2::scale_fill_distiller(palette = 'Spectral',
+    ggplot2::scale_fill_distiller(palette = "Spectral",
                                   direction = 1) +
     ggplot2::labs(
         title = "Average Riders by the Hour of Day",
         subtitle = "(Jan-Dec 2023)",
         caption = "Data from cyclistic database.",
         tag = "Figure 1.c"
-    ) +
+        ) +
     ggplot2::theme(
-        title = ggplot2::element_text(size = 16,lineheight = 4),
+        title = ggplot2::element_text(
+            size = 20,
+            lineheight = 4,
+            color = "white"
+        ),
+        
         text = ggplot2::element_text(color = "white"),
+        
         panel.background = ggplot2::element_rect(fill = "black"),
-        panel.grid.minor = ggplot2::element_line(color = "black"),
-        panel.grid.major = ggplot2::element_line(color = "grey10"),
+        panel.grid.major.x = ggplot2::element_line(linewidth = 1,
+                                                   color = 'grey10'),
+        panel.grid.major.y = ggplot2::element_blank(),
+        
+        
         plot.background = ggplot2::element_rect(fill = "black"),
-        axis.text.y = ggplot2::element_blank(),
+        
+        axis.line.x = ggplot2::element_line(
+            linewidth = 1,
+            color = 'grey10',
+            arrow = ggplot2::arrow()
+        ),
+        
         axis.ticks.y = ggplot2::element_blank(),
-        axis.text.x = ggplot2::element_text(size = 10,
-                                            color = "grey90"),
+        
+        axis.text.x = ggplot2::element_text(
+            size = 18,
+            color = "grey90",
+            face = "bold"
+        ),
+        axis.text.y = ggplot2::element_blank(),
+        
         legend.background = ggplot2::element_rect(fill = "black"),
         legend.ticks = ggplot2::element_line(color = "black",
                                              linewidth = .5),
         legend.text = ggplot2::element_text(color = 'grey80',
-                                             size = 8),
-        legend.title = ggplot2::element_blank(),
+                                            size = 13),
         legend.position = "right",
         legend.justification = "center",
-        legend.direction = "vertical"
-    ) +
-    gganimate::transition_reveal(along = seq(length(hour)))
+        legend.direction = "vertical",
+        legend.key.size = unit(1.5, "cm")
+       )
 
-my_anim <- gganimate::animate(hoursAnimate,
-                              renderer = gganimate::gifski_renderer())
+hoursAnimate
 
-my_anim
+        #gganimate::transition_reveal(along = seq(length(hour)))
+#my_anim <- gganimate::animate(hoursAnimate,
+        #                     renderer = gganimate::gifski_renderer())
+
+#my_anim
 ```
 
 :::
@@ -377,7 +419,6 @@ my_anim
 #| column: body-outset
 #| include: false
 #| eval: false
-#| collapse: true
 
 memberCasuals_monthly  <- dplyr::tbl(dbconn,
            db_path) |>
@@ -441,7 +482,6 @@ grouped_tsi <- grouped_byDay |>
 #| label: 'scatter plot'
 #| include: false
 #| eval: false
-#| collapse: true
 
 grouped_tsi |> ggplot2::ggplot(
     mapping = ggplot2::aes(x = started_at, 
@@ -495,7 +535,6 @@ coordQry_small <- dplyr::tbl(dbconn_fltrd,
 #| label: "leaflet"
 #| eval: false
 #| include: false
-#| collapse: true
 
 
 leaflet::leaflet() |>
@@ -521,7 +560,6 @@ coordQry_small |>
 #| label: "tmap"
 #| eval: false
 #| include: false
-#| collapse: true
 
 illi <- subset(spData::us_states, NAME == "Illinois")
 tmap::tmap_mode("view")
@@ -566,7 +604,6 @@ rows: 20
 #| label: 'line plot'
 #| eval: false
 #| include: false
-#| collapse: true
 
 grouped_tsi |> ggplot2::ggplot(
     mapping = ggplot2::aes(x = started_at, 
@@ -756,24 +793,10 @@ These maps track bike-sharing activity going on worldwide and in Chicago.
 ```{r, eval = FALSE}
 #|label: 'drops duckDB tables'
 
-# a chunk for easily dropping either all (default) or specific tables from the ddb. Also made it so you can see the current tables and then the tables after running the chunk.
-
-paths <- duckdb::dbListTables(dbconn)
-
-paths[]
-
-drops_tables <- function(path) {
-    
-    duckdb::dbRemoveTable(dbconn, 
-                          path)
-}
-
-paths[] |> purrr::walk(drops_tables)
-
-paths <- duckdb::dbListTables(dbconn)
-
-paths[]
+source("duckDrops.R")
 ```
+
+
 
 ```{r}
 #|label: 'duckDB Shutdown'
