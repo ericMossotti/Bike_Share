@@ -18,7 +18,6 @@ tempZipPaths <- sprintf("tempZips/%d-divvy-tripdata.zip",
 curl::multi_download(durls,
                      destfiles = tempZipPaths)
 
-
 # create tempFile directory
 dir.create("tempFiles")
 
@@ -26,12 +25,6 @@ dir.create("tempFiles")
 tempfile_paths <- sprintf("tempFiles/%d-divvy-tripdata.csv",
                           202301:202312)
 
-# create CSV file relocation directory
-#dir.create("tripdata")
-
-# create CSV file relocation paths
-#fileList <- sprintf("tripdata/%d-divvy-tripdata.csv",
-                  #  202301:202312)
 
 # create CSV list to specify for unzipping
 fileNames <- sprintf("%d-divvy-tripdata.csv",
