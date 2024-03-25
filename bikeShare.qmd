@@ -75,17 +75,18 @@ knitr::opts_chunk$set(message = FALSE,
 ```
 
 ```{r}
+
+
+
 if(dir.exists("db")) {
     
     tblPath <- "db/data.db"
-    
     dbconn <- DBI::dbConnect(duckdb::duckdb(),
                              dbdir = tblPath,
                              read_only = FALSE)
-} else {
-    source("import_clean_initial.R")
-}
-
+    } else {
+        source("import_clean_initial.R") 
+        }
 ```
 
 Can script up to this point?
@@ -215,7 +216,8 @@ The incorrect number of observations (nobs) was 4,331,707. The correct nobs afte
 
 # Saving the data to a file to ensure we have a copy free from incomplete and duplicated obs.
 dplyr::tbl(dbconn,
-           tblPath) |>
+           tblPath,
+           check_from = FALSE) |>
     dplyr::select(ride_id:trip_time) |>
     dplyr::distinct(started_at,
                     start_station_name,
@@ -236,29 +238,31 @@ Noting that it was useful for me to retain certain rows at first to determine if
 To ensure the conclusions are accurate, outliers should be filtered. Negative and very low trip times might skew trends. The underlying reason for very low trip times is somewhat of an unknown. Perhaps people often change their minds?
 
 ```{r}
-#|label: 'add/filter distances and speed'
+#| echo: false
+#| label: "filter db"
 
+tblPath_fltrd <- "db/ftrd.db"
 
-```
-
-```{r}
-
-if(dir.exists("db_fltrd")) {
-    
-    tblPath_fltrd <- "db_fltrd/fltrd.db"
-    
-    dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
-                              dbdir = tblPath_fltrd,
-                              read_only = FALSE)
+if (duckdb::dbExistsTable(dbconn,
+                          name = tblPath_fltrd) == TRUE) {
+    tblPath <- "db/data.db"
+    if (exists("dbconn",
+               inherits = FALSE) == FALSE) {
+        dbconn <- DBI::dbConnect(duckdb::duckdb(),
+                                 dbdir = tblPath,
+                                 read_only = FALSE)
+        }
 } else {
-    dir.create("db_fltrd")
     
-    tblPath_fltrd <- "db_fltrd/fltrd.db"
-    
-    dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
-                                   dbdir = tblPath_fltrd,
-                                   read_only = FALSE)
-    
+    tblPath_fltrd <- "db/fltrd.db"
+    tblPath <- "db/data.db"
+    # Because we might still have a valid connection
+    if (exists("dbconn",
+               inherits = FALSE) == FALSE) {
+        dbconn <- DBI::dbConnect(duckdb::duckdb(),
+                                 dbdir = tblPath,
+                                 read_only = FALSE)
+        }
     # Imposing sensible limits on the data we wish to include moving forward.
     dplyr::tbl(dbconn,
                tblPath) |>
@@ -283,11 +287,13 @@ if(dir.exists("db_fltrd")) {
                      # To account for time spent idling, stoplights and
                      # traffic.
                       mph > 1) |>
-        duckdb::dbWriteTable(conn = dbconn_fltrd,
+        duckdb::dbWriteTable(conn = dbconn,
                              name = tblPath_fltrd,
                              overwrite = TRUE,
                              check_from = FALSE)
 }
+
+source("duckDrops.R")
 ```
 
 # Data Modeling
@@ -388,7 +394,7 @@ dplyr::tbl(dbconn_fltrd,
 ```{r}
 
 # Member_casual
-dplyr::tbl(dbconn_fltrd,
+dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
     dplyr::select(member_casual) |>
@@ -396,7 +402,7 @@ dplyr::tbl(dbconn_fltrd,
     table()
 
 # Rideable_type 
-dplyr::tbl(dbconn_fltrd,
+dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
     dplyr::select(rideable_type) |>
@@ -404,7 +410,7 @@ dplyr::tbl(dbconn_fltrd,
     table()
 
 # Trip_time
-trip_time <- dplyr::tbl(dbconn_fltrd,
+trip_time <- dplyr::tbl(dbconn,
                         tblPath_fltrd,
                         check_from = FALSE) |>
     dplyr::select(trip_time) |>
