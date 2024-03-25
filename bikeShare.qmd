@@ -88,7 +88,6 @@ if(dir.exists("db")) {
 
 ```
 
-
 Can script up to this point?
 
 ```{r}
@@ -242,7 +241,6 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 
 ```
 
-
 ```{r}
 
 if(dir.exists("db_fltrd")) {
@@ -292,7 +290,101 @@ if(dir.exists("db_fltrd")) {
 }
 ```
 
+# Data Modeling
 
+**Non-parametric descriptive:**
+
+-   median, interquartile-range (IQR)
+
+## **Semi-parametric and non-parametric** methods
+
+**Description**
+
+-   To predict the outcome variable using independent variables
+
+    -   outcome variable(s) to test
+
+        -   member_casual
+
+**Statistical methods**
+
+-   Binary Logistic regression analysis
+
+**Data type**
+
+-   Outcome variable:
+
+    -   Categorical (\>= 2 categories)
+
+        -   member_casual
+
+        -   rideable_type
+
+-   Independent variable(s):
+
+    -   Categorical (\>= 2 categories) or
+
+        -   hour
+
+            -   24 categories
+
+        -   day_of_week
+
+            -   7 categories
+
+        -   month
+
+            -   12 categories
+
+        -   holiday
+
+            -   2 categories (yes or no?)
+
+        -   member_casual
+
+            -   2 categories
+
+        -   rideable_type
+
+            -   2 categories
+
+    -   Continuous or
+
+        -   trip_time
+
+        -   mph
+
+        -   miles
+
+        -   geospatial location
+
+    -   both
+
+        -   member_causal
+
+        -   rideable_type
+
+        -   hour
+
+        -   day
+
+        -   trip_time
+
+        -   mph
+
+        -   miles
+
+        -   geospatial location
+
+# Frequency Tables
+
+```{r}
+
+dplyr::tbl(dbconn_fltrd,
+           tblPath_fltrd)
+
+dbconn_fltrd
+```
 
 ```{r}
 #|label: 'rider count by hour table'
@@ -331,6 +423,8 @@ hours_of_Riders[[1]] <- simpleTimes
 
 hours_of_Riders
 ```
+
+# Visualizations
 
 ::: column-page
 ```{r}
@@ -411,7 +505,6 @@ hoursAnimate
 
 #my_anim
 ```
-
 :::
 
 ```{r}
@@ -447,8 +540,6 @@ dplyr::collect(memberCasuals_monthly) |>
     caption = "Data from cyclistic database.",
     tag = "Figure 1.b")
 ```
-
-## Visualizations
 
 for quick reference with using Tsibble syntax
 
@@ -590,6 +681,7 @@ Plot.plot({
 })
 ```
 :::
+
 ```{ojs}
 Plot.lineY(jsData, {x: "started_at", y: "n"}).plot()
 ```
@@ -796,11 +888,8 @@ These maps track bike-sharing activity going on worldwide and in Chicago.
 source("duckDrops.R")
 ```
 
-
-
 ```{r}
 #|label: 'duckDB Shutdown'
 duckdb::dbDisconnect(dbconn_fltrd, shutdown = TRUE)
 duckdb::dbDisconnect(dbconn, shutdown = TRUE)
 ```
-
