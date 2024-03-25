@@ -381,9 +381,162 @@ if(dir.exists("db_fltrd")) {
 ```{r}
 
 dplyr::tbl(dbconn_fltrd,
-           tblPath_fltrd)
+           tblPath_fltrd) |>
+    dplyr::filter(trip_time)
+```
 
-dbconn_fltrd
+```{r}
+
+# Member_casual
+dplyr::tbl(dbconn_fltrd,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual) |>
+    dplyr::collect() |>
+    table()
+
+# Rideable_type 
+dplyr::tbl(dbconn_fltrd,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(rideable_type) |>
+    dplyr::collect() |>
+    table()
+
+# Trip_time
+trip_time <- dplyr::tbl(dbconn_fltrd,
+                        tblPath_fltrd,
+                        check_from = FALSE) |>
+    dplyr::select(trip_time) |>
+    dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
+    dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+trip_time[1] <- as.integer(trip_time[[1]])
+trip_time[2] <- as.integer(trip_time[[2]])
+
+#iqr_tripTime <- IQR(trip_time$Freq)
+summary_tripTime <- summary(trip_time)
+
+summary_tripTime
+```
+
+The 3rd quartile for Freq (the count, or frequency, per minute group) was 676. To get a better distribution, I'm going to set 676 as the min Freq value to be included in the frequency table for trip_time.
+
+```{r}
+
+# The 3rd quartile for Frequency was 676. To get a better distribution, I'm going to set 676 as the min Freq value to be included in the frequency table for trip_time.
+trip_time_fltrd <- trip_time |>
+    dplyr::filter(Freq >= 676)
+
+summary_tripTime_fltrd <- summary(trip_time_fltrd)
+```
+
+```{r}
+
+# Miles
+miles <- dplyr::tbl(dbconn_fltrd,
+                        tblPath_fltrd,
+                        check_from = FALSE) |>
+    dplyr::select(miles) |>
+    dplyr::mutate(miles = round(miles, digits = 0)) |>
+    dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+miles[1] <- as.integer(miles[[1]])
+miles[2] <- as.integer(miles[[2]])
+
+summary_miles <- summary(miles)
+
+summary_miles
+```
+
+To get a better distribution for the first quartile and median value, miles' frequency table, I'm going to set the min to the median of the above table.
+
+```{r}
+
+# To get a better distribution for the first quartile and median value, miles' frequency table, I'm going to set the min to the median of the above table.
+miles_fltrd <- miles |>
+    dplyr::filter(Freq >= 686)
+
+summaryMiles_fltrd <- summary(miles_fltrd)
+
+summaryMiles_fltrd
+```
+
+```{r}
+
+# Miles
+mph <- dplyr::tbl(dbconn_fltrd,
+                        tblPath_fltrd,
+                        check_from = FALSE) |>
+    dplyr::select(mph) |>
+    dplyr::mutate(mph = round(mph, digits = 0)) |>
+    dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+mph[1] <- as.integer(mph[[1]])
+mph[2] <- as.integer(mph[[2]])
+
+summary_mph <- summary(mph)
+
+summary_mph
+```
+
+By doing frequency tables, I quickly gain insight into the optimal settings of filter parameters as opposed to making educated guesses..
+
+```{r}
+
+
+
+if(dir.exists("db_fltrd")) {
+    
+    tblPath_fltrd <- "db_fltrd/fltrd.db"
+    
+    dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
+                              dbdir = tblPath_fltrd,
+                              read_only = FALSE)
+} else {
+    dir.create("db_fltrd")
+    
+    tblPath_fltrd <- "db_fltrd/fltrd.db"
+    
+    dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
+                                   dbdir = tblPath_fltrd,
+                                   read_only = FALSE)
+    
+    # Imposing sensible limits on the data we wish to include moving forward.
+    dplyr::tbl(dbconn,
+               tblPath) |>
+        dplyr::filter(trip_time > 1,
+                      trip_time < 480,
+                      rideable_type != "docked_bike") |>
+        dplyr::collect() |>
+        # Might as well calculate distance traveled while at it.
+        dplyr::mutate(
+            miles = geosphere::distGeo(
+                p1 = cbind(start_lng, start_lat),
+                p2 = cbind(end_lng, end_lat)
+            ) / 1000 * 0.62137119,
+            mph = (miles / (trip_time / 60))
+        ) |>
+        # It's nonsensical to rent a bike for distances easily walked.
+        # Also, there could be randomly generated data.
+        dplyr::filter(miles > 0.1,
+                      # Seems that pro cyclists average around 20 mph,
+                      # so I set that as the ceiling.
+                      mph < 21,
+                     # To account for time spent idling, stoplights and
+                     # traffic.
+                      mph > 1) |>
+        duckdb::dbWriteTable(conn = dbconn_fltrd,
+                             name = tblPath_fltrd,
+                             overwrite = TRUE,
+                             check_from = FALSE)
+}
 ```
 
 ```{r}
