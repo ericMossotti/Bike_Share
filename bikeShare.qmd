@@ -83,7 +83,8 @@ if(dir.exists("db")) {
     tblPath <- "db/data.db"
     dbconn <- DBI::dbConnect(duckdb::duckdb(),
                              dbdir = tblPath,
-                             read_only = FALSE)
+                             read_only = FALSE,
+                             check_from = FALSE)
     } else {
         source("import_clean_initial.R") 
         }
@@ -228,7 +229,8 @@ dplyr::tbl(dbconn,
     dplyr::collect() |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = tblPath,
-                         overwrite = TRUE)
+                         overwrite = TRUE,
+                         check_from = FALSE)
 ```
 
 Noting that it was useful for me to retain certain rows at first to determine if there were duplicates.
@@ -239,30 +241,11 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 
 ```{r}
 #| echo: false
-#| label: "filter db"
+#| label: "filtering db"
 
-tblPath_fltrd <- "db/ftrd.db"
+tblPath <- "db/data.db"
 
-if (duckdb::dbExistsTable(dbconn,
-                          name = tblPath_fltrd) == TRUE) {
-    tblPath <- "db/data.db"
-    if (exists("dbconn",
-               inherits = FALSE) == FALSE) {
-        dbconn <- DBI::dbConnect(duckdb::duckdb(),
-                                 dbdir = tblPath,
-                                 read_only = FALSE)
-        }
-} else {
-    
-    tblPath_fltrd <- "db/fltrd.db"
-    tblPath <- "db/data.db"
-    # Because we might still have a valid connection
-    if (exists("dbconn",
-               inherits = FALSE) == FALSE) {
-        dbconn <- DBI::dbConnect(duckdb::duckdb(),
-                                 dbdir = tblPath,
-                                 read_only = FALSE)
-        }
+if(duckdb::dbIsValid(dbconn)) {
     # Imposing sensible limits on the data we wish to include moving forward.
     dplyr::tbl(dbconn,
                tblPath) |>
@@ -284,13 +267,15 @@ if (duckdb::dbExistsTable(dbconn,
                       # Seems that pro cyclists average around 20 mph,
                       # so I set that as the ceiling.
                       mph < 21,
-                     # To account for time spent idling, stoplights and
-                     # traffic.
+                      # To account for time spent idling, stoplights and
+                      # traffic.
                       mph > 1) |>
-        duckdb::dbWriteTable(conn = dbconn,
-                             name = tblPath_fltrd,
-                             overwrite = TRUE,
-                             check_from = FALSE)
+        duckdb::dbWriteTable(
+            conn = dbconn,
+            name = tblPath,
+            overwrite = TRUE,
+            check_from = FALSE
+        )
 }
 
 source("duckDrops.R")
@@ -386,8 +371,8 @@ source("duckDrops.R")
 
 ```{r}
 
-dplyr::tbl(dbconn_fltrd,
-           tblPath_fltrd) |>
+dplyr::tbl(dbconn,
+           tblPath) |>
     dplyr::filter(trip_time)
 ```
 
@@ -422,7 +407,6 @@ trip_time <- dplyr::tbl(dbconn,
 trip_time[1] <- as.integer(trip_time[[1]])
 trip_time[2] <- as.integer(trip_time[[2]])
 
-#iqr_tripTime <- IQR(trip_time$Freq)
 summary_tripTime <- summary(trip_time)
 
 summary_tripTime
@@ -492,7 +476,305 @@ summary_mph <- summary(mph)
 summary_mph
 ```
 
-By doing frequency tables, I quickly gain insight into the optimal settings of filter parameters as opposed to making educated guesses..
+```{r}
+
+hourTbl <- dplyr::tbl(dbconn,
+                  tblPath,
+                  check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate(hour = lubridate::hour(started_at),
+                  .keep = "none") |>
+    dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+
+hourTbl
+summaryHours <- summary(hourTbl)
+summaryHours
+```
+
+```{r}
+
+wkdayTbl <- dplyr::tbl(dbconn,
+                   tblPath,
+                   check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate(wkday = lubridate::wday(started_at),
+                  .keep = "none") |>
+    dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+summaryWkday <- summary(wkdayTbl)
+
+
+wkdayTbl
+summaryWkday
+```
+
+```{r}
+
+monthTbl <- dplyr::tbl(dbconn,
+                       tblPath,
+                       check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate(months = lubridate::month(started_at),
+                  .keep = "none") |>
+    dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+monthTbl
+summaryMonths <- summary(monthTbl)
+summaryMonths
+```
+
+```{r}
+
+latsTable <- dplyr::tbl(dbconn,
+                       tblPath,
+                       check_from = FALSE) |>
+    dplyr::select(start_lat) |>
+    # because 5 digits after decimal place gives down to 1.1m accuracy
+    # 4 digits are accurate up to 11m
+    dplyr::mutate(start_lat = signif(start_lat, digits = 5),
+                  .keep = "none") |>
+    dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+latsTable |>
+    dplyr::arrange(desc(Freq))
+
+summaryLats <- summary(coordTbl)
+summaryLats
+```
+
+```{r}
+
+longsTable <- dplyr::tbl(dbconn,
+                       tblPath,
+                       check_from = FALSE) |>
+    dplyr::select(start_lng) |>
+    # because 5 digits after decimal place gives down to 1.1m accuracy
+    # 4 digits are accurate up to 11m
+    dplyr::mutate(start_lng = signif(start_lng, digits = 5),
+                  .keep = "none") |>
+    dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+longsTable |>
+    dplyr::arrange(desc(Freq))
+
+summaryLongs <- summary(longsTable)
+summaryLongs
+```
+
+```{r}
+
+latlngTable <- dplyr::tbl(dbconn,
+                       tblPath,
+                       check_from = FALSE) |>
+    dplyr::select(start_lat, start_lng) |>
+    # because 5 digits after decimal place gives down to 1.1m accuracy
+    # 4 digits are accurate up to 11m
+    dplyr::collect() |>
+    dplyr::mutate(start_lat = round(start_lat, digits = 3),
+                  start_lng = round(start_lng, digits = 3),
+                  .keep = "none") |>
+    dplyr::group_by(start_lat, start_lng) |>
+    #dplyr::collect() |>
+    table() |>
+    as.data.frame()
+
+latlngTable |>
+    dplyr::arrange(desc(Freq))
+
+summarylatLng <- summary(latlngTable)
+summarylatLng
+```
+
+```{r}
+
+# Trying to get clues as to how we should alter the table. 
+coordsTable <- dplyr::tbl(dbconn,
+                       tblPath,
+                       check_from = FALSE) |>
+    dplyr::select(start_lat, start_lng) |>
+    # because 5 digits after decimal place gives down to 1.1m accuracy
+    # 4 digits are accurate up to 11m
+   # dplyr::filter(start_lat, signif(start_lat, digits = 7) == TRUE) |>
+    #dplyr::collect() |>
+    dplyr::mutate(start_lat = as.character(start_lat),
+                  start_lng = as.character(start_lng),
+                  .keep = "none") |>
+    dplyr::filter(stringr::str_length(start_lat) >= 8,
+                  stringr::str_length(start_lng) >= 9) |>
+    dplyr::group_by(start_lat, start_lng) |>
+    dplyr::summarise(n = dplyr::count()) |>
+    dplyr::arrange(n) |>
+    dplyr::collect() |>
+    #table() |>
+    as.data.frame()
+
+coordsTable
+
+summaryCoords <- summary(coordsTable)
+summaryCoords
+```
+
+```{r}
+
+
+# Trying to get clues as to how we should alter the table. 
+coordsTable2 <- dplyr::tbl(dbconn,
+                           tblPath,
+                           check_from = FALSE) |>
+    dplyr::select(start_lat, start_lng) |>
+    # because 5 digits after decimal place gives down to 1.1m accuracy
+    # 4 digits are accurate up to 11m
+    dplyr::mutate(start_lat = round(start_lat, digits = 5),
+                  start_lng = round(start_lng, digits = 5),
+                  start_lat = as.character(start_lat),
+                  start_lng = as.character(start_lng),
+                  .keep = "none") |>
+    dplyr::filter(stringr::str_length(start_lat) >= 8,
+                  stringr::str_length(start_lng) >= 9) |>
+    dplyr::group_by(start_lat, start_lng) |>
+    dplyr::summarise(n = dplyr::count()) |>
+    dplyr::filter(n >= 47) |>
+    dplyr::arrange(n) |>
+    dplyr::collect() |>
+    # seems base R's table() is a lot slower than dplyr
+    #table() |>
+    as.data.frame()
+
+coordsTable2
+
+summaryCoords2 <- summary(coordsTable2)
+summaryCoords2
+```
+
+Assuming their plans to expand the "over 800 stations" by 250, I'd like to set the parameters to achieve around \~1050 rows. So I set n to include groups with at least 47 riders.
+
+```{r}
+
+# according to this, there are 1428 unique station id's in the dataset now
+dplyr::tbl(dbconn,
+           tblPath,
+           check_from = FALSE) |>
+    dplyr::select(start_station_name) |>
+    dplyr::distinct(start_station_name) |>
+    dplyr::summarise(dplyr::count())
+```
+
+```{r}
+
+
+df <- dplyr::tbl(dbconn,
+           tblPath,
+           check_from = FALSE) |>
+    dplyr::select(start_station_id, 
+                  start_station_name,
+                  start_lat,
+                  start_lng) |>
+    
+    dplyr::distinct(start_station_name,
+                    start_station_id,
+                    start_lat,
+                    start_lng,
+                    .keep_all = TRUE) |>
+    dplyr::group_by(start_station_name,
+                    start_station_id,
+                    start_lat, 
+                    start_lng,
+                   ) |>
+    dplyr::summarise(n = dplyr::count()) |>
+    dplyr::arrange(start_station_name, start_station_id) |>
+    dplyr::collect()
+
+df
+```
+
+The 5th decimal place is accurate up to 1.1m, so there ends up being groupings for bikes rented from stations located along a street or at intersections of two streets. You can tell by the start_station_name. If it's an intersection it will say something like "1st St & 2nd St.". If it's one street, it will likely just say "1st St". There are likely some exceptions to that rule. That helps explain why the geospatial coordinates slightly differ for entries with the same stations and IDs.
+
+```{r}
+
+mapTest <- dplyr::tbl(dbconn,
+           tblPath,
+           check_from = FALSE) |>
+    dplyr::select(start_station_id,
+                  start_station_name,
+                  start_lat,
+                  start_lng) |>
+    dplyr::group_by(start_station_name,
+                    start_station_id,
+                    start_lat,
+                    start_lng) |>
+    dplyr::summarise(n = dplyr::count()) |>
+    dplyr::filter(stringr::str_detect(
+        start_station_name,
+        "Ogden Ave & Chicago Ave") == TRUE,
+        n > 1) |>
+    dplyr::arrange(start_station_name, 
+                   start_station_id, 
+                   start_lat,
+                   start_lng,
+                   n) |>
+    dplyr::collect()
+
+mapTest |>
+    dplyr::ungroup() |>
+    dplyr::select(start_lng, start_lat, n) |>
+   # dplyr::group_by(start_lng, start_lat) |>
+    sf::st_as_sf(coords = c(1:2),
+             crs = 4326) |>
+    mapview::mapview()
+```
+
+A quick test of the data:
+
+```{r}
+
+coordsDF <- mapTest |>
+    dplyr::ungroup() |>
+    dplyr::select(start_lng,
+                  start_lat) |>
+    dplyr::add_count(start_lng,
+                     start_lat) |>
+    dplyr::slice_head(n = 100)
+
+coordsDF |>
+    sf::st_as_sf(coords = c(1:2),
+                 crs = 4326) |>
+    mapview::mapview()
+```
+
+```{r}
+
+# according to this, there are 1428 unique station IDs in the dataset now
+countStations <- dplyr::tbl(dbconn,
+                            tblPath,
+                            check_from = FALSE) |>
+    dplyr::select(start_station_id, start_station_name) |>
+    #dplyr::distinct(dplyr::pick(start_station_id, start_station_name)) |>
+    dplyr::group_by(start_station_id,
+                    start_station_name) |>
+    dplyr::summarise(n = dplyr::count()) |>
+    dplyr::filter(n > 0) |>
+    dplyr::collect()
+
+summary(countStations)
+```
+
+```{r}
+dplyr::tbl(dbconn,
+           tblPath)
+```
+
+By generating frequency tables, I quickly gain insight into more optimal settings of filter parameters as opposed to making educated guesses.
 
 ```{r}
 
@@ -560,6 +842,8 @@ hours_of_Riders <- dplyr::tbl(dbconn_fltrd,
     dplyr::mutate("hour" = hms::hms(hours = hour),
                   "hour" = format(strptime(hour, format = "%H"), "%r"),
                   "index" = seq(1:24))
+
+
 ```
 
 ```{r}
@@ -570,6 +854,7 @@ x <-
                          end = 2) |>
     as.character() |>
     stringr::str_remove(pattern = "^0")
+
 
 y <- stringr::str_sub(hours_of_Riders[[1]],
                       start = -2,
@@ -745,6 +1030,7 @@ grouped_tsi |> ggplot2::ggplot(
                   subtitle = "2023",
                   x = "Month",
                   y = "Count")
+
 ```
 
 ```{r}
@@ -779,6 +1065,7 @@ coordQry_small <- dplyr::tbl(dbconn_fltrd,
     dplyr::arrange(desc(n)) |>
     dplyr::collect() |>
     dplyr::slice_head(n = 50)
+
 ```
 
 ```{r}
@@ -795,6 +1082,7 @@ leaflet::leaflet() |>
     leaflet::addMarkers(lng = coordQry$start_lng[1:50],
                         lat = coordQry$start_lat[1:50],
                         clusterOptions = leaflet::markerClusterOptions())
+
 ```
 
 ```{r}
@@ -804,6 +1092,7 @@ coordQry_small |>
     sf::st_as_sf(coords = c(1:2),
                 crs = 4326) |>
     mapview::mapview()
+
 ```
 
 ```{r}
@@ -812,7 +1101,9 @@ coordQry_small |>
 #| include: false
 
 illi <- subset(spData::us_states, NAME == "Illinois")
+
 tmap::tmap_mode("view")
+
 coordQry_small |>
     sf::st_as_sf(coords = c(1:2),
                  crs = 4326) |>
