@@ -63,19 +63,22 @@ tblPath <- "db/data.db"
 # Helpful persistent db
 dbconn <- DBI::dbConnect(duckdb::duckdb(),
                          dbdir = tblPath,
-                         read_only = FALSE)
+                         read_only = FALSE,
+                         check_from = FALSE)
 
 
 tripTibble |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = tblPath,
-                         overwrite = TRUE)
+                         overwrite = TRUE,
+                         check_from = FALSE)
 
 rm(tripTibble)
 
 # To make use of supplied trip interval data
 dplyr::tbl(dbconn,
-           tblPath) |>
+           tblPath,
+           check_from = FALSE) |>
     dplyr::collect() |>
     dplyr::mutate("trip_time" = lubridate::time_length(
         lubridate::interval(started_at,
@@ -85,7 +88,8 @@ dplyr::tbl(dbconn,
     ) |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = tblPath,
-                         overwrite = TRUE)
+                         overwrite = TRUE,
+                         check_from = FALSE)
 
     
 # all files and folders
