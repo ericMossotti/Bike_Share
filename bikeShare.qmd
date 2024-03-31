@@ -176,7 +176,8 @@ undupedTable
 ```{r}
 #|label: 'output distinct obs, n'
 
-cat("Count of distinct observations: ", distinctUndupedCounts)
+cat("Count of distinct observations: ", 
+    distinctUndupedCounts)
 ```
 
 The count of observed distinct values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount:
@@ -232,7 +233,6 @@ The incorrect number of observations (nobs) was 4,331,707. The correct nobs afte
 #| label: 'overwrite file with correct obs'
 #| column: body-outset
 #| 
-# Saving the data to a file to ensure we have a copy free from incomplete and duplicated obs.
 dplyr::tbl(dbconn,
            tblPath,
            check_from = FALSE) |>
@@ -262,21 +262,27 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 #| echo: false
 #| label: "filtering db"
 
-# This chunk helps when reusing and are messing with parameters so you don't have to redownload or refilter everything if the filtered table already exist. So you can just connect to the filtered tables quickly. 
+# So you don't have to re-download or re-filter everything after making further adjustments.
 
 tblPath <- "db/data.db"
 tblPath_fltrd <- "db/data_fltrd.db"
 
-if(exists("dbconn") == TRUE && duckdb::dbExistsTable(dbconn,
-                                                     "tblPath_fltrd") == FALSE) {
+if (exists("dbconn") == TRUE && duckdb::dbExistsTable(dbconn,
+                                                     "tblPath_fltrd") == FALSE)
+    {
     source("filterDatabase.R")
     filterDatabase()
-} else {
+    } else {
     dbconn <- DBI::dbConnect(duckdb::duckdb(),
                              dbdir = tblPath,
                              read_only = FALSE,
                              check_from = FALSE)
-}
+    }
+
+# To verify the new filtered table exists.
+duckdb::dbListTables(dbconn)
+
+source("duckDrops.R")
 ```
 
 So this should have removed the major, potentially, non-natural outliers from the dataset which are due to errors (including user errors).
@@ -291,11 +297,8 @@ duckdb::dbListTables(dbconn)
 Now we're going to create dimension and frequency tables and add those to our database. We can retain the outliers in those tables and perhaps filter as needed later. 
 
 
-
-
-
 ```{r}
-tblPath
+
 # Member_casual
 dplyr::tbl(dbconn,
            tblPath_fltrd,
@@ -305,13 +308,14 @@ dplyr::tbl(dbconn,
     dplyr::summarize(n = dplyr::n()) |>
     dplyr::collect() |>
     duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/memType_count.db",
+                         name = "db/freq_member.db",
                          overwrite = TRUE,
                          check_from = FALSE)
 
 dplyr::tbl(dbconn,
-           "db/memType_count.db")
+           "db/freq_member.db")
 ```
+
 ```{r}
 duckdb::dbListTables(dbconn)
 ```
@@ -335,33 +339,10 @@ dplyr::tbl(dbconn,
            "db/freq_rTypes.db")
 ```
 
+
 ```{r}
 duckdb::dbListTables(dbconn)
 ```
-
-
-```{r}
-#|label: 'rider count by hour table'
-#|include: true
-#|eval: true
-
-dplyr::tbl(dbconn,
-           tblPath_fltrd,
-           check_from = FALSE) |>
-    dplyr::select(started_at) |>
-    dplyr::mutate("hour" = lubridate::hour(started_at)) |>
-    dplyr::group_by(hour) |>
-    dplyr::summarise("Total_Riders" = dplyr::n()) |> #or count?
-    dplyr::arrange(hour) |>
-    dplyr::collect() |>
-    dplyr::mutate("hour" = hms::hms(hours = hour),
-                  "hour" = format(strptime(hour, format = "%H"), "%r"),
-                  "index" = seq(1:24)) |>
-    duckdb::dbWriteTable(dbconn,
-                         name = "rideHours")
-```
-
-
 
 
 ```{r}
@@ -371,12 +352,14 @@ dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
     dplyr::select(miles) |>
-    dplyr::mutate(miles = round(miles, digits = 0),
-                  miles = as.integer(miles)) |>
+    dplyr::collect() |>
+    dplyr::mutate(miles = dplyr::case_when(miles >= 1 ~ round(miles,
+                                                              digits = 0),
+                                           miles < 1 ~ round(signif(miles, 3),
+                                                             digits = 1))) |>
     dplyr::group_by(miles) |>
     dplyr::summarize(n = dplyr::n()) |>
     dplyr::arrange(miles) |>
-    dplyr::collect() |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = "db/freq_miles.db",
                          check_from = FALSE,
@@ -384,9 +367,9 @@ dplyr::tbl(dbconn,
 
 dplyr::tbl(dbconn,
            "db/freq_miles.db")
-#miles[1] <- as.integer(miles[[1]])
-#miles[2] <- as.integer(miles[[2]])
 ```
+
+
 ```{r}
 duckdb::dbListTables(dbconn)
 ```
@@ -409,11 +392,6 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-#mph[1] <- as.integer(mph[[1]])
-#mph[2] <- as.integer(mph[[2]])
-
-#summary_mph <- summary(mph)
-
 dplyr::tbl(dbconn,
            "db/freq_mph.db")
 ```
@@ -426,6 +404,7 @@ duckdb::dbListTables(dbconn)
 
 ```{r}
 
+# WkDay
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -446,15 +425,16 @@ dplyr::tbl(dbconn,
 ```
 
 
+
 ```{r}
 duckdb::dbListTables(dbconn)
 ```
 
 
 
-
 ```{r}
 
+# Months
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -472,8 +452,6 @@ dplyr::tbl(dbconn,
 dplyr::tbl(dbconn,
            "db/freq_month.db")
 ```
-
-
 
 
 
@@ -503,7 +481,6 @@ dplyr::tbl(dbconn,
 ```
 
 
-
 ```{r}
 dplyr::tbl(dbconn,
            tblPath_fltrd) |>
@@ -520,9 +497,12 @@ dplyr::tbl(dbconn,
 dplyr::tbl(dbconn,
            "db/freq_startNames.db")
 ```
+
+
 ```{r}
 duckdb::dbListTables(dbconn)
 ```
+
 
 ```{r}
 dplyr::tbl(dbconn,
@@ -544,8 +524,36 @@ dplyr::tbl(dbconn,
 ```
 
 
+```{r}
+dplyr::tbl(dbconn,
+           tblPath_fltrd)
+```
 
 
+```{r}
+
+
+
+```
+
+
+```{r}
+#|label: 'rider count by hour table'
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate("hour" = lubridate::hour(started_at)) |>
+    dplyr::group_by(hour) |>
+    dplyr::summarise("Total_Riders" = dplyr::n()) |> #or count?
+    dplyr::arrange(hour) |>
+    dplyr::collect() |>
+    dplyr::mutate("hour" = hms::hms(hours = hour),
+                  "hour" = format(strptime(hour, format = "%H"), "%r"),
+                  "index" = seq(1:24)) |>
+    duckdb::dbWriteTable(dbconn,
+                         name = "rideHours")
+```
 
 
 ```{r}
@@ -650,9 +658,6 @@ my_anim <- gganimate::animate(hoursAnimate,
 my_anim
 ```
 :::
-
-
-
 
 
 
