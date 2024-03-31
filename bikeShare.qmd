@@ -75,24 +75,33 @@ knitr::opts_chunk$set(message = FALSE,
                       warning = FALSE)
 ```
 
+Objective:
+
+# First Off: Import, then Process
+
 ```{r}
-tblPath <- "db/data.db"
-tblPath_fltrd <- "db/data_fltrd.db"
 
-source("import_clean_initial.R")
+if(exists("dbconn") == FALSE) {
+    # Script to keep this document less cluttered. 
+    source("import_clean_initial.R")
+    } else {
+        tblPath <- "db/data.db"
+        
+        dbconn <- DBI::dbConnect(
+        duckdb::duckdb(),
+        dbdir = tblPath,
+        read_only = FALSE,
+        check_from = FALSE)
+    }
+```
 
-# Helpful persistent db
-dbconn <- DBI::dbConnect(duckdb::duckdb(),
-                         dbdir = tblPath,
-                         read_only = FALSE,
-                         check_from = FALSE)
+Verifying DuckDB tables:
 
-
-
+```{r}
 duckdb::dbListTables(dbconn)
 ```
 
-Can script up to this point?
+Now to go a little deeper into verifying data coherence. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique.
 
 ```{r}
 #|label: 'create dupe-table, count n distinct'
@@ -115,23 +124,24 @@ dupeTable <- dplyr::tbl(dbconn,
     dplyr::arrange(started_at) |>
     dplyr::collect()
 
-n <- dupeTable |> 
+distinctDupeCounts <- dupeTable |>
     dplyr::distinct(n) |>
     as.integer()
 
-n
+distinctDupeCounts
+dupeTable
 ```
 
-We started with 5,719,877 observations (obs) for dates spanning January to December, 2023, then removed 1,388,170 incomplete obs.
+Of the other columns, it seems that the start_time, end_time, start_station, and end_station could show if there are possibly hidden duplicated observations.
 
-Of the other columns, it seems that the start_time, end_time, start_station, and end_station could show if there are possibly hidden duplicated observations. Those 4 variables combined results in the most granular view of any one observation. Meaning, that data would naturally only have duplicates in error.
+We started with 5,719,877 observations (obs) for dates spanning January to December, 2023, then removed 1,388,170 incomplete obs.
 
 I assumed that having the same times/dates and stations for two different ride IDs was a mistake. Although, I do not know how that error would happen. I could have assumed one person could check out multiple bikes at once. In that instance, each bike could be assigned a unique ride_id. That, however, has only happened 18 times over a year. Since it's only one copy every time, that also raises a red flag. I did not notice any other correlations with station_id/name, member_casual, or ride_type for those particular duplicated data.
 
 ```{r}
 #|label: 'output to distinct duplicates and total obs'
 
-cat(" Distinct copy count of dupes: ", n,
+cat(" Distinct copy count of dupes: ", distinctDupeCounts,
     "\n\n",
     "Total observations that have and are duplicates: ",
        length(dupeTable[[1]]))
@@ -154,20 +164,22 @@ undupedTable <- dupeTable |>
                      end_station_name,
                      .keep_all = TRUE)
 
-n <- undupedTable |>
+distinctUndupedCounts <- undupedTable |>
     dplyr::select(started_at) |>
     dplyr::distinct() |>
     dplyr::count() |>
     as.integer()
+
+undupedTable
 ```
 
 ```{r}
 #|label: 'output distinct obs, n'
 
-cat("Count of distinct observations: ", n)
+cat("Count of distinct observations: ", distinctUndupedCounts)
 ```
 
-The count of observed distinct values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount.
+The count of observed distinct values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount:
 
 ```{r}
 #|label: 'incorrect/correct distinct observations'
@@ -236,9 +248,11 @@ dplyr::tbl(dbconn,
                          name = tblPath,
                          overwrite = TRUE,
                          check_from = FALSE)
-```
 
-Noting that it was useful for me to retain certain rows at first to determine if there were duplicates.
+dplyr::tbl(dbconn,
+           tblPath) |>
+    head()
+```
 
 ## Filtering Data, Smartly
 
@@ -253,252 +267,395 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 tblPath <- "db/data.db"
 tblPath_fltrd <- "db/data_fltrd.db"
 
-
-if(!(duckdb::dbExistsTable(dbconn,
-                          tblPath_fltrd))) {
+if(exists("dbconn") == TRUE && duckdb::dbExistsTable(dbconn,
+                                                     "tblPath_fltrd") == FALSE) {
     source("filterDatabase.R")
     filterDatabase()
+} else {
+    dbconn <- DBI::dbConnect(duckdb::duckdb(),
+                             dbdir = tblPath,
+                             read_only = FALSE,
+                             check_from = FALSE)
 }
+```
 
+So this should have removed the major, potentially, non-natural outliers from the dataset which are due to errors (including user errors).
+
+
+Verify the tables that now exist:
+
+```{r}
+duckdb::dbListTables(dbconn)
+```
+
+Now we're going to create dimension and frequency tables and add those to our database. We can retain the outliers in those tables and perhaps filter as needed later. 
+
+
+
+
+
+```{r}
+tblPath
+# Member_casual
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual) |>
+    dplyr::group_by(member_casual) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/memType_count.db",
+                         overwrite = TRUE,
+                         check_from = FALSE)
+
+dplyr::tbl(dbconn,
+           "db/memType_count.db")
+```
+```{r}
+duckdb::dbListTables(dbconn)
+```
+
+
+```{r}
+# Rideable_type 
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(rideable_type) |>
+    dplyr::group_by(rideable_type) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_rTypes.db",
+                         overwrite = TRUE,
+                         check_from = FALSE)
+
+dplyr::tbl(dbconn,
+           "db/freq_rTypes.db")
+```
+
+```{r}
+duckdb::dbListTables(dbconn)
+```
+
+
+```{r}
+#|label: 'rider count by hour table'
+#|include: true
+#|eval: true
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate("hour" = lubridate::hour(started_at)) |>
+    dplyr::group_by(hour) |>
+    dplyr::summarise("Total_Riders" = dplyr::n()) |> #or count?
+    dplyr::arrange(hour) |>
+    dplyr::collect() |>
+    dplyr::mutate("hour" = hms::hms(hours = hour),
+                  "hour" = format(strptime(hour, format = "%H"), "%r"),
+                  "index" = seq(1:24)) |>
+    duckdb::dbWriteTable(dbconn,
+                         name = "rideHours")
+```
+
+
+
+
+```{r}
+
+# Miles
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(miles) |>
+    dplyr::mutate(miles = round(miles, digits = 0),
+                  miles = as.integer(miles)) |>
+    dplyr::group_by(miles) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(miles) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_miles.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_miles.db")
+#miles[1] <- as.integer(miles[[1]])
+#miles[2] <- as.integer(miles[[2]])
+```
+```{r}
+duckdb::dbListTables(dbconn)
+```
+
+
+```{r}
+
+# MPH
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(mph) |>
+    dplyr::mutate(mph = round(mph, digits = 0)) |>
+    dplyr::group_by(mph) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    dplyr::arrange(mph) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_mph.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+#mph[1] <- as.integer(mph[[1]])
+#mph[2] <- as.integer(mph[[2]])
+
+#summary_mph <- summary(mph)
+
+dplyr::tbl(dbconn,
+           "db/freq_mph.db")
+```
+
+
+```{r}
+duckdb::dbListTables(dbconn)
+```
+
+
+```{r}
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate(wkday = lubridate::wday(started_at),
+                  .keep = "none") |>
+    dplyr::group_by(wkday) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    dplyr::arrange(wkday) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_wkDay.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_wkDay.db")
+```
+
+
+```{r}
+duckdb::dbListTables(dbconn)
+```
+
+
+
+
+```{r}
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate(months = lubridate::month(started_at),
+                  .keep = "none") |>
+    dplyr::group_by(months) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_month.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_month.db")
+```
+
+
+
+
+
+```{r}
+duckdb::dbListTables(dbconn)
+```
+
+
+
+```{r}
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
+    dplyr::mutate(trip_time = round(trip_time,
+                                    digits = 0)) |>
+    dplyr::group_by(trip_time) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(trip_time) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_tripTime.db",
+                         check_from = FALSE,
+                         overwrite = TRUE) 
+
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db")
+```
+
+
+
+```{r}
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
+    dplyr::select(start_station_name) |>
+    dplyr::group_by(start_station_name) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(start_station_name) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_startNames.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_startNames.db")
+```
+```{r}
 duckdb::dbListTables(dbconn)
 ```
 
 ```{r}
-
-locsStart <- dplyr::tbl(dbconn,
-                      tblPath_fltrd) |>
-    dplyr::select(start_station_name
-                  #start_lng,
-                  #start_lat
-                  ) |>
-    dplyr::distinct() |>
-    dplyr::arrange(start_station_name) |>
-    dplyr::rename("station_name" = start_station_name
-                 # "lng" = start_lng,
-                 # "lat" = start_lat
-                 )
-
-locsEnd <- dplyr::tbl(dbconn,
-                      tblPath_fltrd) |>
-    dplyr::select(end_station_name
-                  #end_lng,
-                  #end_lat
-                  ) |>
-    dplyr::distinct() |>
-    dplyr::arrange(end_station_name) |>
-    dplyr::rename("station_name" = end_station_name
-                  #"lng" = end_lng,
-                  #"lat" = end_lat
-                  )
-
-    
-locs <- locsStart |>
-    dplyr::left_join(locsEnd) |>
-    dplyr::arrange(station_name)
-
-startRows <- locsStart |> 
-    dplyr::collect() |>
-    nrow()
-
-endRows <- locsEnd |> 
-    dplyr::collect() |>
-    nrow()
-
-locsRows <- locs |> 
-    dplyr::collect() |> 
-    nrow()
-
-locs
-```
-
-```{r}
-
-flowData <- dplyr::tbl(dbconn,
-                       tblPath_fltrd) |>
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
     dplyr::select(start_station_name,
                   end_station_name) |>
     dplyr::group_by(start_station_name,
                     end_station_name) |>
-    dplyr::summarize(n = n()) |>
-    dplyr::ungroup() |>
-    dplyr::arrange(desc(n)) |>
-    dplyr::rename("from_station" = start_station_name,
-                  "to_station" = end_station_name) |>
-    dplyr::collect() |>
-    dplyr::slice_head(n = 50)
-
-flowData
-summary(flowData$n
-        )
-```
-
-```{r}
-
-locationData <- dplyr::tbl(dbconn,
-                           tblPath_fltrd) |>
-    dplyr::select(start_station_name,
-                  started_at,
-                  ended_at,
-                  trip_time) |>
-    dplyr::group_by(start_station_name) |>
-    dplyr::mutate("trip_time" = round(trip_time,
-                                      digits = 0)) |>
-    dplyr::summarize("trip_count" = dplyr::n(),
-                     "first_date" = min(started_at),
-                     "last_date" = max(ended_at),
-                     "avg_trip_time" = mean(trip_time)
-                     ) |>
-    dplyr::rename("station_name" = start_station_name) |>
-    dplyr::arrange(station_name) |>
-    dplyr::collect()
-
-locationData
-```
-
-```{r}
-
-mergd <- merge(x = locationData,
-               y = locs,
-               by.x = "station_name",
-               by.y = "station_name",
-               sort = FALSE)
-
-mergd <- mergd |>
-    dplyr::mutate(avg_trip_time = round(avg_trip_time,
-                                    digits = 0))
-
-mergd <- mergd |>
-    dplyr::arrange(desc(trip_count)) |>
-    dplyr::slice_head(n = 25)    
-
-mergd
-```
-
-```{r}
-#|class-output: plotMod
-
-ef_test <- epiflows::make_epiflows(flows = flowData,
-                                   locations = mergd,
-                                   duration_stay = "avg_trip_time",
-                                   num_cases = "trip_count")
-
-epiflows::vis_epiflows(ef_test)
-```
-
-```{r}
-
-library("epiflows")
-data("Brazil_epiflows")
-
-YF_coordinates
-
-loc <- merge(x = YF_locations, y = YF_coordinates,
-by.x = "location_code", by.y = "id", sort = FALSE)
-
-ef <- make_epiflows(flows = YF_flows, locations = loc,
-                    coordinates = c("lon", "lat"),
-                    pop_size = "location_population",
-                    duration_stay = "length_of_stay",
-                    num_cases = "num_cases_time_window",
-                    first_date = "first_date_cases",
-                    last_date = "last_date_cases")
-
-
-epiflows::vis_epiflows(ef)
-
-loc
-str(loc)
-
-YF_locations
-YF_coordinates
-YF_flows
-
-YF_locations
-```
-
-```{r}
-visNetwork(nodes, edges, height = "700px", width = "100%") %>%
-  visOptions(selectedBy = "group", 
-             highlightNearest = TRUE, 
-             nodesIdSelection = TRUE) %>%
-  visPhysics(stabilization = FALSE)
-
-```
-
-```{r}
-
-
-locsStart2 <- dplyr::tbl(dbconn,
-                         tblPath_fltrd) |>
-    dplyr::select(start_station_name,
-                  start_lng,
-                  start_lat
-                  ) |>
-    dplyr::group_by(start_station_name,
-                    start_lng,
-                    start_lat) |>
     dplyr::summarize(n = dplyr::n()) |>
     dplyr::arrange(start_station_name) |>
-    dplyr::rename("station_name" = start_station_name,
-                 "lng" = start_lng,
-                 "lat" = start_lat
-                 )
-
-locsStart2 <- locsStart2 |>
-    dplyr::ungroup()
-
-locsStart2
-
-df <- locsStart2 |> 
-    dplyr::collect()
-
-
-stations <- df[1]
-
-
-df[2:3]
-df |>
-    
-    dplyr::mutate(mp = geosphere::midPoint(c(lng,
-                                         lat)))
-
-locsStart2
-    
-locsStart2 |> dplyr::collect() |>
-    nrow()
-
-locsEnd <- dplyr::tbl(dbconn,
-                      tblPath_fltrd) |>
-    dplyr::select(end_station_name,
-                  end_lng,
-                  end_lat
-                  ) |>
-    dplyr::distinct() |>
-    dplyr::arrange(end_station_name) |>
-    dplyr::rename("station_name" = end_station_name,
-                  "lng" = end_lng,
-                  "lat" = end_lat
-                  )
-
-    
-locs <- locsStart |>
-    dplyr::left_join(locsEnd) |>
-    dplyr::arrange(station_name)
-
-startRows <- locsStart |> 
     dplyr::collect() |>
-    nrow()
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_pairStations.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
 
-endRows <- locsEnd |> 
-    dplyr::collect() |>
-    nrow()
-
-locsRows <- locs |> 
-    dplyr::collect() |> 
-    nrow()
-
-locs
+dplyr::tbl(dbconn,
+           "db/freq_pairStations.db")
 ```
+
+
+
+
+
+
+```{r}
+#| eval: true
+x <-
+    stringr::str_sub_all(hours_of_Riders[[1]],
+                         start = 1,
+                         end = 2) |>
+    as.character() |>
+    stringr::str_remove(pattern = "^0")
+
+
+y <- stringr::str_sub(hours_of_Riders[[1]],
+                      start = -2,
+                      end = -1) |>
+    stringr::str_to_lower()
+
+simpleTimes <- stringr::str_c(x, sep = " ", y)
+
+hours_of_Riders[[1]] <- simpleTimes
+
+hours_of_Riders
+```
+
+
+::: column-page
+```{r}
+#| label: 'radial-column plot'
+#| fig-column: page
+#| fig-cap: "The time of day people tend to be riding."
+#| fig-cap-location: bottom
+#| title: "Time of Day and Volume of Cyclers"
+#| fig-width: 15
+#| fig-height: 12
+#| eval: false
+
+hoursAnimate <- ggplot2::ggplot(data = hours_of_Riders,
+                mapping = ggplot2::aes(
+                    x = reorder(hour, .data$index),
+                    y = Total_Riders,
+                    fill = Total_Riders)) +
+    ggplot2::geom_col() +
+    ggplot2::coord_radial(start = 2 * pi,
+                          inner.radius = .2) +
+    ggplot2::xlab(NULL) +
+    ggplot2::ylab(NULL) +
+    ggplot2::scale_fill_distiller(palette = "Spectral",
+                                  direction = 1) +
+    ggplot2::labs(
+        title = "Average Riders by the Hour of Day",
+        subtitle = "(Jan-Dec 2023)",
+        caption = "Data from cyclistic database.",
+        tag = "Figure 1.c"
+        ) +
+    ggplot2::theme(
+        title = ggplot2::element_text(
+            size = 20,
+            lineheight = 4,
+            color = "white"
+        ),
+        
+        text = ggplot2::element_text(color = "white"),
+        
+        panel.background = ggplot2::element_rect(fill = "black"),
+        panel.grid.major.x = ggplot2::element_line(linewidth = 1,
+                                                   color = 'grey10'),
+        panel.grid.major.y = ggplot2::element_blank(),
+        
+        
+        plot.background = ggplot2::element_rect(fill = "black"),
+        
+        axis.line.x = ggplot2::element_line(
+            linewidth = 1,
+            color = 'grey10',
+            arrow = ggplot2::arrow()
+        ),
+        
+        axis.ticks.y = ggplot2::element_blank(),
+        
+        axis.text.x = ggplot2::element_text(
+            size = 18,
+            color = "grey90",
+            face = "bold"
+        ),
+        axis.text.y = ggplot2::element_blank(),
+        
+        legend.background = ggplot2::element_rect(fill = "black"),
+        legend.ticks = ggplot2::element_line(color = "black",
+                                             linewidth = .5),
+        legend.text = ggplot2::element_text(color = 'grey80',
+                                            size = 13),
+        legend.position = "right",
+        legend.justification = "center",
+        legend.direction = "vertical",
+        legend.key.size = unit(1.5, "cm")
+       ) +
+    gganimate::transition_reveal(along = seq(length(hour)))
+
+my_anim <- gganimate::animate(hoursAnimate,
+                             renderer = gganimate::gifski_renderer())
+
+my_anim
+```
+:::
+
+
+
+
+
+
 
 # Data Modeling
 
@@ -586,26 +743,6 @@ locs
 
         -   geospatial location
 
-# Frequency Tables
-
-```{r}
-
-# Member_casual
-dplyr::tbl(dbconn,
-           tblPath_fltrd,
-           check_from = FALSE) |>
-    dplyr::select(member_casual) |>
-    dplyr::collect() |>
-    table()
-
-# Rideable_type 
-dplyr::tbl(dbconn,
-           tblPath_fltrd,
-           check_from = FALSE) |>
-    dplyr::select(rideable_type) |>
-    dplyr::collect() |>
-    table()
-```
 
 The 3rd quartile for Freq (the count, or frequency, per minute group) was 676. To get a better distribution, I'm going to set 676 as the min Freq value to be included in the frequency table for trip_time.
 
@@ -637,11 +774,41 @@ ttime_mem_Rtype <- ttime_mem_Rtype |>
     dplyr::arrange(memb_Rtype, 
                    trip_time)
 
+
 ttime_mem_Rtype$memb_Rtype <- as.factor(ttime_mem_Rtype$memb_Rtype)
 summ_ttime_mem_Rtype <- summary(ttime_mem_Rtype)
 
-ttime_mem_Rtype2 <- ttime_mem_Rtype |>
+```
+
+```{r}
+
+tripTimes_rTypes <- ttime_mem_Rtype |>
     dplyr::ungroup()
+
+tripTimes_rTypes |> duckdb::dbWriteTable(conn = dbconn,
+                                         name = 'db/times_rTypes',
+                                         overwrite = TRUE,
+                                         check_from = FALSE)
+
+duckdb::dbListTables(dbconn)
+
+dir.create('exports')
+```
+
+
+
+```{sql connection = dbconn}
+
+COPY "db/times_rTypes" TO 'exports/times_rTypes.parquet' (FORMAT PARQUET);
+```
+
+
+
+
+```{r}
+
+arrow::read_parquet("exports/times_rTypes.parquet")
+
 ```
 
 ```{r}
@@ -741,25 +908,6 @@ Mean \> Median
 
 Unimodal
 
-```{r}
-
-# Miles
-miles <- dplyr::tbl(dbconn,
-                    tblPath_fltrd,
-                    check_from = FALSE) |>
-    dplyr::select(miles) |>
-    dplyr::mutate(miles = round(miles, digits = 0)) |>
-    dplyr::collect() |>
-    table() |>
-    as.data.frame()
-
-miles[1] <- as.integer(miles[[1]])
-miles[2] <- as.integer(miles[[2]])
-
-summary_miles <- summary(miles)
-
-summary_miles
-```
 
 To get a better distribution for the first quartile and median value, miles' frequency table, I'm going to set the min to the median of the above table.
 
@@ -774,6 +922,9 @@ summaryMiles_fltrd <- summary(miles_fltrd)
 summaryMiles_fltrd
 ```
 
+
+
+
 ```{r}
 
 ggplot2::ggplot(miles_fltrd,
@@ -783,25 +934,6 @@ ggplot2::ggplot(miles_fltrd,
                       color = "black")
 ```
 
-```{r}
-
-# Miles
-mph <- dplyr::tbl(dbconn,
-                  tblPath_fltrd,
-                  check_from = FALSE) |>
-    dplyr::select(mph) |>
-    dplyr::mutate(mph = round(mph, digits = 0)) |>
-    dplyr::collect() |>
-    table() |>
-    as.data.frame()
-
-mph[1] <- as.integer(mph[[1]])
-mph[2] <- as.integer(mph[[2]])
-
-summary_mph <- summary(mph)
-
-summary_mph
-```
 
 ```{r}
 
@@ -811,6 +943,10 @@ ggplot2::ggplot(mph,
                                    fill = Freq),
                             color = "black")
 ```
+
+
+
+
 
 ```{r}
 
@@ -829,6 +965,9 @@ summaryHours <- summary(hourTbl)
 summaryHours
 ```
 
+
+
+
 ```{r}
 
 ggplot2::ggplot(hourTbl,
@@ -838,23 +977,6 @@ ggplot2::ggplot(hourTbl,
                       color = "black")
 ```
 
-```{r}
-
-wkdayTbl <- dplyr::tbl(dbconn,
-                   tblPath_fltrd,
-                   check_from = FALSE) |>
-    dplyr::select(started_at) |>
-    dplyr::mutate(wkday = lubridate::wday(started_at),
-                  .keep = "none") |>
-    dplyr::collect() |>
-    table() |>
-    as.data.frame()
-
-summaryWkday <- summary(wkdayTbl)
-
-wkdayTbl
-summaryWkday
-```
 
 ```{r}
 
@@ -866,24 +988,6 @@ ggplot2::ggplot(wkdayTbl,
                             color = "black")
 ```
 
-```{r}
-#| eval: false
-
-
-monthTbl <- dplyr::tbl(dbconn,
-                       tblPath,
-                       check_from = FALSE) |>
-    dplyr::select(started_at) |>
-    dplyr::mutate(months = lubridate::month(started_at),
-                  .keep = "none") |>
-    dplyr::group_by(months) |>
-    dplyr::summarize(Freq = dplyr::count()) |>
-    dplyr::collect()
-
-monthTbl
-summaryMonths <- summary(monthTbl)
-summaryMonths
-```
 
 ```{r}
 #| eval: false
@@ -1036,44 +1140,19 @@ Assuming their plans to expand the "over 800 stations" by 250, I'd like to set t
 #| eval: false
 # according to this, there are 1428 unique station id's in the dataset now
 dplyr::tbl(dbconn,
-           tblPath,
+           tblPath_fltrd,
            check_from = FALSE) |>
     dplyr::select(start_station_name) |>
     dplyr::distinct(start_station_name) |>
     dplyr::summarise(dplyr::count())
 ```
 
-```{r}
-#| eval: false
-
-df <- dplyr::tbl(dbconn,
-           tblPath,
-           check_from = FALSE) |>
-    dplyr::select(start_station_id, 
-                  start_station_name,
-                  start_lat,
-                  start_lng) |>
-    
-    dplyr::distinct(start_station_name,
-                    start_station_id,
-                    start_lat,
-                    start_lng,
-                    .keep_all = TRUE) |>
-    dplyr::group_by(start_station_name,
-                    start_station_id,
-                    start_lat, 
-                    start_lng,
-                   ) |>
-    dplyr::summarise(n = dplyr::count()) |>
-    dplyr::arrange(start_station_name, start_station_id) |>
-    dplyr::collect()
-```
 
 The 5th decimal place is accurate up to 1.1m, so there ends up being groupings for bikes rented from stations located along a street or at intersections of two streets. You can tell by the start_station_name. If it's an intersection it will say something like "1st St & 2nd St.". If it's one street, it will likely just say "1st St". There are likely some exceptions to that rule. That helps explain why the geospatial coordinates slightly differ for entries with the same stations and IDs.
 
+
 ```{r}
 #| eval: false
-
 
 mapTest <- dplyr::tbl(dbconn,
            tblPath,
@@ -1137,7 +1216,7 @@ countStations <- dplyr::tbl(dbconn,
     #dplyr::distinct(dplyr::pick(start_station_id, start_station_name)) |>
     dplyr::group_by(start_station_id,
                     start_station_name) |>
-    dplyr::summarise(n = dplyr::count()) |>
+    dplyr::summarise(n = dplyr::n()) |>
     dplyr::filter(n > 0) |>
     dplyr::collect()
 
@@ -1146,180 +1225,7 @@ summary(countStations)
 
 By generating frequency tables, I quickly gain insight into more optimal settings of filter parameters as opposed to making educated guesses.
 
-```{r}
-#| eval: false
 
-
-if(dir.exists("db_fltrd")) {
-    
-    tblPath_fltrd <- "db_fltrd/fltrd.db"
-    
-    dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
-                              dbdir = tblPath_fltrd,
-                              read_only = FALSE)
-} else {
-    dir.create("db_fltrd")
-    
-    tblPath_fltrd <- "db_fltrd/fltrd.db"
-    
-    dbconn_fltrd <- DBI::dbConnect(duckdb::duckdb(),
-                                   dbdir = tblPath_fltrd,
-                                   read_only = FALSE)
-    
-    # Imposing sensible limits on the data we wish to include moving forward.
-    dplyr::tbl(dbconn,
-               tblPath) |>
-        dplyr::filter(trip_time > 1,
-                      trip_time < 480,
-                      rideable_type != "docked_bike") |>
-        dplyr::collect() |>
-        # Might as well calculate distance traveled while at it.
-        dplyr::mutate(
-            miles = geosphere::distGeo(
-                p1 = cbind(start_lng, start_lat),
-                p2 = cbind(end_lng, end_lat)
-            ) / 1000 * 0.62137119,
-            mph = (miles / (trip_time / 60))
-        ) |>
-        # It's nonsensical to rent a bike for distances easily walked.
-        # Also, there could be randomly generated data.
-        dplyr::filter(miles > 0.1,
-                      # Seems that pro cyclists average around 20 mph,
-                      # so I set that as the ceiling.
-                      mph < 21,
-                     # To account for time spent idling, stoplights and
-                     # traffic.
-                      mph > 1) |>
-        duckdb::dbWriteTable(conn = dbconn_fltrd,
-                             name = tblPath_fltrd,
-                             overwrite = TRUE,
-                             check_from = FALSE)
-}
-```
-
-```{r}
-#|label: 'rider count by hour table'
-#|include: false
-#|eval: false
-
-
-hours_of_Riders <- dplyr::tbl(dbconn,
-                              tblPath_fltrd,
-                              check_from = FALSE) |>
-    dplyr::select(started_at) |>
-    dplyr::mutate("hour" = lubridate::hour(started_at)) |>
-    dplyr::group_by(hour) |>
-    dplyr::summarise("Total_Riders" = dplyr::n()) |> #or count?
-    dplyr::arrange(hour) |>
-    dplyr::collect() |>
-    dplyr::mutate("hour" = hms::hms(hours = hour),
-                  "hour" = format(strptime(hour, format = "%H"), "%r"),
-                  "index" = seq(1:24))
-```
-
-```{r}
-#| eval: false
-x <-
-    stringr::str_sub_all(hours_of_Riders[[1]],
-                         start = 1,
-                         end = 2) |>
-    as.character() |>
-    stringr::str_remove(pattern = "^0")
-
-
-y <- stringr::str_sub(hours_of_Riders[[1]],
-                      start = -2,
-                      end = -1) |>
-    stringr::str_to_lower()
-
-simpleTimes <- stringr::str_c(x, sep = " ", y)
-
-hours_of_Riders[[1]] <- simpleTimes
-
-hours_of_Riders
-```
-
-# Visualizations
-
-::: column-page
-```{r}
-#| label: 'radial-column plot'
-#| fig-column: page
-#| fig-cap: "The time of day people tend to be riding."
-#| fig-cap-location: bottom
-#| title: "Time of Day and Volume of Cyclers"
-#| fig-width: 15
-#| fig-height: 12
-#| eval: false
-
-hoursAnimate <- ggplot2::ggplot(data = hours_of_Riders,
-                mapping = ggplot2::aes(
-                    x = reorder(hour, .data$index),
-                    y = Total_Riders,
-                    fill = Total_Riders)) +
-    ggplot2::geom_col() +
-    ggplot2::coord_radial(start = 2 * pi,
-                          inner.radius = .2) +
-    ggplot2::xlab(NULL) +
-    ggplot2::ylab(NULL) +
-    ggplot2::scale_fill_distiller(palette = "Spectral",
-                                  direction = 1) +
-    ggplot2::labs(
-        title = "Average Riders by the Hour of Day",
-        subtitle = "(Jan-Dec 2023)",
-        caption = "Data from cyclistic database.",
-        tag = "Figure 1.c"
-        ) +
-    ggplot2::theme(
-        title = ggplot2::element_text(
-            size = 20,
-            lineheight = 4,
-            color = "white"
-        ),
-        
-        text = ggplot2::element_text(color = "white"),
-        
-        panel.background = ggplot2::element_rect(fill = "black"),
-        panel.grid.major.x = ggplot2::element_line(linewidth = 1,
-                                                   color = 'grey10'),
-        panel.grid.major.y = ggplot2::element_blank(),
-        
-        
-        plot.background = ggplot2::element_rect(fill = "black"),
-        
-        axis.line.x = ggplot2::element_line(
-            linewidth = 1,
-            color = 'grey10',
-            arrow = ggplot2::arrow()
-        ),
-        
-        axis.ticks.y = ggplot2::element_blank(),
-        
-        axis.text.x = ggplot2::element_text(
-            size = 18,
-            color = "grey90",
-            face = "bold"
-        ),
-        axis.text.y = ggplot2::element_blank(),
-        
-        legend.background = ggplot2::element_rect(fill = "black"),
-        legend.ticks = ggplot2::element_line(color = "black",
-                                             linewidth = .5),
-        legend.text = ggplot2::element_text(color = 'grey80',
-                                            size = 13),
-        legend.position = "right",
-        legend.justification = "center",
-        legend.direction = "vertical",
-        legend.key.size = unit(1.5, "cm")
-       ) +
-    gganimate::transition_reveal(along = seq(length(hour)))
-
-my_anim <- gganimate::animate(hoursAnimate,
-                             renderer = gganimate::gifski_renderer())
-
-my_anim
-```
-:::
 
 ```{r}
 #| label: "column plot"
@@ -1457,7 +1363,6 @@ leaflet::leaflet() |>
     leaflet::addMarkers(lng = coordQry$start_lng[1:50],
                         lat = coordQry$start_lat[1:50],
                         clusterOptions = leaflet::markerClusterOptions())
-
 ```
 
 ```{r}
@@ -1491,7 +1396,6 @@ coordQry_small |>
 
 ```{r}
 #|eval: false
-
 
 ojs_define(js_tsi = grouped_tsi)
 ```
@@ -1688,6 +1592,8 @@ groupedStats_tsib |>
     ggplot2::scale_color_distiller(palette = 'Spectral')
 ```
 
+
+
 ```{r}
 #|label: "dygraph"
 
@@ -1706,6 +1612,261 @@ dygraphs::dygraph(sumDF, main = "ever",
                        color = c("green", "red"))
 ```
 
+
+
+```{r}
+
+locsStart <- dplyr::tbl(dbconn,
+                      tblPath_fltrd) |>
+    dplyr::select(start_station_name
+                  #start_lng,
+                  #start_lat
+                  ) |>
+    dplyr::distinct() |>
+    dplyr::arrange(start_station_name) |>
+    dplyr::rename("station_name" = start_station_name
+                 # "lng" = start_lng,
+                 # "lat" = start_lat
+                 )
+
+locsEnd <- dplyr::tbl(dbconn,
+                      tblPath_fltrd) |>
+    dplyr::select(end_station_name
+                  #end_lng,
+                  #end_lat
+                  ) |>
+    dplyr::distinct() |>
+    dplyr::arrange(end_station_name) |>
+    dplyr::rename("station_name" = end_station_name
+                  #"lng" = end_lng,
+                  #"lat" = end_lat
+                  )
+
+    
+locs <- locsStart |>
+    dplyr::left_join(locsEnd) |>
+    dplyr::arrange(station_name)
+
+startRows <- locsStart |> 
+    dplyr::collect() |>
+    nrow()
+
+endRows <- locsEnd |> 
+    dplyr::collect() |>
+    nrow()
+
+locsRows <- locs |> 
+    dplyr::collect() |> 
+    nrow()
+
+locs
+```
+
+
+
+```{r}
+
+flowData <- dplyr::tbl(dbconn,
+                       tblPath_fltrd) |>
+    dplyr::select(start_station_name,
+                  end_station_name) |>
+    dplyr::group_by(start_station_name,
+                    end_station_name) |>
+    dplyr::summarize(n = n()) |>
+    dplyr::ungroup() |>
+    dplyr::arrange(desc(n)) |>
+    dplyr::rename("from_station" = start_station_name,
+                  "to_station" = end_station_name) |>
+    dplyr::collect() |>
+    dplyr::slice_head(n = 50)
+
+flowData
+summary(flowData$n
+        )
+```
+
+
+
+```{r}
+
+locationData <- dplyr::tbl(dbconn,
+                           tblPath_fltrd) |>
+    dplyr::select(start_station_name,
+                  started_at,
+                  ended_at,
+                  trip_time) |>
+    dplyr::group_by(start_station_name) |>
+    dplyr::mutate("trip_time" = round(trip_time,
+                                      digits = 0)) |>
+    dplyr::summarize("trip_count" = dplyr::n(),
+                     "first_date" = min(started_at),
+                     "last_date" = max(ended_at),
+                     "avg_trip_time" = mean(trip_time)
+                     ) |>
+    dplyr::rename("station_name" = start_station_name) |>
+    dplyr::arrange(station_name) |>
+    dplyr::collect()
+
+locationData
+```
+
+
+```{r}
+
+mergd <- merge(x = locationData,
+               y = locs,
+               by.x = "station_name",
+               by.y = "station_name",
+               sort = FALSE)
+
+mergd <- mergd |>
+    dplyr::mutate(avg_trip_time = round(avg_trip_time,
+                                    digits = 0))
+
+mergd <- mergd |>
+    dplyr::arrange(desc(trip_count)) |>
+    dplyr::slice_head(n = 25)    
+
+mergd
+```
+
+
+
+```{r}
+#|class-output: plotMod
+
+ef_test <- epiflows::make_epiflows(flows = flowData,
+                                   locations = mergd,
+                                   duration_stay = "avg_trip_time",
+                                   num_cases = "trip_count")
+
+epiflows::vis_epiflows(ef_test)
+```
+
+
+
+```{r}
+
+library("epiflows")
+data("Brazil_epiflows")
+
+YF_coordinates
+
+loc <- merge(x = YF_locations, y = YF_coordinates,
+by.x = "location_code", by.y = "id", sort = FALSE)
+
+ef <- make_epiflows(flows = YF_flows, locations = loc,
+                    coordinates = c("lon", "lat"),
+                    pop_size = "location_population",
+                    duration_stay = "length_of_stay",
+                    num_cases = "num_cases_time_window",
+                    first_date = "first_date_cases",
+                    last_date = "last_date_cases")
+
+
+epiflows::vis_epiflows(ef)
+
+loc
+str(loc)
+
+YF_locations
+YF_coordinates
+YF_flows
+
+YF_locations
+```
+
+```{r}
+visNetwork(nodes, edges, height = "700px", width = "100%") %>%
+  visOptions(selectedBy = "group", 
+             highlightNearest = TRUE, 
+             nodesIdSelection = TRUE) %>%
+  visPhysics(stabilization = FALSE)
+
+```
+
+```{r}
+
+
+locsStart2 <- dplyr::tbl(dbconn,
+                         tblPath_fltrd) |>
+    dplyr::select(start_station_name,
+                  start_lng,
+                  start_lat
+                  ) |>
+    dplyr::group_by(start_station_name,
+                    start_lng,
+                    start_lat) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(start_station_name) |>
+    dplyr::rename("station_name" = start_station_name,
+                 "lng" = start_lng,
+                 "lat" = start_lat
+                 )
+
+locsStart2 <- locsStart2 |>
+    dplyr::ungroup()
+
+locsStart2
+
+df <- locsStart2 |> 
+    dplyr::collect()
+
+
+stations <- df[1]
+
+
+df[2:3]
+
+df |>
+    dplyr::mutate(mp = geosphere::midPoint(c(lng,
+                                         lat)))
+
+locsStart2
+    
+locsStart2 |> dplyr::collect() |>
+    nrow()
+
+locsEnd <- dplyr::tbl(dbconn,
+                      tblPath_fltrd) |>
+    dplyr::select(end_station_name,
+                  end_lng,
+                  end_lat
+                  ) |>
+    dplyr::distinct() |>
+    dplyr::arrange(end_station_name) |>
+    dplyr::rename("station_name" = end_station_name,
+                  "lng" = end_lng,
+                  "lat" = end_lat
+                  )
+
+    
+locs <- locsStart |>
+    dplyr::left_join(locsEnd) |>
+    dplyr::arrange(station_name)
+
+startRows <- locsStart |> 
+    dplyr::collect() |>
+    nrow()
+
+endRows <- locsEnd |> 
+    dplyr::collect() |>
+    nrow()
+
+locsRows <- locs |> 
+    dplyr::collect() |> 
+    nrow()
+
+locs
+```
+
+
+
+
+
+
+
+
 These maps track bike-sharing activity going on worldwide and in Chicago.
 
 [Bike Share Map](https://bikesharemap.com/#/8/-87.5771/41.3747/) [@bikesha]
@@ -1714,12 +1875,10 @@ These maps track bike-sharing activity going on worldwide and in Chicago.
 
 ```{r, eval = FALSE}
 #|label: 'drops duckDB tables'
-
 source("duckDrops.R")
 ```
 
 ```{r}
 #|label: 'duckDB Shutdown'
-#duckdb::dbDisconnect(dbconn_fltrd, shutdown = TRUE)
 duckdb::dbDisconnect(dbconn, shutdown = TRUE)
 ```
