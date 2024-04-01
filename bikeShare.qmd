@@ -294,11 +294,12 @@ Verify the tables that now exist:
 duckdb::dbListTables(dbconn)
 ```
 
+# Frequency Tables and What They Tell Us
+
 Now we're going to create dimension and frequency tables and add those to our database. We can retain the outliers in those tables and perhaps filter as needed later. 
 
 
 ```{r}
-
 # Member_casual
 dplyr::tbl(dbconn,
            tblPath_fltrd,
@@ -312,9 +313,20 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE,
                          check_from = FALSE)
 
+
+
 dplyr::tbl(dbconn,
            "db/freq_member.db")
+
+
+dplyr::tbl(dbconn,
+           "db/freq_member.db") |>
+    dplyr::summarise(sum = sum(n))
+
 ```
+This indicates that there are nearly twice as many trips taken by annual subscribers than by casual users. So, it would seem that there is some correlation between how often a person uses the service and whether they choose to subscribe to an annual membership plan.
+
+
 
 ```{r}
 duckdb::dbListTables(dbconn)
@@ -337,8 +349,13 @@ dplyr::tbl(dbconn,
 
 dplyr::tbl(dbconn,
            "db/freq_rTypes.db")
-```
 
+dplyr::tbl(dbconn,
+           "db/freq_rTypes.db") |>
+    dplyr::summarize(sum = sum(n))
+
+```
+This tells us that there are nearly twice as many trips taken with non-electric bikes as electric bikes. There are differences in cost for casual members, so that might be one determining factor. Also, perhaps the associated health benefits with exercise would help explain higher non-electric bicycle use. 
 
 ```{r}
 duckdb::dbListTables(dbconn)
@@ -367,7 +384,29 @@ dplyr::tbl(dbconn,
 
 dplyr::tbl(dbconn,
            "db/freq_miles.db")
+
+
+dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    dplyr::summarize(sum = sum(n))
+
+
+dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 10)
+
+
 ```
+
+```{r}
+dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    ggplot2::ggplot(mapping = ggplot2::aes(x = miles)) +
+    ggplot2::geom_line(ggplot2::aes(y = n,
+                                   color = n))
+```
+This shows that around 0.3 to 3 miles is the distance traveled on most trips taken. The fact that casual bicycles are used more often perhaps makes a little more sense given that people are not traveling long distances.  
 
 
 ```{r}
@@ -394,8 +433,29 @@ dplyr::tbl(dbconn,
 
 dplyr::tbl(dbconn,
            "db/freq_mph.db")
-```
 
+
+
+dplyr::tbl(dbconn,
+           "db/freq_mph.db") |>
+    dplyr::summarize(sum = sum(n))
+
+
+dplyr::tbl(dbconn,
+           "db/freq_mph.db") |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 10) |>
+    dplyr::arrange(mph)
+
+```
+```{r}
+dplyr::tbl(dbconn,
+           "db/freq_mph.db") |>
+    dplyr::collect() |>
+    plot()
+
+```
+The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel. 
 
 ```{r}
 duckdb::dbListTables(dbconn)
@@ -403,25 +463,72 @@ duckdb::dbListTables(dbconn)
 
 
 ```{r}
-
 # WkDay
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
     dplyr::select(started_at) |>
-    dplyr::mutate(wkday = lubridate::wday(started_at),
-                  .keep = "none") |>
+    dplyr::mutate(wkday = lubridate::wday(started_at,
+                                          label = TRUE,
+                                          abbr = TRUE)) |>
     dplyr::group_by(wkday) |>
     dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
     dplyr::arrange(wkday) |>
+    dplyr::collect() |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = "db/freq_wkDay.db",
                          check_from = FALSE,
                          overwrite = TRUE)
 
+wkOrder <- c("Sun", 
+             "Mon", 
+             "Tue", 
+             "Wed",
+             "Thu", 
+             "Fri", 
+             "Sat")
+
+abbDays <- dplyr::tbl(dbconn,
+                      "db/freq_wkDay.db") |>
+    dplyr::collect()
+
+abbDays$wkday <- factor(abbDays$wkday,
+                        levels = wkOrder)
+
+abbDays[order(abbDays$wkday), ] |>
+    duckdb::dbWriteTable(
+        conn = dbconn,
+        name = "db/freq_wkdayAbb.db",
+        check_from = FALSE,
+        overwrite = TRUE
+    )
+
 dplyr::tbl(dbconn,
-           "db/freq_wkDay.db")
+           "db/freq_wkdayAbb.db") 
+```
+```{r}
+
+dplyr::tbl(dbconn,
+           "db/freq_wkdayAbb.db") |>
+    dplyr::collect() |>
+    plot()
+```
+
+There is a slight reduction in trips taken on Sundays and Mondays. This could be explained by the fact that most trips are taken by annual subscribers, possibly because they are biking to work and such. Much less people will be biking to work on Sundays. Taking 3-day weekends is common in the workplace, where most would likely opt to use up their sick/vacation days on Monday, which might explain the down tick in trips taken on Mondays. Also, those who are working Tuesdays-Saturdays could be taking Sunday and Mondays off. 
+
+
+
+```{r}
+dplyr::tbl(dbconn,
+           "db/freq_wkDay.db") |>
+    dplyr::mutate(wkday = lubridate::started_at(wkday,
+                                                label = TRUE,
+                                                abbr = TRUE)) |>
+    dplyr::collect() |>
+    ggplot2::ggplot(ggplot2::aes(x = wkday)) +
+    ggplot2::geom_col(ggplot2::aes(y = n,
+                                   fill = n),
+                      color = "black")
 ```
 
 
@@ -439,11 +546,17 @@ dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
     dplyr::select(started_at) |>
-    dplyr::mutate(months = lubridate::month(started_at),
-                  .keep = "none") |>
+    dplyr::mutate(months = lubridate::month(started_at,
+                                            label = FALSE,
+                                            abbr = TRUE
+                                            )) |>
     dplyr::group_by(months) |>
     dplyr::summarize(n = dplyr::n()) |>
     dplyr::collect() |>
+    dplyr::arrange(months) |>
+    dplyr::mutate(months = c(month.abb),
+                  months = forcats::as_factor(months),
+                  months = forcats::fct_inorder(months)) |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = "db/freq_month.db",
                          check_from = FALSE,
@@ -451,6 +564,16 @@ dplyr::tbl(dbconn,
 
 dplyr::tbl(dbconn,
            "db/freq_month.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_month.db") |>
+    dplyr::summarize(sum = sum(n))
+```
+```{r}
+dplyr::tbl(dbconn,
+           "db/freq_month.db") |>
+    dplyr::collect() |>
+    plot()
 ```
 
 
@@ -462,7 +585,6 @@ duckdb::dbListTables(dbconn)
 
 
 ```{r}
-
 dplyr::tbl(dbconn,
            tblPath_fltrd) |>
     dplyr::mutate(trip_time = round(trip_time,
@@ -474,10 +596,15 @@ dplyr::tbl(dbconn,
     duckdb::dbWriteTable(conn = dbconn,
                          name = "db/freq_tripTime.db",
                          check_from = FALSE,
-                         overwrite = TRUE) 
+                         overwrite = TRUE)
 
 dplyr::tbl(dbconn,
            "db/freq_tripTime.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db") |>
+    dplyr::summarize(sum = sum(n))
+
 ```
 
 
@@ -496,6 +623,11 @@ dplyr::tbl(dbconn,
 
 dplyr::tbl(dbconn,
            "db/freq_startNames.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_startNames.db") |>
+    dplyr::summarize(sum = sum(n))
+
 ```
 
 
@@ -521,6 +653,11 @@ dplyr::tbl(dbconn,
 
 dplyr::tbl(dbconn,
            "db/freq_pairStations.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_pairStations.db") |>
+    dplyr::summarize(sum = sum(n))
+
 ```
 
 
@@ -530,11 +667,6 @@ dplyr::tbl(dbconn,
 ```
 
 
-```{r}
-
-
-
-```
 
 
 ```{r}
@@ -838,13 +970,10 @@ ggplot2::ggplot(ttime_mem_Rtype,
 ```
 
 ```{r}
-
-
 ggplot2::ggplot(ttime_mem_Rtype,
                 ggplot2::aes(x = trip_time)) +
     ggplot2::geom_line(ggplot2::aes(y = n,
                                    color = memb_Rtype))
-
 ```
 
 ```{r}
@@ -953,22 +1082,6 @@ ggplot2::ggplot(mph,
 
 
 
-```{r}
-
-hourTbl <- dplyr::tbl(dbconn,
-                      tblPath_fltrd,
-                      check_from = FALSE) |>
-    dplyr::select(started_at) |>
-    dplyr::mutate(hour = lubridate::hour(started_at),
-                  .keep = "none") |>
-    dplyr::collect() |>
-    table() |>
-    as.data.frame()
-
-hourTbl
-summaryHours <- summary(hourTbl)
-summaryHours
-```
 
 
 
@@ -983,15 +1096,6 @@ ggplot2::ggplot(hourTbl,
 ```
 
 
-```{r}
-
-
-ggplot2::ggplot(wkdayTbl,
-                ggplot2::aes(x = wkday)) +
-    ggplot2::geom_col(ggplot2::aes(y = Freq,
-                                   fill = Freq),
-                            color = "black")
-```
 
 
 ```{r}
