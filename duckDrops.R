@@ -14,12 +14,19 @@ for (i in seq(paths)) {
     message(as.character(i), ". ", paths[i])
 } 
 
-choice <- readline(prompt = message("Choose\n")) |>
+choice <- readline(prompt = message("\n Drop which tables? \n")) |>
     stringr::str_split(",") |>
     unlist() |>
     as.integer()
-    
-paths[choice] |> purrr::walk(drops_tables)
 
-message("Tables left:\n",
-        duckdb::dbListTables(dbconn))
+if (is.na(choice)== TRUE) {
+    message("No tables were removed\n")
+} else {
+    paths[choice] |> purrr::walk(drops_tables)    
+}
+
+message("Tables left:\n")
+
+x <- duckdb::dbListTables(dbconn)
+
+as.matrix(x)
