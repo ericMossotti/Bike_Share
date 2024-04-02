@@ -14,7 +14,7 @@ website:
 
 format:
   html:
-    theme: cosmo
+    theme: solar
     sass: styles.sass
     toc: true
 
