@@ -75,7 +75,9 @@ knitr::opts_chunk$set(message = FALSE,
                       warning = FALSE)
 ```
 
-Objective:
+## Objective: 
+
+Communicate to shareholders data based insights regarding to better inform their desire to enlist more annual subscribers.
 
 # First Off: Import, then Process
 
@@ -101,7 +103,7 @@ Verifying DuckDB tables:
 duckdb::dbListTables(dbconn)
 ```
 
-Now to go a little deeper into verifying data coherence. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique.
+Now to go a little deeper, we can check for duplicates. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique.
 
 ```{r}
 #|label: 'create dupe-table, count n distinct'
@@ -124,12 +126,86 @@ dupeTable <- dplyr::tbl(dbconn,
     dplyr::arrange(started_at) |>
     dplyr::collect()
 
-distinctDupeCounts <- dupeTable |>
-    dplyr::distinct(n) |>
-    as.integer()
 
-distinctDupeCounts
-dupeTable
+gtDupes <- dupeTable |>
+    dplyr::group_by(started_at) |>
+    gt::gt(rowname_col = "row",
+           groupname_col = "started_at",
+           row_group_as_column = TRUE) |>
+    gt::data_color(columns = start_station_name,
+                   target_columns = everything(),
+                   method = "auto",
+                   palette = "basetheme::clean") |>
+     gt::data_color(columns = "n",
+                   colors = "purple") |>
+        gt::tab_source_note(gt::md(
+            "**Table**: Duplicates Table<br>**Data**: Divvy Data "))
+
+gtDupes
+
+
+dupeTableGT |>
+    gt::tab_style(
+        style = list(
+            gt::cell_text(weight = "bold")
+        ),
+        locations = gt::cells_column_labels(everything())
+    ) |>
+    gt::tab_style(
+        style = gt::cell_borders(
+            sides = c("top", "bottom")
+        ),
+        locations = gt::cells_body()
+    ) |>
+    gt::opt_table_lines(extent = "default") |>
+    gt::tab_options(
+        column_labels.border.top.width = gt::px(3),
+        column_labels.border.bottom.color = "black",
+        table.border.bottom.width = gt::px(3)
+    ) |>
+    gt::data_color(columns = n,
+                   colors = 'lightgreen') |>
+    gt::tab_source_note(gt::md("**Table**: Duplicates Table<br>**Data**: Divvy Data "))
+```
+
+[@divvyda]
+
+```{r}
+
+factorDupeTable <- dupeTable |>
+    dplyr::distinct(started_at) |>
+    dplyr::summarize(n = dplyr::n())
+
+
+dupeTable |>
+    dplyr::distinct(started_at) |>
+    dplyr::summarize(n = dplyr::n())
+
+factorDupeTable <- dupeTable |>
+    dplyr::collect() |>
+    dplyr::mutate(started_at = factor(started_at),
+                  .keep = "all")
+
+factorDupeTable$started_at
+
+colorer <- scales::col_factor(
+    palette = c("grey10", "grey100"),
+    domain = c(factorDupeTable$started_at)
+)
+
+dupeTable |>
+   # dplyr::group_by(started_at) |>
+    
+    flextable::flextable() |>
+    flextable::theme_zebra() |>
+    #flextable::highlight(j = "n",
+    #                     color = "grey") |>
+    flextable::bg(#i = "started_at",
+                  j = "n",
+                  bg = "lightgreen",
+                  part = "body")
+    
+dupeTableFT
 ```
 
 Of the other columns, it seems that the start_time, end_time, start_station, and end_station could show if there are possibly hidden duplicated observations.
@@ -292,9 +368,7 @@ duckdb::dbListTables(dbconn)
 source("duckDrops.R")
 ```
 
-
 So this should have removed the major, potentially, non-natural outliers from the dataset which are due to errors (including user errors).
-
 
 Verify the tables that now exist:
 
@@ -304,10 +378,9 @@ duckdb::dbListTables(dbconn)
 
 # Frequency Tables and What They Tell Us
 
-Now we're going to create dimension and frequency tables and add those to our database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables. 
+Now we're going to create dimension and frequency tables and add those to our database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables.
 
-By generating frequency tables, I quickly glean insights from the data. 
-
+By generating frequency tables, I quickly glean insights from the data.
 
 ```{r}
 # Member_casual
@@ -327,9 +400,8 @@ dplyr::tbl(dbconn,
            "db/freq_member.db")
 
 ```
+
 This indicates that there are nearly twice as many trips taken by annual subscribers than by casual users. So, it would seem that there is some correlation between how often a person uses the service and whether they choose to subscribe to an annual membership plan.
-
-
 
 ```{r}
 # Rideable_type 
@@ -348,12 +420,12 @@ dplyr::tbl(dbconn,
 dplyr::tbl(dbconn,
            "db/freq_rTypes.db")
 ```
-This tells us that there are nearly twice as many trips taken with non-electric bikes as electric bikes. There are differences in cost for casual members, so that might be one determining factor. Also, perhaps the associated health benefits with exercise would help explain higher non-electric bicycle use. 
+
+This tells us that there are nearly twice as many trips taken with non-electric bikes as electric bikes. There are differences in cost for casual members, so that might be one determining factor. Also, perhaps the associated health benefits with exercise would help explain higher non-electric bicycle use.
 
 ```{r}
 duckdb::dbListTables(dbconn)
 ```
-
 
 ```{r}
 
@@ -391,13 +463,12 @@ dplyr::tbl(dbconn,
                   "Miles" = miles) |>
     plot()
 ```
-This shows that around 0.3 to 3 miles is the distance traveled on most trips taken. The fact that casual bicycles are used more often perhaps makes a little more sense given that people are not traveling long distances.  
 
+This shows that around 0.3 to 3 miles is the distance traveled on most trips taken. The fact that casual bicycles are used more often perhaps makes a little more sense given that people are not traveling long distances.
 
 ```{r}
 duckdb::dbListTables(dbconn)
 ```
-
 
 ```{r}
 
@@ -419,6 +490,7 @@ dplyr::tbl(dbconn,
 dplyr::tbl(dbconn,
            "db/freq_mph.db")
 ```
+
 ```{r}
 dplyr::tbl(dbconn,
            "db/freq_mph.db") |>
@@ -426,12 +498,12 @@ dplyr::tbl(dbconn,
     plot()
 
 ```
-The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel. 
+
+The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel.
 
 ```{r}
 duckdb::dbListTables(dbconn)
 ```
-
 
 ```{r}
 # WkDay
@@ -461,6 +533,7 @@ dplyr::tbl(dbconn,
 dplyr::tbl(dbconn,
            "db/freq_wkday.db") 
 ```
+
 ```{r}
 
 dplyr::tbl(dbconn,
@@ -469,10 +542,7 @@ dplyr::tbl(dbconn,
     plot()
 ```
 
-There is a slight reduction in trips taken on Sundays and Mondays. This could be explained by the fact that most trips are taken by annual subscribers, possibly because they are biking to work and such. Much less people will be biking to work on Sundays. Taking 3-day weekends is common in the workplace, where most would likely opt to use up their sick/vacation days on Monday, which might explain the down tick in trips taken on Mondays. Also, those who are working Tuesdays-Saturdays could be taking Sunday and Mondays off. 
-
-
-
+There is a slight reduction in trips taken on Sundays and Mondays. This could be explained by the fact that most trips are taken by annual subscribers, possibly because they are biking to work and such. Much less people will be biking to work on Sundays. Taking 3-day weekends is common in the workplace, where most would likely opt to use up their sick/vacation days on Monday, which might explain the down tick in trips taken on Mondays. Also, those who are working Tuesdays-Saturdays could be taking Sunday and Mondays off.
 
 ```{r}
 
@@ -504,6 +574,7 @@ dplyr::tbl(dbconn,
            "db/freq_month.db") |>
     dplyr::summarize(sum = sum(n))
 ```
+
 ```{r}
 dplyr::tbl(dbconn,
            "db/freq_month.db") |>
@@ -512,8 +583,6 @@ dplyr::tbl(dbconn,
 ```
 
 The monthly ridership does differ substantially between certain months. Summer months (relative to North America) is when we see the largest increase in ridership. Spring and Fall seasons lie in between Summer and Winter in terms of scale of trips taken
-
-
 
 ```{r}
 dplyr::tbl(dbconn,
@@ -542,14 +611,15 @@ dplyr::tbl(dbconn,
 
 
 ```
+
 ```{r}
 dplyr::tbl(dbconn,
            "db/freq_tripTime.db") |>
     dplyr::collect() |>
     plot()
 ```
-The time riders are usually spending on these trips lies in between 5-15 minutes. 
 
+The time riders are usually spending on these trips lies in between 5-15 minutes.
 
 ```{r}
 dplyr::tbl(dbconn,
@@ -568,8 +638,6 @@ dplyr::tbl(dbconn,
 dplyr::tbl(dbconn,
            "db/freq_startNames.db")
 ```
-
-
 
 ```{r}
 dplyr::tbl(dbconn,
@@ -595,14 +663,10 @@ dplyr::tbl(dbconn,
 
 ```
 
-
 ```{r}
 dplyr::tbl(dbconn,
            tblPath_fltrd)
 ```
-
-
-
 
 ```{r}
 #|label: 'rider count by hour table'
@@ -623,7 +687,6 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 ```
-
 
 ```{r}
 #| eval: true
@@ -651,7 +714,6 @@ hours_of_Riders[[1]] <- simpleTimes
 
 hours_of_Riders
 ```
-
 
 ::: column-page
 ```{r}
@@ -731,9 +793,6 @@ my_anim <- gganimate::animate(hoursAnimate,
 my_anim
 ```
 :::
-
-
-
 
 # Data Modeling
 
@@ -821,13 +880,6 @@ my_anim
 
         -   geospatial location
 
-
-
-
-
-
-
-
 \
 Mean \> Median
 
@@ -835,14 +887,6 @@ Mean \> Median
 - The right side of the histogram plot has lower frequencies than the left.
 
 Unimodal
-
-
-
-
-
-
-
-
 
 ```{r}
 
@@ -860,7 +904,6 @@ latsTable <- dplyr::tbl(dbconn,
     as.data.frame()
 
 ```
-
 
 ```{r}
 #| eval: false
@@ -971,9 +1014,7 @@ dplyr::tbl(dbconn,
     dplyr::summarise(n = dplyr::n())
 ```
 
-
 The 5th decimal place is accurate up to 1.1m, so there ends up being groupings for bikes rented from stations located along a street or at intersections of two streets. You can tell by the start_station_name. If it's an intersection it will say something like "1st St & 2nd St.". If it's one street, it will likely just say "1st St". There are likely some exceptions to that rule. That helps explain why the geospatial coordinates slightly differ for entries with the same stations and IDs.
-
 
 ```{r}
 #| eval: false
@@ -1047,9 +1088,6 @@ countStations <- dplyr::tbl(dbconn,
 summary(countStations)
 ```
 
-
-
-
 ```{r}
 #| label: "column plot"
 #| column: body-outset
@@ -1109,7 +1147,6 @@ grouped_tsi <- grouped_byDay |>
                         index = started_at) |>
     dplyr::arrange(started_at)
 ```
-
 
 ```{r}
 #|label: "map query setup"
@@ -1183,9 +1220,6 @@ Plot.plot({
 Plot.lineY(jsData, {x: "started_at", y: "n"}).plot()
 ```
 
-
-
-
 ```{r}
 
 locsStart <- dplyr::tbl(dbconn,
@@ -1221,8 +1255,6 @@ locs <- locsStart |>
 locs
 ```
 
-
-
 ```{r}
 
 flowData <- dplyr::tbl(dbconn,
@@ -1242,8 +1274,6 @@ flowData <- dplyr::tbl(dbconn,
 flowData
 summary(flowData$n)
 ```
-
-
 
 ```{r}
 
@@ -1268,7 +1298,6 @@ locationData <- dplyr::tbl(dbconn,
 locationData
 ```
 
-
 ```{r}
 
 mergd <- merge(x = locationData,
@@ -1286,8 +1315,6 @@ mergd <- mergd |>
 mergd
 ```
 
-
-
 ```{r}
 #|class-output: plotMod
 
@@ -1298,9 +1325,6 @@ ef_test <- epiflows::make_epiflows(flows = flowData,
 
 epiflows::vis_epiflows(ef_test)
 ```
-
-
-
 
 These maps track bike-sharing activity going on worldwide and in Chicago.
 
