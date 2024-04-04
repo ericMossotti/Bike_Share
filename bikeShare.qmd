@@ -4,7 +4,6 @@ author: "Eric Mossotti"
 
 bibliography: references.bib
 repo: https://github.com/ericMossotti/Bike_Share
-page-layout: article
 source: bikeShare.qmd
 
 code-links:
@@ -20,73 +19,51 @@ toc: true
 toc_float: false
 smooth-scroll: true
 
+fig-responsive: true
 echo: true
 
-sass: styles.sass
+#sass: styles.sass
 
 #font: merriweather, futura
 ---
-
-# Case Study: Bike-Sharing, Rethought
-
-#### References:
-
--   [Bike-share research (bikeshare-research.org)](https://bikeshare-research.org/#bssid:chicago)
-
--   [Divvy - Wikipedia](https://en.wikipedia.org/wiki/Divvy)
-
--   [Cycling in Chicago - Wikipedia](https://en.wikipedia.org/wiki/Cycling_in_Chicago)
-
--   [Home \| Divvy Bikes](https://divvybikes.com/)
-
--   [Divvy Membership & Pass Options \| Divvy Bikes](https://divvybikes.com/pricing)
-
--   [@datalic]
-
-    -   [Data License Agreement \| Divvy Bikes](https://divvybikes.com/data-license-agreement)
-
--   [@motivate]
-
-    -   [MOTIVATE (motivateco.com)](https://motivateco.com/)
-
--   [@indexof]
-
-    -   [Index of bucket "divvy-tripdata"](https://divvy-tripdata.s3.amazonaws.com/index.html)
-
--   [@whyduck]
-
-    -   [Why DuckDB?](https://duckdb.org/why_duckdb)
-
--   [@rforda]
-
-    -   [R for Data Science: Chapter 22: Arrow](https://r4ds.hadley.nz/arrow "Arrow")
-
--   [@great-ci]
-
-    -   <https://en.wikipedia.org/wiki/Great-circle_distance>
-
--   [@average2024]
-
-    -   <https://bikingultimate.com/average-bicycle-speed-how-fast-do-cyclists-ride-and-what-affects-their-pace/>
-
 ```{r, include = FALSE}
 
 knitr::opts_chunk$set(message = FALSE, 
                       warning = FALSE)
 ```
+:::grid
+:::g-col-1 
+
+
+
+
+:::
+ 
+:::g-col-5
+
+# Case Study: Bike-Sharing in Chicago
 
 ## Objective:
 
 Communicate to shareholders data based insights regarding to better inform their desire to enlist more annual subscribers.
 
-# First Off: Import, then Process
+# First Off, Import and Clean
+
+I've condensed the initial download, import and cleaning steps to reduce the complexity of this Quarto document. Thinking ahead, with reproducibility in mind, this code chunk should cover most use cases for tinkering and testing. I've personally found it helpful to reduce the need to re-download files and re-process all over again if all one needs to do is reconnect to the database that has already been written. Choosing a persistent DuckDB database filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering.
+
+Overall, I think a locally persistent DuckDB solution was an ideal decision on most levels. Desktops and laptop systems tend to have more long term, non-volatile memory, such as drives available than short-term, volatile memory, such as RAM. It was interesting that the db file is only one file despite how many paths are written using the initial connection. The zero-copy feature, I believe, is why it doesn't really increase much in size despite writing multiple processed tables, even if they are of similar length to the original. I think that's because the longer ones contain much of the same data. I'll have to look more into that later in project updates.
+
+All data was downloaded from @divvydab.
 
 ```{r}
-
 if(exists("dbconn") == FALSE) {
     # Script to keep this document less cluttered. 
     source("import_clean_initial.R")
     } else {
+        # you will have to change original_nobs if you use different data
+        # helps with tinkering when you want to skip the import part
+        original_nobs <- as.integer(5719877)
+        
         tblPath <- "db/data.db"
         
         dbconn <- DBI::dbConnect(
@@ -97,16 +74,33 @@ if(exists("dbconn") == FALSE) {
     }
 ```
 
+```{r}
+#| label: "View import script"
+#| code-summary: "Data import and initial processing script."
+#| file: "import_clean_initial.R"
+#| eval: false 
+```
+
 Verifying DuckDB tables:
 
 ```{r}
-duckdb::dbListTables(dbconn)
+#| output: true
+#| code-summary: "Verifying DuckDB tables"
+#| message: true
+
+duckdb::dbListTables(dbconn) |>
+    message()
 ```
 
-Now to go a little deeper, we can check for duplicates. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique.
+## Hidden Duplicate Observations?
 
+Now to go a little deeper, we can check for duplicates. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique. 
+:::
+
+:::g-col-5
 ```{r}
-#|label: 'create dupe-table, count n distinct'
+#| label: 'Duplicates Table with GT'
+#| code-overflow: wrap
 
 # This is a separate table used to analyze the observations returned as not distinct (n > 1). This adds an extra column labeled "n".
 dupeTable <- dplyr::tbl(dbconn,
@@ -137,7 +131,7 @@ gtDupes <- dupeTable |>
     style = list(
         gt::cell_text(weight = "bold",
                       align = "center"),
-        gt::cell_borders(sides = c("left", "right"))
+        gt::cell_borders(sides = c("bottom"))
     ),
     locations = gt::cells_column_labels(gt::everything())
     ) |>
@@ -153,58 +147,32 @@ gtDupes <- dupeTable |>
                    target_columns = gt::everything(),
                    method = "auto",
                    palette = "basetheme::brutal") |>
-    gt::data_color(columns = "n",
-                   target_columns = "n",
-                   colors = "purple") |>
-    gt::data_color(columns = "started_at",
-                   target_columns = "started_at",
-                   colors = "blue") |>
-    gt::tab_source_note(gt::md(
-        "**Table**: Duplicates Table, **Data**: Divvy Data "))
+    gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
+    gt::tab_header(title = "Duplicate Observations",
+                   subtitle = "(by start date)") |>
+    gt::tab_options(
+        heading.title.font.weight = "bolder",
+        heading.subtitle.font.weight = "lighter",
+        table.layout = "auto"
+        )
+
 
 gtDupes
 
 ```
+:::
 
-[@divvyda]
-
-```{r}
-
-factorDupeTable <- dupeTable |>
-    dplyr::distinct(started_at) |>
-    dplyr::summarize(n = dplyr::n())
+:::g-col-1
 
 
-dupeTable |>
-    dplyr::distinct(started_at) |>
-    dplyr::summarize(n = dplyr::n())
 
-factorDupeTable <- dupeTable |>
-    dplyr::collect() |>
-    dplyr::mutate(started_at = factor(started_at),
-                  .keep = "all")
 
-factorDupeTable$started_at
 
-colorer <- scales::col_factor(
-    palette = c("grey10", "grey100"),
-    domain = c(factorDupeTable$started_at)
-)
 
-dupeTable |>
-   # dplyr::group_by(started_at) |>
-    
-    flextable::flextable() |>
-    flextable::theme_zebra() |>
-    #flextable::highlight(j = "n",
-    #                     color = "grey") |>
-    flextable::bg(#i = "started_at",
-                  j = "n",
-                  bg = "lightgreen",
-                  part = "body")
-    
-dupeTableFT
-```
+:::
+:::
+
+
 
 Of the other columns, it seems that the start_time, end_time, start_station, and end_station could show if there are possibly hidden duplicated observations.
 
@@ -213,12 +181,13 @@ We started with 5,719,877 observations (obs) for dates spanning January to Decem
 I assumed that having the same times/dates and stations for two different ride IDs was a mistake. Although, I do not know how that error would happen. I could have assumed one person could check out multiple bikes at once. In that instance, each bike could be assigned a unique ride_id. That, however, has only happened 18 times over a year. Since it's only one copy every time, that also raises a red flag. I did not notice any other correlations with station_id/name, member_casual, or ride_type for those particular duplicated data.
 
 ```{r}
-#|label: 'output to distinct duplicates and total obs'
+#| label: 'output to distinct duplicates and total obs'
 
-cat(" Distinct copy count of dupes: ", distinctDupeCounts,
-    "\n\n",
-    "Total observations that have and are duplicates: ",
-       length(dupeTable[[1]]))
+distinctCopiesCount <- dupeTable |>
+    dplyr::distinct(n) |>
+    as.integer() 
+
+duplicateObs <- length(dupeTable[[1]])
 ```
 
 By applying distinct() on dupeTable, we see the only distinct value is 2. We can safely conclude that, of the duplicates, each has a minimum and maximum of 1 extra copy.
@@ -247,20 +216,13 @@ distinctUndupedCounts <- undupedTable |>
 undupedTable
 ```
 
-```{r}
-#|label: 'output distinct obs, n'
-
-cat("Count of distinct observations: ", 
-    distinctUndupedCounts)
-```
-
 The count of observed distinct values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount:
 
 ```{r}
 #|label: 'incorrect/correct distinct observations'
 
 # Run an incorrect count on how many rows or observations there are in the dataset.
-incorrectDistinct <- dplyr::tbl(dbconn,
+count_incorrectDists <- dplyr::tbl(dbconn,
                                 tblPath,
                                 check_from = FALSE) |>
     dplyr::distinct(dplyr::pick("ride_id")) |>
@@ -269,7 +231,7 @@ incorrectDistinct <- dplyr::tbl(dbconn,
     as.integer()
 
 # For the correct count of obs
-correctDistinct <- dplyr::tbl(dbconn,
+count_correctDists <- dplyr::tbl(dbconn,
                               tblPath,
                               check_from = FALSE) |>
     dplyr::distinct(
@@ -292,13 +254,13 @@ correctDistinct <- dplyr::tbl(dbconn,
 #| column: body-outset
 
 # To visualize a summary of what we just determined regarding obs
-tibble::tibble(
-    "Original Obs" = original_nobs,
-    "Uncorrected Complete Obs" = incorrectDistinct,
-    "Corrected Complete Obs" = correctDistinct,
-    "Removed Obs" = (incorrectDistinct - correctDistinct)
-) |>
-    polars::as_polars_df()
+tidyr::tribble(~"",~"Counts",
+    "Original observations", original_nobs,
+    "Observations with duplicates", count_incorrectDists,
+    "Duplicate observations removed", 
+    (count_incorrectDists - count_correctDists),
+    "Corrected observations", count_correctDists
+) 
 ```
 
 The incorrect number of observations (nobs) was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed.
@@ -306,7 +268,7 @@ The incorrect number of observations (nobs) was 4,331,707. The correct nobs afte
 ```{r}
 #| label: 'overwrite file with correct obs'
 #| column: body-outset
-#| 
+ 
 dplyr::tbl(dbconn,
            tblPath,
            check_from = FALSE) |>
@@ -340,14 +302,12 @@ To ensure the conclusions are accurate, outliers should be filtered. Negative an
 tblPath <- "db/data.db"
 tblPath_fltrd <- "db/data_fltrd.db"
 
-
 if(exists("dbconn") == FALSE) {
     dbconn <- DBI::dbConnect(duckdb::duckdb(),
                              dbdir = tblPath,
                              read_only = FALSE,
                              check_from = FALSE)
 }
-
 
 if (duckdb::dbExistsTable(dbconn,
                           "tblPath_fltrd") == FALSE) {
@@ -790,6 +750,9 @@ my_anim <- gganimate::animate(hoursAnimate,
 
 my_anim
 ```
+
+:::
+
 :::
 
 # Data Modeling
@@ -1341,3 +1304,4 @@ duckdb::dbDisconnect(dbconn, shutdown = TRUE)
 unlink("db",
        recursive = TRUE)
 ```
+
