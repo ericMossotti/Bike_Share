@@ -7,10 +7,8 @@ website:
   navbar:
     left:
       - href: index.qmd
-        text: Home
-      - about.qmd
-      - href: bikeShare.qmd
-        text: Bike Share
+        text: BikeShare
+#      - about.qmd
 
 format:
   html:
