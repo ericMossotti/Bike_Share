@@ -14,9 +14,12 @@ website:
 
 format:
   html:
-    theme: solar
-    sass: styles.sass
+    theme:
+        light: flatly
+        dark: darkly
+    #sass: styles.sass
     toc: true
+    page-layout: custom
 
 editor: visual
 
