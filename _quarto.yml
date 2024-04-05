@@ -3,12 +3,12 @@ project:
   output-dir: docs
 
 website:
-  title: "Bike_Share"
-  navbar:
-    left:
-      - href: index.qmd
-        text: BikeShare
-#      - about.qmd
+  title: "BikeShare Analysis"
+  #navbar:
+   # left:
+  #    - href: index.qmd
+    #    text: BikeShare
+#   #   - about.qmd
 
 format:
   html:
@@ -16,7 +16,7 @@ format:
         light: flatly
         dark: darkly
     #sass: styles.sass
-    toc: true
+    toc: false
     page-layout: custom
 
 editor: visual

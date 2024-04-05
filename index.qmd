@@ -1,10 +1,10 @@
 ---
-title: "BikeShare"
+title: "Case study of bike-sharing in the chicago area"
 author: "Eric Mossotti"
 
 bibliography: references.bib
 repo: https://github.com/ericMossotti/Bike_Share
-source: bikeShare.qmd
+source: index.qmd
 
 #code-links:
 #    - text: "Project Repo"
