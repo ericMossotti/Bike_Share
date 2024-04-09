@@ -1,5 +1,5 @@
 filterDatabase <- function(conxn = dbconn,
-                           path1 = tblPath,
+                           path1 = dupelessPath,
                            path2 = tblPath_fltrd) {
     dplyr::tbl(conxn,
                path1,

@@ -2,22 +2,25 @@ project:
   type: website
   output-dir: docs
 
+#execute: 
+# freeze: auto
+
 website:
   title: "BikeShare Analysis"
-  #navbar:
-   # left:
-  #    - href: index.qmd
+  navbar:
+    left:
+      - href: index.qmd
     #    text: BikeShare
 #   #   - about.qmd
 
 format:
   html:
     theme:
-        light: flatly
-        dark: darkly
-    #sass: styles.sass
+        light: morph
+        dark: [morph, custom-theme.sass]
     toc: false
     page-layout: custom
+        
 
 editor: visual
 
