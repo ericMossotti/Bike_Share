@@ -9,15 +9,12 @@ $btn-border-width: 0px;
 $background-color: #212529 !default;
 $color-bg: #212529 !default;
 
-
-
 .btn {
     background-color: #212529 !important;
     box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05) !important;
     border: none !important;
     color: rgba(255, 255, 255, 0.75) !important;
 }
-
 
 .flex-wrapper {
     display: flex;
@@ -34,38 +31,58 @@ $color-bg: #212529 !default;
     background-color: $background-color;
 }
 
-
-.r, .code-with-copy {
+.r {
     background-color: $background-color !important;
-
 }
 
 .sourceCode {
-    background-color: $background-color !important;
+/*   background-color: $background-color !important;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(150, 150, 150, 0.1) !important;
+*/    
+    border: none !important;
+    opacity: .95 !important;
+   // margin-block: 1em !important;
+   // border-width: 0px !important;
+  //  background-color: #282c2f !important;
+    //box-shadow: 8px 8px 40px rgba(0, 0, 0, 0.15), inset 1px 1px 3px rgba(255, 255, 255, 0.05), inset -5px -5px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.code {
+    padding: .125rem .500rem !important;
 }
 
 .cell-code {
     background-color: $background-color !important;
-    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(150, 150, 150, 0.1) !important;
-    border-width: 0px !important;
+}
 
+::marker {
+    color: #75AADB !important;
+    font-size: 1rem;
+    font: icon;
+}
+
+details>summary {
+    color: rgba(25, 255, 25, .6) !important;
+    font: .9rem "lucida console" !important;
 }
 
 
 .flex-code {
-    flex: 1;
     overflow-y: auto;
     align-self: center;
     max-height: 50vh; 
     max-width: 100vh; 
     scrollbar-width: thin; 
-    scrollbar-color: #00cc00 #001a00;
+    scrollbar-color: rgba(10, 10, 10, .5) $background-color;
     background-color: $background-color;
-    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(150, 150, 150, 0.05);
-    border-width: 0px;
-    color: rgba(255, 255, 255, 0.75);
-    opacity: 1;
 }
+
+.modal-content{
+  background-color: #282c2f !important;
+  box-shadow: 8px 8px 40px rgba(0, 0, 0, 0.15), inset 1px 1px 3px rgba(255, 255, 255, 0.05), inset -5px -5px 20px rgba(0, 0, 0, 0.05) !important;
+  margin: .5em !important;
+}
+
 
 /*
 .btn {
@@ -205,4 +222,16 @@ $color-bg: #212529 !default;
 //.btn-outline-primary {
 //    @include button-outline-variant($mynewcolor, #222222, lighten//($mynewcolor,5%), $mynewcolor);
 //}
+
+
+
+/*
+[data-bs-theme=dark] .modal-content,
+[data-bs-theme=dark] .popover,
+[data-bs-theme=dark] .toast {
+  background-color: #282c2f;
+  box-shadow: 8px 8px 40px rgba(0, 0, 0, 0.15), inset 1px 1px 3px rgba(255, 255, 255, 0.05), inset -5px -5px 20px rgba(0, 0, 0, 0.05);
+}
+
+*/
 
