@@ -13,13 +13,13 @@ code-links:
       href: repo
 code-fold: true
 code-copy: hover
-#code-overflow: wrap
+code-overflow: wrap
 code-tools: true
 code-link: true
 #toc: true
 #toc_float: true
 #smooth-scroll: true
-#fig-responsive: true
+fig-responsive: true
 echo: true
 
 margin-left: 15vh
@@ -37,13 +37,8 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```
 
-
-:::{.btn .btn-primary}
-colby's button
-:::
-
 ::: {.d-flex style="gap: 5%"}
-::: {.p-4 style="max-width: 70vh"}
+::: {.p style="max-width: 70vh"}
 ## Import and Project Design
 
 Data source for this data analysis, @divvyda.
@@ -55,39 +50,37 @@ As a counterpart to the if-else design decision at the top of the project, I've 
 Choosing a persistent DuckDB database filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
 :::
 
-::: {.p-4 .card .bg-secondary .mb-3 .align-self-center .overflow-y-auto style="max-height: 35vh; max-width: 60vh; scrollbar-width: thin; scrollbar-color: #00cc00 #001a00"}
-
+::: modal-content
+::: {.p .flex-code}
 ```{r}
 #| label: importOrConnect
-#| code-summary: Import or just connect
-if(exists("dbconn") == FALSE && dir.exists("db") == FALSE) {
-    
-    # Script to keep this document less cluttered. 
+#| code-summary: import or connect
+
+if(exists("dbconn") == FALSE &&
+   dir.exists("db") == FALSE) {
+    # Script to keep this document less cluttered.
     source("import_clean_initial.R")
-    } else {
-        # you will have to change original_nobs if you use different data
-        # helps with tinkering when you want to skip the import part
-        original_nobs <- as.integer(5719877)
-        
-        tblPath <- "db/data.db"
-        
-        dbconn <- DBI::dbConnect(
-            duckdb::duckdb(),
-            dbdir = tblPath,
-            read_only = FALSE,
-            check_from = FALSE
-        )
-    }
-#    color: rgb(255, 125,10)
-#  box-shadow: 8px 8px 10px #99ff99"
+} else {
+    # You will have to change original_nobs if you use            #  different data. It helps with tinkering when 
+    #   you want to skip the import step.
+    original_nobs <- as.integer(5719877)
+    
+    tblPath <- "db/data.db"
+    
+    dbconn <- DBI::dbConnect(
+        duckdb::duckdb(),
+        dbdir = tblPath,
+        read_only = FALSE,
+        check_from = FALSE
+    )
+}
 ```
 
 ```{r}
 #| label: importProcessScript
-#| code-summary: Data import and initial processing script.
+#| code-summary: download, import, and process
 #| file: "import_clean_initial.R"
 #| eval: false 
-#| code-fold: true
 ```
 
 ```{r}
@@ -99,9 +92,358 @@ duckdb::dbListTables(dbconn) |>
     as.matrix()
 ```
 :::
-
+:::
 :::
 
-# hello
+::: flex-wrap
+::: {.p .flex-text}
+## Hidden Duplicate Observations?
 
-fijfoiwejfoiwejf
+Now to go a little deeper, we can check for duplicates. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique. Of the other columns, it seems that the start_time, end_time, start_station, and end_station, if combined, could show if there are possibly hidden duplicated observations. We started with 5,719,877 observations (obs) for dates spanning January to December, 2023, then removed 1,388,170 incomplete obs.
+
+I assumed that having the same times/dates and stations for two different ride IDs was a mistake. Although, I do not know how that error would happen, I could have assumed one person could check out multiple bikes at once. In that instance, each bike would be assigned a unique ride_id. That, however, has only happened 18 times over a year. Since it's only one copy every time, that also raises a red flag in my mind. I did not notice any other correlations with station_id/name, member_casual, or ride_type for those particular duplicated data.
+:::
+
+::: modal-content
+::: {.p .flex-code}
+```{r}
+#| label: 'duplicates_GTtable'
+#| code-overflow: wrap
+
+
+# This is a separate table used to analyze the observations 
+#  returned as not distinct (n > 1). 
+#   This adds an extra column, labeled "n".
+dupeTable <- dplyr::tbl(dbconn,
+                        tblPath,
+                        check_from = FALSE) |>
+    dplyr::select(started_at:end_station_name) |>
+    # Counts of unique rows added for column 'n'
+    dplyr::add_count(started_at,
+                     ended_at,
+                     start_station_name,
+                     end_station_name) |>
+    # Only observations that have been duplicated 
+    #  1 or more times are shown.
+    dplyr::filter(n > 1) |>
+    # We want to see all rows, 
+    #  not just one row for each obs.
+    dplyr::ungroup() |>
+    dplyr::arrange(started_at) |>
+    dplyr::collect()
+
+
+gtDupes <- dupeTable |>
+    dplyr::group_by(started_at) |>
+    gt::gt(rowname_col = "row",
+           groupname_col = "started_at",
+           row_group_as_column = TRUE,
+           caption = "Duplicates_Table1") |>
+    gt::tab_style(
+    style = list(
+        gt::cell_text(weight = "bold",
+                      align = "center"),
+        gt::cell_borders(sides = c("bottom"))
+    ),
+    locations = gt::cells_column_labels(gt::everything())
+    ) |>
+    gt::tab_style(
+    style = list(
+        gt::cell_borders(sides = c("left", "right")),
+        gt::cell_text(align = "center",
+                      v_align = "middle")
+    ),
+    locations = gt::cells_body(gt::everything())
+    ) |>
+    gt::data_color(columns = start_station_name,
+                   target_columns = gt::everything(),
+                   method = "auto",
+                   palette = "basetheme::brutal") |>
+    gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
+    gt::tab_header(title = "Duplicate Observations",
+                   subtitle = "(by start date)") |>
+    gt::tab_options(
+        heading.title.font.weight = "bolder",
+        heading.subtitle.font.weight = "lighter",
+        table.layout = "auto"
+        )
+```
+:::
+:::
+:::
+
+::: flex-wrap
+::: {.p .flex-text}
+### Deeper into Duplicates
+
+By applying distinct() on dupeTable, we see the only distinct value, 'n', is 2. I conclude that, of the duplicates, each has a minimum and maximum of 1 extra copy. Number of rows in the dupeTable is 36. Because each duplicated observation has one duplicate, "n = 2", expected removed nobs is 18. The issue is that we need to get rid of not all 36 rows, but just one extra duplicate observation from each. This will result in the expected 18 obs.
+:::
+
+::: modal-content
+::: {.p .flex-code}
+```{r}
+#| label: duplicateObs count
+
+distinctCopiesCount <- dupeTable |>
+    dplyr::distinct(n) |>
+    as.integer() 
+
+duplicateObs <- length(dupeTable[[1]])
+```
+
+```{r}
+#| label: undupedTable
+
+# The issue is, we need to get rid of not all of these rows,
+#  but just the extra duplicate observations. 
+
+# If there were 2 rows of duplicates, 
+#  we would want to end up with 1 row after 
+#   removing the extras.
+undupedTable <- dupeTable |>
+    dplyr::distinct(started_at,
+                     start_station_name,
+                     ended_at,
+                     end_station_name,
+                     .keep_all = TRUE)
+```
+
+```{r}
+#| label: duplicated code
+
+distinctUndupedCounts <- undupedTable |>
+    dplyr::select(started_at) |>
+    dplyr::distinct() |>
+    dplyr::count() |>
+    as.integer()
+
+```
+
+```{r}
+#| label: incorrect distinct obs count
+
+# Run an incorrect count on how many rows or observations 
+#  there are in the dataset.
+count_incorrectDists <- dplyr::tbl(dbconn,
+                                   tblPath,
+                                   check_from = FALSE) |>
+    dplyr::distinct(dplyr::pick("ride_id")) |>
+    dplyr::count(name = "Incorrect Distinct Observations") |>
+    dplyr::collect() |>
+    as.integer()
+
+```
+
+```{r}
+#| label: count_correctDists count
+
+# For the correct count of obs
+count_correctDists <- dplyr::tbl(dbconn,
+                                 tblPath,
+                                 check_from = FALSE) |>
+    dplyr::distinct(
+        dplyr::pick(
+            "started_at",
+            "start_station_name",
+            "ended_at",
+            "end_station_name"
+        )
+    ) |>
+    dplyr::count() |>
+    dplyr::collect() |>
+    as.integer()
+
+```
+:::
+:::
+:::
+
+::: flex-wrap
+::: {.p .flex-text}
+### Duplicate Tables
+
+The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect number of observations (nobs) was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed.
+:::
+
+::: modal-content
+::: {.p .flex-code}
+```{r}
+#| label: gt table of duplicates view
+#| code-summary: gt table of duplicates view
+gtDupes
+```
+
+```{r}
+#| label: unduplicatedGT
+#| code-summary: gt table of the now unduplicated obs
+undupedTable |>
+    dplyr::collect() |>
+    gt::gt()
+```
+
+```{r}
+#| label: duplicateProcess
+#| code-summary: summarizing obs removed so far
+#| fig-cap: "Summary of observations removed by processing."
+
+# To visualize a summary of what we just determined 
+#  regarding obs.
+tidyr::tribble(
+    ~ "Observations",
+    ~ "Counts",
+    "Original   ",
+    original_nobs,
+    "Processed   ",
+    count_incorrectDists,
+    "Duplicates   ",
+    (count_incorrectDists - count_correctDists),
+    "Total Corrected   ",
+    count_correctDists
+) |>
+    gt::gt(rownames_to_stub = FALSE) |>
+    gt::tab_header(title = "Tallying Observations") |>
+    gt::tab_footnote(
+        footnote = gt::md("Row counts throughout the cleaning steps."),
+        locations = gt::cells_column_labels(columns = Counts)
+    ) |>
+    gt::tab_style(
+        style = list(
+            gt::cell_borders(sides = "bottom"),
+            gt::cell_text(
+                align = "left",
+                stretch = "semi-expanded",
+                whitespace = "break-spaces"
+            )
+        ),
+        locations = gt::cells_body(gt::everything())
+    ) |>
+    gt::tab_style(
+        style = list(gt::cell_borders(sides = c("bottom",
+                                                "top"))),
+        locations = gt::cells_column_labels(gt::everything())
+    ) |>
+    gt::tab_options(quarto.use_bootstrap = TRUE,
+                    column_labels.font.weight = "bold")
+
+```
+:::
+:::
+:::
+
+::: flex-wrap
+::: {.p .flex-text}
+### Duplicate Processing Summary
+
+We can now add the processed table to our database. Might be a good idea to verify the table is where it should be.
+:::
+
+::: modal-content
+::: {.p .flex-code}
+```{r}
+#| label: 'overwrite file with correct obs'
+#| column: body-outset
+#|
+
+dupelessPath <- "db/dupeless.db"
+ 
+dplyr::tbl(dbconn,
+           tblPath,
+           check_from = FALSE) |>
+    dplyr::select(ride_id:trip_time) |>
+    dplyr::distinct(started_at,
+                    start_station_name,
+                    ended_at,
+                    end_station_name,
+                    .keep_all = TRUE) |>
+    dplyr::arrange(started_at) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = dupelessPath,
+                         overwrite = TRUE,
+                         check_from = FALSE)
+
+dplyr::tbl(dbconn,
+           dupelessPath) |>
+    head() |>
+    gt::gt()
+```
+:::
+:::
+:::
+
+::: flex-wrap
+::: {.p .flex-text}
+## Outlier Filter
+
+To ensure the conclusions are accurate, outliers should be filtered. Negative and very low trip times might skew trends. The underlying reason for very low trip times is somewhat of an unknown. Perhaps people often change (lose) their minds?
+
+As in the first part, an if-else code-chunk design was chosen because it makes testing easier. It's not required but is nice-to-have. Removing the nonsensical outliers, on the other hand, is required. This code chunk accomplishes both, regardless if you are just testing and already have the filtered database table, or if you still need to create it. A database filtering script was used to make the code chunk easier to follow. We then verify the table does exist now along with all other tables we previously created.
+
+So this should have removed the major, potentially, non-natural outliers from the dataset which are due to errors (including user errors).
+:::
+
+::: {.btn .btn-primary data-bs-toggle="offcanvas" href="#offcanvas" role="button" aria-controls="offcanvas"}
+Link with href
+:::
+
+::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas" aria-controls="offcanvas"}
+Code Please
+:::
+
+::: {.offcanvas .off-canvas-start tabindex="-1" id="offcanvas" aria-labelledby="offcanvas" }
+::: off-canvas-header
+::: {.h5 .off-canvas-title id="offcanvasLabel"}
+Hello
+:::
+
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+
+::: offcanvas-body
+::: modal-content
+::: {.p .flex-code}
+```{r}
+#| label: filtering db
+#| include: true
+#| echo: true
+#| output: asis
+
+# So you don't have to re-dl or re-fltr    
+#  after making further adjustments.
+
+tblPath <- "db/data.db"
+dupelessPath <- "db/dupeless.db"
+tblPath_fltrd <- "db/data_fltrd.db"
+
+if (exists("dbconn") == FALSE && dir.exists("db") == TRUE) {
+    dbconn <- DBI::dbConnect(
+        duckdb::duckdb(),
+        dbdir = tblPath,
+        read_only = FALSE,
+        check_from = FALSE
+    )
+}
+
+if (duckdb::dbExistsTable(dbconn,
+                          "tblPath_fltrd") == FALSE) {
+    source("filterDatabase.R")
+    filterDatabase()
+}
+
+# To verify the new filtered table exists.
+duckdb::dbListTables(dbconn)
+```
+:::
+:::
+:::
+:::
+:::
+
+```{r}
+#| eval: false
+#| include: false
+
+# If you need to drop any tables
+source("duckDrops.R")
+```
