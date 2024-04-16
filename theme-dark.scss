@@ -2,15 +2,39 @@
 $theme: "morph" !default;
 
 // Base document colors
-$body-bg: #212529 !default;
+$body-bg: #181818 !default; //212529
 $body-color: white !default;
-$link-color: #75AADB;
+$link-color: #FCCB1A !default;
 $btn-border-width: 0px;
 $background-color: #212529 !default;
 $color-bg: #212529 !default;
+$headings-color: #FC7307 !default;
+$nav-tabs-link-active-bg: rgba(77, 0, 0, .5) !default;
+$nav-link-hover-color: rgba(255, 26, 26) !default;
+$btn-close-color: #3366ff !default;
+
 // Code blocks
 //$code-block-bg-alpha: .8;
 
+
+.nav-item {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.panel-tabset, .nav-tabs {
+    background-color: rgba(5,0,0,.2) !important; //transparent !important;
+    color: $body-color !important;
+
+}
+
+.h2, h2 {
+    color: #F28736 !important;
+}
+
+//.h5 {
+//    color: #FEFE33 !important;
+//}
 
 .offcanvas{
     background-color: rgba(0,0,0,.5) !important;
@@ -18,6 +42,31 @@ $color-bg: #212529 !default;
 
 .offcanvas-body {
     background-color: transparent !important;
+    margin: .1em !important;
+    padding: .1em !important;
+}
+
+.offcanvas-title {
+    font-size: 1.5em !important;
+    margin-top: .5em !important;
+    color: #E56A87 !important;
+}
+
+#offcanvasLabel, .offcanvas-header {
+    padding: 1rem !important;
+    font-size: 2em !important;
+    margin-top: 1em !important;
+    color: #E56A87 !important;
+}
+
+.btn-close {
+    position: absolute !important;
+    top: .1em !important;
+    right: .1em !important;
+    font-size: 1em !important;
+    margin-left: 50px !important;
+    padding: 1em !important;
+    btn-close-color: #3366ff !important;
 }
 
 pre code {
@@ -26,7 +75,7 @@ pre code {
 }
 
 .btn {
-    background-color: #212529 !important;
+    background-color: $body-bg !important;
     box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05) !important;
     border: none !important;
     color: rgba(255, 255, 255, 0.75) !important;
@@ -51,10 +100,10 @@ pre code {
     background-color: transparent !important;
 }
 
-
+//controls the code background in code-fold after dropping down
 .sourceCode, .R, .r {
-    background-color: $body-bg !important;
-    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(150, 150, 150, 0.1) !important;
+    background-color: rgba(0,0,5,.25) !important;
+    //box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(150, 150, 150, 0.1) !important;
     //opacity: 0.80 !important;
     border: none !important;
    // margin-block: 1em !important;
@@ -66,17 +115,22 @@ pre code {
 
 .cell-code, .cell {
     background-color: transparent !important;
+    padding: .50em !important;
 }
 
 ::marker {
-    color: #75AADB !important;
-    font-size: 1rem;
-    font: icon;
+    color: #5E860F !important;
+    font-size: 1em !important;
+  //  font: icon !important;
+    font-optical-sizing: auto !important;
 }
 
 details>summary {
-    color: rgba(25, 255, 25, .6) !important;
-    font: .9rem "lucida console" !important;
+    color: #6D9224 !important;
+    font: 1.5em "merriweather" !important;
+    background-color: transparent;
+    align-content: justify-content;
+    font-optical-sizing: auto;
 }
 
 
@@ -86,20 +140,23 @@ details>summary {
     max-height: 70vh; 
     max-width: 100vw;
     overflow-x: hidden;
-    scrollbar-width: thin; 
-    scrollbar-color: rgba(50, 10, 10, 1) $background-color;
+    scrollbar-width: thin; //5900b3 //d9b3ff
+    scrollbar-color: #33ccff transparent;
     //background-color: $background-color !important;
    // color: $body-color !important;
-    flex-direction: column;
+    //flex-direction: row;
+    background-color: transparent !important;
 }
 
 .modal-content{
-  background-color: #282c2f !important;
-  box-shadow: 8px 8px 40px rgba(0, 0, 0, 0.15), inset 1px 1px 3px rgba(255, 255, 255, 0.05), inset -5px -5px 20px rgba(0, 0, 0, 0.05) !important;
+  background-color: transparent !important;
+//  box-shadow: 8px 8px 40px rgba(0, 0, 0, 0.15), inset 1px 1px 3px rgba(255, 255, 255, 0.05), inset -5px -5px 20px rgba(0, 0, 0, 0.05) !important;
   margin: .5em !important;
   align-self: center !important;
   block-size: fit-content !important;
   width: fit-content !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 
@@ -150,56 +207,6 @@ details>summary {
 
 
 
-
-[data-bs-theme=dark] .nav-tabs,
-[data-bs-theme=dark] .nav-pills,
-[data-bs-theme=dark] .breadcrumb,
-[data-bs-theme=dark] .pagination {
-  background-color: #212529;
-  border: none;
-  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05);
-  transition: background-color 0.15s ease-in-out, border 0.15s ease-in-out, box-shadow 0.15s ease-in-out, color 0.15s ease-in-out;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-
-[data-bs-theme=dark] .modal-content,
-[data-bs-theme=dark] .popover,
-[data-bs-theme=dark] .toast {
-  background-color: #282c2f;
-  box-shadow: 8px 8px 40px rgba(0, 0, 0, 0.15), inset 1px 1px 3px rgba(255, 255, 255, 0.05), inset -5px -5px 20px rgba(0, 0, 0, 0.05);
-}
-
-
-
-
-<a class="btn btn-primary" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button" aria-controls="offcanvasExample">
-  Link with href
-</a>
-<button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
-  Button with data-bs-target
-</button>
-<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="offcanvasExampleLabel">Offcanvas</h5>
-    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-  </div>
-  <div class="offcanvas-body">
-    <div>
-      Some text as placeholder. In real life you can have the elements you have chosen. Like, text, images, lists, etc.
-    </div>
-    <div class="dropdown mt-3">
-      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        Dropdown button
-      </button>
-      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton" style="">
-        <li><a class="dropdown-item" href="#">Action</a></li>
-        <li><a class="dropdown-item" href="#">Another action</a></li>
-        <li><a class="dropdown-item" href="#">Something else here</a></li>
-      </ul>
-    </div>
-  </div>
-</div>
 
 
 
