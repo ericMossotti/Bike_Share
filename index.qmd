@@ -38,11 +38,22 @@ knitr::opts_chunk$set(message = FALSE,
 ```
 
 ::: flex-wrap
+::: {.flex-text .p-3}
+## Import and Project Design
+
+Data source for this data analysis was obtained from Divvy Data. [@divvyda]
+
+Thinking ahead with reproducibility in mind, should cover most use cases for tinkering and testing. I have found it helpful to reduce the need to re-download files and re-process all over again if all one needs to do is reconnect to the database that has already been written.
+
+As a counterpart to the if-else design decision at the top of the project, I've condensed the initial download, import and cleaning steps inside of an R-script.
+
+Choosing a persistent DuckDB database filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
+:::
+
+::: {.d-flex .flex-column .justify-content-around .p-3}
 ::: {.btn .btn-dark .align-self-center type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
 ```{=html}
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-code" viewBox="0 0 16 16">
-  <path d="M5.854 4.854a.5.5 0 1 0-.708-.708l-3.5 3.5a.5.5 0 0 0 0 .708l3.5 3.5a.5.5 0 0 0 .708-.708L2.707 8zm4.292 0a.5.5 0 0 1 .708-.708l3.5 3.5a.5.5 0 0 1 0 .708l-3.5 3.5a.5.5 0 0 1-.708-.708L13.293 8z"/>
-</svg>
+<i class="bi bi-code-slash" style="font-size: 1.5em; color: cornflowerblue;"></i>
 ```
 :::
 
@@ -102,21 +113,10 @@ dbList <- duckdb::dbListTables(dbconn) |>
 :::
 :::
 
-::: flex-text
-## Import and Project Design
-
-Data source for this data analysis was obtained from Divvy Data. [@divvyda]
-
-Thinking ahead with reproducibility in mind, should cover most use cases for tinkering and testing. I have found it helpful to reduce the need to re-download files and re-process all over again if all one needs to do is reconnect to the database that has already been written.
-
-As a counterpart to the if-else design decision at the top of the project, I've condensed the initial download, import and cleaning steps inside of an R-script.
-
-Choosing a persistent DuckDB database filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
-:::
 
 ::: {.btn .btn-dark .align-self-center type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 ```{=html}
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><path d="M2 3.75C2 2.784 2.784 2 3.75 2h16.5c.966 0 1.75.784 1.75 1.75v16.5A1.75 1.75 0 0 1 20.25 22H3.75A1.75 1.75 0 0 1 2 20.25ZM9 9v11.5h11.25a.25.25 0 0 0 .25-.25V9Zm11.5-1.5V3.75a.25.25 0 0 0-.25-.25H9v4ZM3.5 9v11.25c0 .138.112.25.25.25H7.5V9Zm4-1.5v-4H3.75a.25.25 0 0 0-.25.25V7.5Z"></path></svg>
+<i class="bi bi-table" style="color: red; font-size: 1.5em"></i>
 ```
 :::
 
@@ -141,10 +141,9 @@ dbList
 :::
 :::
 :::
+:::
 
 ::: flex-wrap
-
-
 ::: {.btn .btn-dark .align-self-center type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas3" aria-controls="offcanvas"}
 ```{=html}
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-code" viewBox="0 0 16 16">
@@ -155,14 +154,16 @@ dbList
 
 ::: {#offcanvas3 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
-::: {#offcanvasLabel .h5 .offcanvas-title}
+::: {.h5 .offcanvas-title}
 Hello
 :::
+
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
 :::
+
 ::: {.offcanvas-body .align-text-center}
-::: {.flex-code}
+::: flex-code
 ```{r}
 #| label: duplicates_gt
 #| code-summary: create gt of duplicates for illustration
@@ -236,7 +237,6 @@ distinctCopiesCount <- dupeTable |>
 duplicateObs <- length(dupeTable[[1]])
 ```
 
-
 ```{r}
 #| label: undupedTable
 #| code-summary: create table of the duplicated obs
@@ -267,7 +267,6 @@ distinctUndupedCounts <- undupedTable |>
     as.integer()
 
 ```
-
 
 ```{r}
 #| label: incorrect distinct obs count
@@ -307,7 +306,6 @@ count_correctDists <- dplyr::tbl(dbconn,
 
 ```
 
-
 ```{r}
 #| label: 'overwrite file with correct obs'
 #| code-summary: writing dupeless db
@@ -331,7 +329,6 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE,
                          check_from = FALSE)
 ```
-
 
 ```{r}
 #| label: duplicateProcess
@@ -381,7 +378,7 @@ summaryProcessTable <- tidyr::tribble(
 :::
 :::
 
-::: {.flex-text}
+::: flex-text
 ## Hidden Duplicate Observations?
 
 Now to go a little deeper, we can check for duplicates. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique. Of the other columns, it seems that the start_time, end_time, start_station, and end_station, if combined, could show if there are possibly hidden duplicated observations. We started with 5,719,877 observations (obs) for dates spanning January to December, 2023, then removed 1,388,170 incomplete obs.
@@ -395,8 +392,6 @@ The count of distinct n-values for the un-duplicated table was indeed 18. So now
 We can now add the processed table to our database. Might be a good idea to verify the table is where it should be.
 :::
 
-
-
 ::: {.btn .btn-dark .align-self-center type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas4" aria-controls="offcanvas"}
 ```{=html}
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"><path d="M2 3.75C2 2.784 2.784 2 3.75 2h16.5c.966 0 1.75.784 1.75 1.75v16.5A1.75 1.75 0 0 1 20.25 22H3.75A1.75 1.75 0 0 1 2 20.25ZM9 9v11.5h11.25a.25.25 0 0 0 .25-.25V9Zm11.5-1.5V3.75a.25.25 0 0 0-.25-.25H9v4ZM3.5 9v11.25c0 .138.112.25.25.25H7.5V9Zm4-1.5v-4H3.75a.25.25 0 0 0-.25.25V7.5Z"></path></svg>
@@ -408,15 +403,16 @@ We can now add the processed table to our database. Might be a good idea to veri
 ::: {.h5 .offcanvas-title}
 Hello
 :::
+
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
 :::
+
 ::: {.offcanvas-body .align-text-center}
-::: {.flex-code}
+::: flex-code
+::: panel-tabset
+## Duplicates View
 
-::: {.panel-tabset}
-
-## Duplicates View 
 ```{r}
 #| label: gt table of duplicates view
 #| code-summary: gt table of duplicates view
@@ -458,14 +454,10 @@ dplyr::tbl(dbconn,
 summaryProcessTable
 ```
 :::
-
 :::
 :::
 :::
-
 :::
-
-
 
 ::: flex-wrap
 ::: {.btn .btn-dark .align-self-center type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
