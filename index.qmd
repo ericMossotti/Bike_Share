@@ -51,7 +51,7 @@ As a counterpart to the if-else design decision at the top of the project, I've 
 Choosing a persistent DuckDB database filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
 :::::::::
 
-::::::::: p
+::::::::: {.btn-group role="group" aria-label="first"}
 
 :::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas" .m-1}
 ```{=html}
@@ -140,6 +140,11 @@ dbList
 ```
 ::::::
 :::::::
+::::::::
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#null" aria-controls="offcanvas" .disabled}
+```{=html}
+<i class="bi bi-pie-chart-fill" style="color: green; font-size: .75em"></i>
+```
 ::::::::
 :::::::::
 ::::::::::
@@ -482,25 +487,36 @@ summaryProcessTable
 ::::::::::
 :::::::::::
 
-::: flex-wrap
-::: {.btn .btn-dark .align-self-center type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
+::::::::::: flex-row-tainer
+:::::::::: flex-col-tainer
+
+::::::::: p
+## Outlier Filter
+
+To ensure the conclusions are accurate, outliers should be filtered. Negative and very low trip times might skew trends. The underlying reason for very low trip times is somewhat of an unknown. Perhaps people often change their minds?
+
+As in the first part, an if-else code-chunk design was chosen because it makes testing easier. It's not required but is nice-to-have. Removing the nonsensical outliers, on the other hand, is required. This code chunk accomplishes both, regardless if you are just testing and already have the filtered database table or if you still need to create it. A database filtering script was used to make the code chunk easier to follow. We then verify the table does exist now along with all other tables we previously created.
+
+So this should have removed outliers from the dataset which don't really serve the scope of this analysis. Some could have also been erroneous data.
+:::::::::
+::::::::: {.btn-group role="group" aria-label="third"}
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
 ```
-:::
+::::::::
+:::::::: {#offcanvas33 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::: offcanvas-header
+:::::: {.h5 .offcanvas-title}
+Stepping Through the Code
+::::::
 
-::: {#offcanvas33 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
-::: {.h5 .offcanvas-title}
-Hello
-:::
+:::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::
+:::::::
 
-::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
-:::
-:::
-
-::: {.offcanvas-body .align-text-center}
-::: flex-code
+::::::: {.offcanvas-body}
+:::::: flex-code
 ```{r}
 #| label: filtering db
 # So you don't have to re-dl or re-fltr    
@@ -524,47 +540,45 @@ if (duckdb::dbExistsTable(dbconn,
     filterDatabase()
 }
 ```
-:::
-:::
-:::
+::::::
+:::::::
+::::::::
 
-::: {.btn .btn-dark .align-self-center type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas22" aria-controls="offcanvas"}
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas22" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-table" style="color: red; font-size: .75em"></i>
 ```
-:::
+::::::::
 
-::: {#offcanvas22 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
-::: {.h5 .offcanvas-title}
-Hello
-:::
+:::::::: {#offcanvas22 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::: offcanvas-header
+:::::: {.h5 .offcanvas-title}
+Stepping Through the Code
+::::::
 
-::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
-:::
-:::
+:::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::
+:::::::
 
-::: {.offcanvas-body .align-text-center}
-::: flex-code
+::::::: {.offcanvas-body}
+:::::: flex-code
 ```{r}
 #| echo: false
 # To verify the new filtered table exists.
 duckdb::dbListTables(dbconn)
 ```
-:::
-:::
-:::
+::::::
+:::::::
+::::::::
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#null" aria-controls="offcanvas" .disabled}
+```{=html}
+<i class="bi bi-pie-chart-fill" style="color: green; font-size: .75em"></i>
+```
+::::::::
+:::::::::
+::::::::::
+:::::::::::
 
-::: flex-text
-## Outlier Filter
-
-To ensure the conclusions are accurate, outliers should be filtered. Negative and very low trip times might skew trends. The underlying reason for very low trip times is somewhat of an unknown. Perhaps people often change their minds?
-
-As in the first part, an if-else code-chunk design was chosen because it makes testing easier. It's not required but is nice-to-have. Removing the nonsensical outliers, on the other hand, is required. This code chunk accomplishes both, regardless if you are just testing and already have the filtered database table or if you still need to create it. A database filtering script was used to make the code chunk easier to follow. We then verify the table does exist now along with all other tables we previously created.
-
-So this should have removed outliers from the dataset which don't really serve the scope of this analysis. Some could have also been erroneous data.
-:::
-:::
 
 ```{r}
 #| eval: false
@@ -576,10 +590,3 @@ source("duckDrops.R")
 
 ------------------------------------------------------------------------
 
-1.  idjfdifj
-
-2.  idfjodjf
-
-3.  ifjdofjd
-
-4.  idfjodjfd
