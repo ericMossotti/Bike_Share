@@ -2,7 +2,7 @@
 $theme: "morph" !default;
 
 // Base document colors
-$body-bg: #181818 !default; //212529
+$body-bg: #212529 !default; //212529 181818
 $body-color: white !default;
 $link-color: #FCCB1A !default;
 $btn-border-width: 0px;
@@ -13,9 +13,11 @@ $nav-tabs-link-active-bg: rgba(77, 0, 0, .5) !default;
 $nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
 
-// Code blocks
-//$code-block-bg-alpha: .8;
 
+.flex-row-tainer {
+    display: flex;
+    justify-content: center;
+}
 
 .nav-item {
     border: none !important;
@@ -31,10 +33,6 @@ $btn-close-color: #3366ff !default;
 .h2, h2 {
     color: #F28736 !important;
 }
-
-//.h5 {
-//    color: #FEFE33 !important;
-//}
 
 .offcanvas{
     background-color: rgba(0,0,0,.5) !important;
@@ -69,32 +67,41 @@ $btn-close-color: #3366ff !default;
     btn-close-color: #3366ff !important;
 }
 
+
 pre code {
     color: Orange !important;
     background-color: rgba(10,0,0,.5) !important;
 }
 
-.btn {
+
+.btn, .btn-secondary {
+    box-shadow: none !important;
     background-color: $body-bg !important;
-    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05) !important;
-    border: none !important;
     color: rgba(255, 255, 255, 0.75) !important;
+    margin: 0 !important;
+    border: none !important;
+    --bs-btn-disabled-opacity: 0.35 !important;
+
 }
 
-.flex-wrap {
+
+.btn-group {
+    background-color: $body-bg !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.75);
+    box-shadow: 4px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05) !important;
+}
+
+.flex-col-tainer {
     display: flex;
-    //flex-direction: row-reverse;
-    justify-content: center;
-    gap: 5vh !important;
+    flex-direction: column;
+    align-items: center;
+    //justify-content: center;
+    gap: 2vh !important;
     color: $body-color !important;
+    max-width: 70vh;
 }
 
-.flex-text {
-   // display: flex;
-   // justify-content: center;
-    max-width: 70vh;
- 
-}
 
 .code-fold {
     background-color: transparent !important;
@@ -142,15 +149,11 @@ details>summary {
     overflow-x: hidden;
     scrollbar-width: thin; //5900b3 //d9b3ff
     scrollbar-color: #33ccff transparent;
-    //background-color: $background-color !important;
-   // color: $body-color !important;
-    //flex-direction: row;
     background-color: transparent !important;
 }
 
 .modal-content{
   background-color: transparent !important;
-//  box-shadow: 8px 8px 40px rgba(0, 0, 0, 0.15), inset 1px 1px 3px rgba(255, 255, 255, 0.05), inset -5px -5px 20px rgba(0, 0, 0, 0.05) !important;
   margin: .5em !important;
   align-self: center !important;
   block-size: fit-content !important;
@@ -158,8 +161,6 @@ details>summary {
   border: none !important;
   box-shadow: none !important;
 }
-
-
 
 /*
 .btn {
@@ -204,16 +205,4 @@ details>summary {
     box-shadow: var(--bs-btn-box-shadow);
     transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out
 } 
-
-
-
-
-
-
-
-
-
-
-
-
 */
