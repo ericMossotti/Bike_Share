@@ -14,6 +14,10 @@ $nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
 
 
+i {
+    filter: drop-shadow(3px 3px 3px black) !important;
+}
+
 .flex-row-tainer {
     display: flex;
     justify-content: center;
@@ -89,7 +93,8 @@ pre code {
     background-color: $body-bg !important;
     border: none !important;
     color: rgba(255, 255, 255, 0.75);
-    box-shadow: 4px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05) !important;
+ //   box-shadow: 4px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.05) !important;
+    box-shadow: none !important;
 }
 
 .flex-col-tainer {
