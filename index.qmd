@@ -50,25 +50,20 @@ As a counterpart to the if-else design decision at the top of the project, I've 
 
 Choosing a persistent DuckDB database filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
 :::::::::
-
 ::::::::: {.btn-group role="group" aria-label="first"}
-
-:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas" .m-1}
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
 ```
 ::::::::
-
 :::::::: {#offcanvas1 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::: offcanvas-header
 :::::: {#offcanvasLabel .h5 .offcanvas-title}
 Hello
 ::::::
-
 :::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 ::::::
 :::::::
-
 ::::::: {.offcanvas-body}
 :::::: flex-code
 ```{r}
@@ -114,20 +109,16 @@ dbList <- duckdb::dbListTables(dbconn) |>
 ::::::
 :::::::
 ::::::::
-
-
-:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas" .m-1}
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-table" style="color: red; font-size: .75em"></i>
 ```
 ::::::::
-
 :::::::: {#offcanvas2 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::: offcanvas-header
 :::::: {.h5 .offcanvas-title}
-Hello
+Stepping Through the Code
 ::::::
-
 :::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 ::::::
 :::::::
@@ -141,7 +132,7 @@ dbList
 ::::::
 :::::::
 ::::::::
-:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#null" aria-controls="offcanvas" .disabled}
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#null1" aria-controls="offcanvas" .disabled}
 ```{=html}
 <i class="bi bi-pie-chart-fill" style="color: green; font-size: .75em"></i>
 ```
@@ -579,6 +570,357 @@ duckdb::dbListTables(dbconn)
 ::::::::::
 :::::::::::
 
+::::::::::: flex-row-tainer
+:::::::::: flex-col-tainer
+
+::::::::: p
+## Frequency Tables and What They Tell Us
+
+Now we're going to create dimension and frequency tables and add those to our database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables.
+
+By generating frequency tables, I quickly glean insights from the data.
+:::::::::
+::::::::: {.btn-group role="group" aria-label="fourth"}
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
+```
+::::::::
+:::::::: {#offcanvas10 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::: offcanvas-header
+:::::: {.h5 .offcanvas-title}
+Stepping Through the Code
+::::::
+
+:::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::
+:::::::
+
+::::::: {.offcanvas-body}
+:::::: flex-code
+```{r}
+#| label: Member_casual
+#| code-summary: This indicates that there are nearly twice as many trips taken by annual subscribers than by casual users. So, it would seem that there is some correlation between how often a person uses the service and whether they choose to subscribe to an annual membership plan.
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual) |>
+    dplyr::group_by(member_casual) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_member.db",
+                         overwrite = TRUE,
+                         check_from = FALSE)
+
+dplyr::tbl(dbconn,
+           "db/freq_member.db")
+```
+
+```{r}
+#| label: Rideable_types
+#| code-summary: This tells us that there are nearly twice as many trips taken with non-electric bikes as electric bikes. There are differences in cost for casual members, so that might be one determining factor. Also, perhaps the associated health benefits with exercise would help explain higher non-electric bicycle use.
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(rideable_type) |>
+    dplyr::group_by(rideable_type) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_rTypes.db",
+                         overwrite = TRUE,
+                         check_from = FALSE)
+
+dplyr::tbl(dbconn,
+           "db/freq_rTypes.db")
+```
+
+
+```{r}
+#| label: Miles
+#| code-summary: This shows that around 0.3 to 3 miles is the distance traveled on most trips taken. The fact that casual bicycles are used more often perhaps makes a little more sense given that people are not traveling long distances.
+
+# Miles
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(miles) |>
+    dplyr::collect() |>
+    dplyr::mutate(miles = dplyr::case_when(miles >= 1 ~ round(miles,
+                                                              digits = 0),
+                                           miles < 1 ~ round(signif(miles, 3),
+                                                             digits = 1))) |>
+    dplyr::group_by(miles) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(miles) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_miles.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+
+dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 10)
+```
+
+```{r}
+#| label: Miles_plot
+
+dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    dplyr::collect() |>
+    dplyr::mutate(n = n/1000) |>
+    dplyr::rename("Trips (in thousands)" = n,
+                  "Miles" = miles) |>
+    plot()
+```
+
+
+
+```{r}
+#| label: MPH
+#| code-summary: The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel.
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(mph) |>
+    dplyr::mutate(mph = round(mph, digits = 0)) |>
+    dplyr::group_by(mph) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    dplyr::arrange(mph) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_mph.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_mph.db")
+```
+
+
+```{r}
+#| label: MPH plot
+
+dplyr::tbl(dbconn,
+           "db/freq_mph.db") |>
+    dplyr::collect() |>
+    plot()
+```
+
+
+```{r}
+#| label: Weekday
+#| code-summary: There is a slight reduction in trips taken on Sundays and Mondays. This could be explained by the fact that most trips are taken by annual subscribers, possibly because they are biking to work and such. Much less people will be biking to work on Sundays. Taking 3-day weekends is common in the workplace, where most would likely opt to use up their sick/vacation days on Monday, which might explain the down tick in trips taken on Mondays. Also, those who are working Tuesdays-Saturdays could be taking Sunday and Mondays off.
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate(wkday = lubridate::wday(started_at)) |>
+    dplyr::group_by(wkday) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(wkday) |>
+    dplyr::collect() |>
+    dplyr::mutate(wkday = c("Sun",
+                            "Mon",
+                            "Tue",
+                            "Wed",
+                            "Thu",
+                            "Fri",
+                            "Sat"),
+                  wkday = forcats::as_factor(wkday),
+                  wkday = forcats::fct_inorder(wkday)) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_wkDay.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_wkday.db") 
+```
+
+
+```{r}
+#| label: Weekday Plot
+
+dplyr::tbl(dbconn,
+           "db/freq_wkday.db") |>
+    dplyr::collect() |>
+    plot()
+```
+
+
+
+
+```{r}
+#| label: Months
+#| code-summary: The monthly ridership does differ substantially between certain months. Summer months in Chicago is when we see the largest increase in ridership. Spring and Fall seasons lie in between Summer and Winter in terms of scale of trips taken.
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(started_at) |>
+    dplyr::mutate(months = lubridate::month(started_at,
+                                            label = FALSE,
+                                            abbr = TRUE
+                                            )) |>
+    dplyr::group_by(months) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    dplyr::arrange(months) |>
+    dplyr::mutate(months = c(month.abb),
+                  months = forcats::as_factor(months),
+                  months = forcats::fct_inorder(months)) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_month.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_month.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_month.db") |>
+    dplyr::summarize(sum = sum(n))
+```
+
+```{r}
+#| label: Months_plot
+
+dplyr::tbl(dbconn,
+           "db/freq_month.db") |>
+    dplyr::collect() |>
+    plot()
+```
+
+
+```{r}
+#| label: tripTime
+#| code-summary: The time riders are usually spending on these trips lies in between 5-15 minutes.
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
+    dplyr::mutate(trip_time = round(trip_time,
+                                    digits = 0)) |>
+    dplyr::group_by(trip_time) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(trip_time) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_tripTime.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db") |>
+    dplyr::collect() |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 20)
+
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db") |>
+    dplyr::summarize(sum = sum(n))
+```
+
+```{r}
+#| label: tripTime_plot
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db") |>
+    dplyr::collect() |>
+    plot()
+```
+
+
+```{r}
+#| label: freq_startNames
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
+    dplyr::select(start_station_name) |>
+    dplyr::group_by(start_station_name) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(start_station_name) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_startNames.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+
+dplyr::tbl(dbconn,
+           "db/freq_startNames.db")
+```
+
+
+```{r}
+#| label: freq_PairNames
+
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
+    dplyr::select(start_station_name,
+                  end_station_name) |>
+    dplyr::group_by(start_station_name,
+                    end_station_name) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(start_station_name) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freq_pairStations.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+dplyr::tbl(dbconn,
+           "db/freq_pairStations.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_pairStations.db") |>
+    dplyr::summarize(sum = sum(n))
+
+```
+
+
+::::::
+:::::::
+::::::::
+
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas11" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-table" style="color: red; font-size: .75em"></i>
+```
+::::::::
+
+:::::::: {#offcanvas11 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::: offcanvas-header
+:::::: {.h5 .offcanvas-title}
+Tables
+::::::
+
+:::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::
+:::::::
+
+::::::: {.offcanvas-body}
+:::::: flex-code
+
+::::::
+:::::::
+::::::::
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#12" aria-controls="offcanvas" .disabled}
+```{=html}
+<i class="bi bi-pie-chart-fill" style="color: green; font-size: .75em"></i>
+```
+::::::::
+:::::::::
+::::::::::
+:::::::::::
+
 
 ```{r}
 #| eval: false
@@ -587,6 +929,3 @@ duckdb::dbListTables(dbconn)
 # If you need to drop any tables
 source("duckDrops.R")
 ```
-
-------------------------------------------------------------------------
-
