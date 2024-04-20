@@ -572,7 +572,6 @@ duckdb::dbListTables(dbconn)
 
 ::::::::::: flex-row-tainer
 :::::::::: flex-col-tainer
-
 ::::::::: p
 ## Frequency Tables and What They Tell Us
 
@@ -614,9 +613,8 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE,
                          check_from = FALSE)
 
-dplyr::tbl(dbconn,
-           "db/freq_member.db")
 ```
+
 
 ```{r}
 #| label: Rideable_types
@@ -634,8 +632,6 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE,
                          check_from = FALSE)
 
-dplyr::tbl(dbconn,
-           "db/freq_rTypes.db")
 ```
 
 
@@ -649,37 +645,24 @@ dplyr::tbl(dbconn,
            check_from = FALSE) |>
     dplyr::select(miles) |>
     dplyr::collect() |>
-    dplyr::mutate(miles = dplyr::case_when(miles >= 1 ~ round(miles,
-                                                              digits = 0),
-                                           miles < 1 ~ round(signif(miles, 3),
-                                                             digits = 1))) |>
+    dplyr::mutate(miles = dplyr::case_when(
+        miles >= 1 ~ round(miles,
+                           digits = 0),
+        miles < 1 ~ round(signif(miles, 3),
+                          digits = 1)
+    )) |>
     dplyr::group_by(miles) |>
     dplyr::summarize(n = dplyr::n()) |>
     dplyr::arrange(miles) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_miles.db",
-                         check_from = FALSE,
-                         overwrite = TRUE)
+    duckdb::dbWriteTable(
+        conn = dbconn,
+        name = "db/freq_miles.db",
+        check_from = FALSE,
+        overwrite = TRUE
+    )
 
 
-dplyr::tbl(dbconn,
-           "db/freq_miles.db") |>
-    dplyr::arrange(desc(n)) |>
-    head(n = 10)
 ```
-
-```{r}
-#| label: Miles_plot
-
-dplyr::tbl(dbconn,
-           "db/freq_miles.db") |>
-    dplyr::collect() |>
-    dplyr::mutate(n = n/1000) |>
-    dplyr::rename("Trips (in thousands)" = n,
-                  "Miles" = miles) |>
-    plot()
-```
-
 
 
 ```{r}
@@ -700,18 +683,6 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-dplyr::tbl(dbconn,
-           "db/freq_mph.db")
-```
-
-
-```{r}
-#| label: MPH plot
-
-dplyr::tbl(dbconn,
-           "db/freq_mph.db") |>
-    dplyr::collect() |>
-    plot()
 ```
 
 
@@ -742,21 +713,7 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-dplyr::tbl(dbconn,
-           "db/freq_wkday.db") 
 ```
-
-
-```{r}
-#| label: Weekday Plot
-
-dplyr::tbl(dbconn,
-           "db/freq_wkday.db") |>
-    dplyr::collect() |>
-    plot()
-```
-
-
 
 
 ```{r}
@@ -783,21 +740,6 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-dplyr::tbl(dbconn,
-           "db/freq_month.db")
-
-dplyr::tbl(dbconn,
-           "db/freq_month.db") |>
-    dplyr::summarize(sum = sum(n))
-```
-
-```{r}
-#| label: Months_plot
-
-dplyr::tbl(dbconn,
-           "db/freq_month.db") |>
-    dplyr::collect() |>
-    plot()
 ```
 
 
@@ -818,23 +760,6 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-dplyr::tbl(dbconn,
-           "db/freq_tripTime.db") |>
-    dplyr::collect() |>
-    dplyr::arrange(desc(n)) |>
-    head(n = 20)
-
-dplyr::tbl(dbconn,
-           "db/freq_tripTime.db") |>
-    dplyr::summarize(sum = sum(n))
-```
-
-```{r}
-#| label: tripTime_plot
-dplyr::tbl(dbconn,
-           "db/freq_tripTime.db") |>
-    dplyr::collect() |>
-    plot()
 ```
 
 
@@ -854,8 +779,6 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE)
 
 
-dplyr::tbl(dbconn,
-           "db/freq_startNames.db")
 ```
 
 
@@ -876,16 +799,8 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-dplyr::tbl(dbconn,
-           "db/freq_pairStations.db")
-
-dplyr::tbl(dbconn,
-           "db/freq_pairStations.db") |>
-    dplyr::summarize(sum = sum(n))
 
 ```
-
-
 ::::::
 :::::::
 ::::::::
@@ -908,18 +823,385 @@ Tables
 
 ::::::: {.offcanvas-body}
 :::::: flex-code
+```{r}
+#| echo: false
 
+dplyr::tbl(dbconn,
+           "db/freq_member.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_rTypes.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 10)
+
+dplyr::tbl(dbconn,
+           "db/freq_mph.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_wkday.db") 
+
+
+dplyr::tbl(dbconn,
+           "db/freq_month.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_month.db") |>
+    dplyr::summarize(sum = sum(n))
+
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db") |>
+    dplyr::collect() |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 20)
+
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db") |>
+    dplyr::summarize(sum = sum(n))
+
+dplyr::tbl(dbconn,
+           "db/freq_startNames.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_pairStations.db")
+
+dplyr::tbl(dbconn,
+           "db/freq_pairStations.db") |>
+    dplyr::summarize(sum = sum(n))
+
+```
 ::::::
 :::::::
 ::::::::
-:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#12" aria-controls="offcanvas" .disabled}
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas12" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-pie-chart-fill" style="color: green; font-size: .75em"></i>
 ```
 ::::::::
+
+:::::::: {#offcanvas12 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::: offcanvas-header
+:::::: {.h5 .offcanvas-title}
+Plots and Charts
+::::::
+
+:::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::
+:::::::
+
+::::::: {.offcanvas-body}
+:::::: flex-code
+```{r}
+#| label: Miles_plot
+#| echo: false
+
+dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    dplyr::collect() |>
+    dplyr::mutate(n = n/1000) |>
+    dplyr::rename("Trips (in thousands)" = n,
+                  "Miles" = miles) |>
+    plot(main = "Trip Distance Frequency")
+```
+
+
+```{r}
+#| label: Weekday Plot
+#| echo: false
+
+dplyr::tbl(dbconn,
+           "db/freq_wkday.db") |>
+    dplyr::collect() |>
+    plot(main = "Day of Week Ride Frequency")
+```
+
+
+```{r}
+#| label: MPH plot
+#| echo: false
+
+dplyr::tbl(dbconn,
+           "db/freq_mph.db") |>
+    dplyr::collect() |>
+    plot(main = "Average Trip Speed Frequency")
+```
+
+
+```{r}
+#| label: Months_plot
+#| echo: false
+
+dplyr::tbl(dbconn,
+           "db/freq_month.db") |>
+    dplyr::collect() |>
+    plot(main = "Monthly Ride Frequency")
+```
+
+
+```{r}
+#| label: tripTime_plot
+#| echo: false
+
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db") |>
+    dplyr::collect() |>
+    plot(main = "Trip-Time Frequencies")
+```
+::::::
+:::::::
+::::::::
 :::::::::
 ::::::::::
 :::::::::::
+
+
+::::::::::: flex-row-tainer
+:::::::::: flex-col-tainer
+
+::::::::: p
+
+:::::::::
+::::::::: {.btn-group role="group" aria-label="third"}
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas13" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="color: cornflowerblue"></i>
+```
+::::::::
+:::::::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::: offcanvas-header
+:::::: {.h5 .offcanvas-title}
+Stepping Through the Code
+::::::
+
+:::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::
+:::::::
+
+::::::: {.offcanvas-body}
+:::::: flex-code
+
+```{r}
+#| label: createFlows dataframe
+
+flowData <- dplyr::tbl(dbconn,
+                       tblPath_fltrd) |>
+    dplyr::select(start_station_name,
+                  end_station_name) |>
+    dplyr::group_by(start_station_name,
+                    end_station_name) |>
+    dplyr::summarize(n = n()) |>
+    dplyr::ungroup() |>
+    dplyr::arrange(desc(n)) |>
+    dplyr::rename("from_station" = start_station_name,
+                  "to_station" = end_station_name) |>
+    dplyr::collect() |>
+    dplyr::slice_head(n = 50)
+
+
+flowData1 <- flowData |>
+    dplyr::slice(1:10)
+
+flowData2 <- flowData |>
+    dplyr::slice(11:20)
+
+flowData3 <- flowData |>
+    dplyr::slice(21:30)
+
+flowData4 <- flowData |>
+    dplyr::slice(31:40)
+
+flowData5 <- flowData |>
+    dplyr::slice(41:50)
+
+```
+
+
+```{r}
+#| label: location stats
+#| code-summary: Now we need to obtain statistics but also combine the statistics for every unique station name. 
+
+locationData <- dplyr::tbl(dbconn,
+                            tblPath_fltrd) |>
+    dplyr::select(start_station_name,
+                  end_station_name,
+                  started_at,
+                  ended_at,
+                  trip_time) |>
+    dplyr::group_by(start_station_name,
+                    end_station_name
+                ) |>
+    dplyr::mutate("trip_time" = round(trip_time,
+                                      digits = 0)) |>
+    dplyr::summarize(
+        "trip_count" = dplyr::n(),
+        "first_date" = min(started_at),
+        "last_date" = max(ended_at),
+        "avg_trip_time" = mean(trip_time)
+    ) |>
+    dplyr::ungroup() |>
+    dplyr::rename("from_station" = start_station_name,
+                  "to_station" = end_station_name
+               ) |>
+    dplyr::arrange(desc(trip_count)) |>
+    dplyr::collect() |>
+    dplyr::slice_head(n = 50)
+
+
+
+locationData_pivoted <- locationData |>
+    tidyr::pivot_longer(cols = 1:2, 
+                        values_to = "allNames") |>
+    dplyr::group_by(allNames) |>
+    dplyr::summarize("trips_toAndfrom" = sum(trip_count),
+                     first_date = min(first_date),
+                     last_date = max(last_date),
+                     avg_trip_time = mean(avg_trip_time)
+                     ) |>
+    dplyr::mutate(avg_trip_time = round(avg_trip_time,
+                                      digits = 0)) |>
+
+    dplyr::arrange(trips_toAndfrom)
+```
+
+
+
+```{r}
+#| class-output: plotMod
+
+ef_test1 <- epiflows::make_epiflows(flows = flowData1,
+                                   locations = locationData_pivoted,
+                                   duration_stay = "avg_trip_time",
+                                   num_cases = "trips_toAndfrom")
+
+ef_test2 <- epiflows::make_epiflows(flows = flowData,
+                                   locations = mergd2,
+                                   duration_stay = "avg_trip_time",
+                                   num_cases = "trip_count")
+
+ef_test3 <- epiflows::make_epiflows(flows = flowData,
+                                   locations = mergd3,
+                                   duration_stay = "avg_trip_time",
+                                   num_cases = "trip_count")
+
+ef_test4 <- epiflows::make_epiflows(flows = flowData,
+                                   locations = mergd4,
+                                   duration_stay = "avg_trip_time",
+                                   num_cases = "trip_count")
+
+ef_test5 <- epiflows::make_epiflows(flows = flowData,
+                                   locations = mergd5,
+                                   duration_stay = "avg_trip_time",
+                                   num_cases = "trip_count")
+
+
+ef_test1
+
+```
+
+
+::::::
+:::::::
+::::::::
+
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas14" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-table" style="color: red;"></i>
+```
+::::::::
+
+:::::::: {#offcanvas14 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::: offcanvas-header
+:::::: {.h5 .offcanvas-title}
+Tables
+::::::
+
+:::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::
+:::::::
+
+::::::: {.offcanvas-body}
+:::::: flex-code
+```{r}
+flowData
+summary(flowData$n)
+```
+
+```{r}
+locationData_pivoted
+```
+
+::::::
+:::::::
+::::::::
+:::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas15" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-pie-chart-fill" style="color: green"></i>
+```
+::::::::
+
+:::::::: {#offcanvas15 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::: offcanvas-header
+:::::: {.h5 .offcanvas-title}
+Plots and Charts
+::::::
+
+:::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::
+:::::::
+
+::::::: {.offcanvas-body}
+:::::: flex-code
+::::: panel-tabset
+
+## 1-10
+
+```{r}
+#| label: epiflowViz1
+#| echo: false
+epiflows::vis_epiflows(ef_test1)
+```
+
+## 11-20
+
+```{r}
+#| label: epiflowViz2
+#| echo: false
+epiflows::vis_epiflows(ef_test2)
+```
+
+## 21-30
+
+```{r}
+#| label: epiflowViz3
+#| echo: false
+epiflows::vis_epiflows(ef_test3)
+```
+
+## 31-40
+
+```{r}
+#| label: epiflowViz4
+#| echo: false
+epiflows::vis_epiflows(ef_test4)
+```
+
+## 41-50
+
+```{r}
+#| label: epiflowViz5
+#| echo: false
+epiflows::vis_epiflows(ef_test5)
+```
+:::::
+::::::
+:::::::
+::::::::
+:::::::::
+::::::::::
+:::::::::::
+
 
 
 ```{r}
