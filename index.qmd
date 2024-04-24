@@ -598,28 +598,29 @@ Now we're going to create frequency tables and add those to the database. We can
 :::::::::::: flex-row-tainer
 ::::::::::: flex-col-tainer
 ## Duplicates View
-::: {.btn-group role="group" aria-label="fourth"}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
+:::::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
 ```
-:::
+::::::::
+:::::::::
+::::::::::
 
-::: {#offcanvas10 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
-::: {.h5 .offcanvas-title}
+:::::::::: {#offcanvas10 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::::: offcanvas-header
+:::::::: {.h5 .offcanvas-title}
 Stepping Through the Code
-:::
+::::::::
 
-::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
-:::
-:::
+:::::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::::
+:::::::::
 
-::: offcanvas-body
-::: flex-code
+::::::::: offcanvas-body
+:::::::: flex-code
 ```{r}
-#| label: Member_casual
-#| code-summary: This indicates that there are nearly twice as many trips taken by annual subscribers than by casual users. So, it would seem that there is some correlation between how often a person uses the service and whether they choose to subscribe to an annual membership plan.
+#| label: membershipFrequency_writeTbl
+
 
 dplyr::tbl(dbconn,
            tblPath_fltrd,
@@ -813,9 +814,7 @@ dplyr::tbl(dbconn,
 
 
 ```
-:::
-:::
-:::
+::::::::::::
 ::::::::::::::
 :::::::::::::::
 
@@ -823,12 +822,21 @@ dplyr::tbl(dbconn,
 :::::::::::: flex-row-tainer
 ::::::::::: flex-col-tainer
 :::::::::: {.panel-tabset .shadow-lg}
-## Duplicates View
 
+# Memberships
 
+::::: {.article}
+
+## Memberships
+
+::: p
+There are nearly twice as many trips taken by annual subscribers than by casual users. Maybe there is a relationship between how often a person uses Divvy Bikes service and whether they make the decision to subscribe to an annual membership plan.
+:::
+:::: {.d-flex .flex-row}
+::: {.p-3 .align-self-center}
 ```{r}
+#| label: memberFrequency_tblView
 #| echo: false
-#| code-fold: hide
 
 dplyr::tbl(dbconn,
            "db/freq_member.db") |>
@@ -844,6 +852,72 @@ dplyr::tbl(dbconn,
         table_body.hlines.color = "gray20",
         column_labels.hidden = TRUE
     )
+```
+:::
+
+::: {.p-2}
+```{r}
+#| label: memberFrequency_plotView
+#| echo: false
+
+
+member_freqTbl <- dplyr::tbl(dbconn,
+                             "db/freq_member.db") |>
+    dplyr::collect()
+
+
+member_freqTbl |>
+    ggplot2::ggplot(
+        mapping = ggplot2::aes(
+            x = member_casual,
+            y = n,
+            fill = n
+            )
+        ) +
+    ggplot2::geom_col(show.legend = FALSE) +
+    ggplot2::labs(title = "Membership Frequency",
+                  subtitle = "Trips taken by annual subscribers vs non-subscribers") +
+    ggplot2::theme(
+    rect = ggplot2::element_rect(
+        fill = rgb(0,0,0, alpha = 0),
+        color = rgb(0,0,0, alpha = 0)),
+    legend.background = ggplot2::element_rect(
+        fill = rgb(0,0,0, alpha = 0)),
+    legend.box.background = ggplot2::element_rect(
+        rgb(0,0,0, alpha = 0)),
+    panel.background = ggplot2::element_rect(
+        fill = rgb(0,0,0, alpha = 0),
+            #"gray5",
+        color = NA),
+    plot.background = ggplot2::element_rect(
+        fill = "#212529",
+        color = NA),
+    text = ggplot2::element_text(
+        color = "seashell"),
+    panel.grid = ggplot2::element_blank(),
+    axis.title.x = ggplot2::element_text(
+        margin = grid::unit(c(5,5,5,5), "mm")),
+    axis.title.y = ggplot2::element_text(
+        margin = grid::unit(c(5,5,5,5), "mm")),
+    axis.text.x = ggplot2::element_text(
+        color = "Snow"),
+    axis.text.y = ggplot2::element_text(
+        color = "Snow")
+    #panel.ontop = TRUE
+    
+    )
+
+```
+:::
+::::
+
+:::::
+::::::
+:::::::
+::::::::
+
+```{r}
+#| echo: false
 
 dplyr::tbl(dbconn,
            "db/freq_rTypes.db") |>
@@ -874,7 +948,6 @@ dplyr::tbl(dbconn,
             table.font.color = "SeaShell",
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20"
-            #column_labels.hidden = TRUE
         )
 
 dplyr::tbl(dbconn,
@@ -938,9 +1011,7 @@ dplyr::tbl(dbconn,
         column_labels.hidden = TRUE
     )
 ```
-:::
-:::
-:::
+
 
 
 
@@ -1098,7 +1169,6 @@ monthlyPlot <- monthlyTable |>
     )
 
 monthlyPlot    
-    #plot(main = "Monthly Ride Frequency")
 ```
 
 ```{r}
@@ -1138,12 +1208,6 @@ tripTimePlot <- tripTimeTable |>
 tripTimePlot
   #  plot(main = "Trip-Time Frequencies")
 ```
-:::
-:::
-:::
-:::
-:::
-:::
 
 ::: flex-row-tainer
 ::: flex-col-tainer
