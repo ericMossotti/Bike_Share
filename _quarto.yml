@@ -20,7 +20,7 @@ website:
 format:
   html:
     theme:
-        - morph
+        - darkly
         - theme-dark.scss
     toc: false
     page-layout: custom
