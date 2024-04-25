@@ -16,9 +16,9 @@ code-copy: hover
 code-overflow: wrap
 code-tools: true
 code-link: true
-#toc: true
-#toc_float: true
-#smooth-scroll: true
+# toc: true
+# toc_float: true
+# smooth-scroll: true
 fig-responsive: true
 echo: true
 
@@ -37,31 +37,31 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```
 
-::: flex-row-tainer
-::: flex-col-tainer
+:::::::::::: flex-row-tainer
+::::::::::: flex-col-tainer
 
 ## Import and Project Design
 
-::: {.p-1}
+:::::::::: {.p-1}
 Data source for this data analysis was obtained from Divvy Data. Thinking ahead with reproducibility in mind, should cover most use cases for tinkering and testing. I have found it helpful to reduce the need to re-download files and re-process all over again if all one needs to do is reconnect to the database that has already been written. [@divvyda]
 
-As a counterpart to the if-else design decision at the top of the project, I've condensed the initial download, import and cleaning steps inside of an R-script. Choosing a persistent DuckDB database filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
-:::
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
+As a counterpart to the if-else design decision at the top of the project, I've condensed the initial download, import and cleaning steps inside of an R-script. Choosing a persistent DuckDB filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
+::::::::::
+:::::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
 ```
-:::
-::: {#offcanvas1 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
-::: {#offcanvasLabel .h5 .offcanvas-title}
+::::::::::
+:::::::::: {#offcanvas1 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::::::: offcanvas-header
+:::::::: {#offcanvasLabel .h5 .offcanvas-title}
 Stepping Through Code
-:::
-::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
-:::
-:::
-::: offcanvas-body
-::: flex-code
+::::::::
+:::::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::::::
+:::::::::
+::::::::: offcanvas-body
+:::::::: flex-code
 ```{r}
 #| label: importOrConnect
 #| code-summary: First, we decide whether to download and do the necessary initial processing steps or skip that if we have already done this and are just tinkering around with the project. 
@@ -89,7 +89,7 @@ if(exists("dbconn") == FALSE &&
 
 ```{r}
 #| label: importProcessScript
-#| code-summary: The above would source and execute this script code if the conditions are met.
+#| code-summary: The above would source and execute this script code if the conditions were met.
 #| file: "import_clean_initial.R"
 #| eval: false 
 ```
@@ -116,10 +116,10 @@ dbList <- duckdb::dbListTables(dbconn) |>
         table.font.size = gt::px(13)
     )
 ```
-:::
-:::
-:::
-:::
+::::::::
+:::::::::
+::::::::::
+:::::::::::
 
 ::: {.p-3 style="margin-left: 10%"}
 ```{r}
@@ -129,7 +129,7 @@ dbList <- duckdb::dbListTables(dbconn) |>
 dbList
 ```
 :::
-:::
+::::
 
 :::::::::::: flex-row-tainer
 ::::::::::: flex-col-tainer
@@ -140,7 +140,6 @@ Now to go a little deeper, we can check for duplicates. It might not necessarily
 
 I assumed that having the same times/dates and stations for two different ride IDs was a mistake. Although, I do not know how that error would happen, I could have assumed one person could check out multiple bikes at once. In that instance, each bike would be assigned a unique ride_id. That, however, has only happened 18 times over a year. Since it's only one copy every time, that also raises a red flag in my mind. I did not notice any other correlations with station_id/name, member_casual, or ride_type for those particular duplicated data.
 ::::::::::
-
 :::::::::::
 ::::::::::::
 
@@ -176,10 +175,111 @@ dupeTable <- dplyr::tbl(dbconn,
     # We want to see all rows, 
     #  not just one row for each obs.
     dplyr::ungroup() |>
- #   dplyr::mutate("Observations" = n)
     dplyr::arrange(started_at) |>
     dplyr::collect()
+```
 
+```{r}
+#| label: duplicateObs count
+#| code-summary: To count distinct duplicates and total obs.
+
+distinctCopiesCount <- dupeTable |>
+    dplyr::distinct(n) |>
+    as.integer() 
+
+duplicateObs <- length(dupeTable[[1]])
+```
+
+```{r}
+#| label: undupedTable
+#| code-summary: create table of the duplicated obs
+
+# The issue is, we need to get rid of not all of these rows,
+#  but just the extra duplicate observations. 
+
+# If there were 2 rows of duplicates, 
+#  we would want to end up with 1 row after 
+#   removing the extras.
+undupedTable <- dupeTable |>
+    dplyr::distinct(started_at,
+                     start_station_name,
+                     ended_at,
+                     end_station_name,
+                     .keep_all = TRUE)
+```
+
+
+```{r}
+#| label: incorrect distinct obs count
+#| code-summary: count of incorrect obs
+
+# Run an incorrect count on how many rows or observations 
+#  there are in the dataset.
+count_incorrectDists <- dplyr::tbl(dbconn,
+                                   tblPath,
+                                   check_from = FALSE) |>
+    dplyr::distinct(dplyr::pick("ride_id")) |>
+    dplyr::count(name = "Incorrect Distinct Observations") |>
+    dplyr::collect() |>
+    as.integer()
+```
+
+```{r}
+#| label: count_correctDists count
+#| code-summary: count of correct obs
+
+# For the correct count of obs
+count_correctDists <- dplyr::tbl(dbconn,
+                                 tblPath,
+                                 check_from = FALSE) |>
+    dplyr::distinct(
+        dplyr::pick(
+            "started_at",
+            "start_station_name",
+            "ended_at",
+            "end_station_name"
+        )
+    ) |>
+    dplyr::count() |>
+    dplyr::collect() |>
+    as.integer()
+```
+
+```{r}
+#| label: 'overwrite file with correct obs'
+#| code-summary: writing dupeless db
+
+dupelessPath <- "db/dupeless.db"
+ 
+dplyr::tbl(dbconn,
+           tblPath,
+           check_from = FALSE) |>
+    dplyr::select(ride_id:trip_time) |>
+    dplyr::distinct(started_at,
+                    start_station_name,
+                    ended_at,
+                    end_station_name,
+                    .keep_all = TRUE) |>
+    dplyr::arrange(started_at) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = dupelessPath,
+                         overwrite = TRUE,
+                         check_from = FALSE)
+```
+
+::::::::
+:::::::::
+::::::::::
+
+:::::::::::: flex-row-tainer
+::::::::::: flex-col-tainer
+:::::::::: {.panel-tabset}
+
+### Duplicates View
+
+```{r}
+#| label: gt table of duplicates view
 
 gtDupes <- dupeTable |>
     dplyr::group_by(started_at) |>
@@ -216,194 +316,16 @@ gtDupes <- dupeTable |>
         heading.subtitle.font.weight = "lighter",
         table.background.color = "transparent",
         table.font.color = "SeaShell",
-        table.font.size = gt::pct(75),
-        #column_labels.border.bottom.color = "transparent",
-        #column_labels.border.top.color = "transparent",
-        #heading.border.bottom.color = "transparent",
-        #row_group.border.top.color = "transparent",
-        #row_group.border.bottom.color = "transparent",
-        #table.border.top.color = "transparent",
-        #stub.border.color = "transparent"
-        
-        )
-```
+        table.font.size = gt::pct(75))
 
-```{r}
-#| label: duplicateObs count
-#| code-summary: create count of distinct duplicates and total obs
-
-distinctCopiesCount <- dupeTable |>
-    dplyr::distinct(n) |>
-    as.integer() 
-
-duplicateObs <- length(dupeTable[[1]])
-```
-
-```{r}
-#| label: undupedTable
-#| code-summary: create table of the duplicated obs
-
-# The issue is, we need to get rid of not all of these rows,
-#  but just the extra duplicate observations. 
-
-# If there were 2 rows of duplicates, 
-#  we would want to end up with 1 row after 
-#   removing the extras.
-undupedTable <- dupeTable |>
-    dplyr::distinct(started_at,
-                     start_station_name,
-                     ended_at,
-                     end_station_name,
-                     .keep_all = TRUE)
-```
-
-```{r}
-#| label: duplicated code
-#| include: false
-#| eval: false
-
-distinctUndupedCounts <- undupedTable |>
-    dplyr::select(started_at) |>
-    dplyr::distinct() |>
-    dplyr::count() |>
-    as.integer()
-
-```
-
-```{r}
-#| label: incorrect distinct obs count
-#| code-summary: count of incorrect obs
-
-# Run an incorrect count on how many rows or observations 
-#  there are in the dataset.
-count_incorrectDists <- dplyr::tbl(dbconn,
-                                   tblPath,
-                                   check_from = FALSE) |>
-    dplyr::distinct(dplyr::pick("ride_id")) |>
-    dplyr::count(name = "Incorrect Distinct Observations") |>
-    dplyr::collect() |>
-    as.integer()
-
-```
-
-```{r}
-#| label: count_correctDists count
-#| code-summary: count of correct obs
-
-# For the correct count of obs
-count_correctDists <- dplyr::tbl(dbconn,
-                                 tblPath,
-                                 check_from = FALSE) |>
-    dplyr::distinct(
-        dplyr::pick(
-            "started_at",
-            "start_station_name",
-            "ended_at",
-            "end_station_name"
-        )
-    ) |>
-    dplyr::count() |>
-    dplyr::collect() |>
-    as.integer()
-
-```
-
-```{r}
-#| label: 'overwrite file with correct obs'
-#| code-summary: writing dupeless db
-
-
-dupelessPath <- "db/dupeless.db"
- 
-dplyr::tbl(dbconn,
-           tblPath,
-           check_from = FALSE) |>
-    dplyr::select(ride_id:trip_time) |>
-    dplyr::distinct(started_at,
-                    start_station_name,
-                    ended_at,
-                    end_station_name,
-                    .keep_all = TRUE) |>
-    dplyr::arrange(started_at) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = dupelessPath,
-                         overwrite = TRUE,
-                         check_from = FALSE)
-```
-
-```{r}
-#| label: duplicateProcess
-#| code-summary: summarizing obs removed so far
-
-# To visualize a summary of what we just determined
-#  regarding obs.
-summaryProcessTable <- tidyr::tribble(
-    ~ "Observations",
-    ~ "Counts",
-    "Original   ",
-    original_nobs,
-    "Processed   ",
-    count_incorrectDists,
-    "Duplicates   ",
-    (count_incorrectDists - count_correctDists),
-    "Total Corrected   ",
-    count_correctDists
-) |>
-    gt::gt(rownames_to_stub = FALSE) |>
-    gt::tab_header(title = "Tallying Observations") |>
-    gt::tab_footnote(
-        footnote = gt::md("Row counts throughout the cleaning steps."),
-        locations = gt::cells_column_labels(columns = Counts)
-    ) |>
-    gt::tab_style(
-        style = list(
-            gt::cell_borders(sides = "bottom"),
-            gt::cell_text(
-                align = "left",
-                stretch = "semi-expanded",
-                whitespace = "break-spaces"
-            )
-        ),
-        locations = gt::cells_body(gt::everything())
-    ) |>
-    gt::tab_style(
-        style = list(gt::cell_borders(sides = c("bottom",
-                                                "top"))),
-        locations = gt::cells_column_labels(gt::everything())
-    ) |>
-    gt::tab_options(quarto.use_bootstrap = TRUE,
-                    column_labels.font.weight = "bold",
-                    table.background.color = "transparent",
-                    table.font.color = "SeaShell",
-                    row.striping.background_color = "gray10",
-                    row.striping.include_table_body = TRUE)
-
-```
-::::::::
-:::::::::
-::::::::::
-
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
-:::::::::: {.panel-tabset .shadow-lg}
-## Duplicates View
-
-```{r}
-#| label: gt table of duplicates view
-#| code-summary: gt table of duplicates view
-#| echo: false
-#| title: Duplicates Table View
 gtDupes
 ```
 
-## Unduplicated View
+### Unduplicated View
 
 ```{r}
 #| label: unduplicatedGT
-#| code-summary: gt table of the now unduplicated obs
-#| title: View of Un-duplicated Table
-#| echo: false
+
 
 undupedTable |>
     dplyr::collect() |>
@@ -445,12 +367,11 @@ undupedTable |>
         )
 ```
 
-## Verify Dupeless
+### Verify Dupeless
 
 ```{r}
 #| label: output_dupelessPath
-#| echo: false
-#| title: Verify Dupeless DB Path
+
 dplyr::tbl(dbconn,
            dupelessPath) |>
     head() |>
@@ -460,10 +381,13 @@ dplyr::tbl(dbconn,
         subtitle = "Top 10 rows from the database table"
     ) |>
     gt::tab_style(
-        gt::cell_borders(sides = "all",
-                         color = "gray10"),
-    locations =
-        gt::cells_column_labels(columns = gt::everything())) |>
+        gt::cell_borders(sides = c("left", "right"),
+                         color = "gray20",
+                         weight = gt::px(1)),
+    locations = list(
+        gt::cells_body(columns = gt::everything())
+        )
+    ) |>
     gt::tab_options(
         table.background.color = "transparent",
         table.font.color = "SeaShell",
@@ -471,18 +395,62 @@ dplyr::tbl(dbconn,
         row.striping.include_table_body = TRUE,
         table_body.hlines.color = "gray20",
         table_body.vlines.color = "gray20",
-        table.font.size = gt::pct(75)
-    ) |>
-    gt::opt_table_lines()
-    
+        table.font.size = gt::pct(75),
+        #column_labels.border.lr.color = "gray20"
+    )
 ```
 
-## Summary of Processsing
+### Summary of Processsing
 
 ```{r}
 #| label: output_summaryProcessTable
-#| title: Summary of Processing Table
-#| echo: false
+
+# To see the history of obs in our dataset.
+summaryProcessTable <- tidyr::tribble(
+    ~ "Observations",
+    ~ "Counts",
+    "Original   ",
+    original_nobs,
+    "Processed   ",
+    count_incorrectDists,
+    "Duplicates   ",
+    (count_incorrectDists - count_correctDists),
+    "Total Corrected   ",
+    count_correctDists ) |>
+    gt::gt(rownames_to_stub = FALSE) |>
+    gt::tab_header(title = "Tallying Observations") |>
+    gt::tab_footnote(
+        footnote = gt::md("Row counts throughout the cleaning steps."),
+        locations = gt::cells_column_labels(columns = Counts)
+    ) |>
+    gt::tab_style(
+        style = list(
+            gt::cell_borders(sides = "bottom"),
+            gt::cell_text(
+                align = "left",
+                stretch = "semi-expanded",
+                whitespace = "break-spaces"
+            )
+        ),
+        locations = gt::cells_body(gt::everything())
+    ) |>
+    gt::tab_style(
+        gt::cell_text(
+            align = "center",
+            stretch = "semi-expanded",
+            whitespace = "break-spaces"),
+        locations = list(
+            gt::cells_title(groups = c("title", "subtitle")),
+            gt::cells_column_labels(gt::everything())
+            )
+        ) |>
+    gt::tab_options(quarto.use_bootstrap = TRUE,
+                    column_labels.font.weight = "bold",
+                    table.background.color = "transparent",
+                    table.font.color = "SeaShell",
+                    row.striping.background_color = "gray10",
+                    row.striping.include_table_body = TRUE)
+
 summaryProcessTable
 ```
 ::::::::::
@@ -574,15 +542,6 @@ if (duckdb::dbExistsTable(dbconn,
 :::::::::
 ::::::::::
 
-
-```{r}
-#| echo: false
-# To verify the new filtered table exists.
-duckdb::dbListTables(dbconn)
-```
-
-
-
 :::::::::::: flex-row-tainer
 ::::::::::: flex-col-tainer
 :::::::::: p
@@ -590,14 +549,10 @@ duckdb::dbListTables(dbconn)
 
 Now we're going to create frequency tables and add those to the database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables. By generating frequency tables, one can quickly glean insights from the data.
 ::::::::::
-
 :::::::::::
 ::::::::::::
-
-
 :::::::::::: flex-row-tainer
 ::::::::::: flex-col-tainer
-## Duplicates View
 :::::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
@@ -619,9 +574,10 @@ Stepping Through the Code
 ::::::::: offcanvas-body
 :::::::: flex-code
 ```{r}
-#| label: membershipFrequency_writeTbl
+#| label: all_frequencyWrites
+#| code-summary: Writing frequency tables to DuckDB.
 
-
+# For the membership frequency
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -634,12 +590,7 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE,
                          check_from = FALSE)
 
-```
-
-```{r}
-#| label: Rideable_types
-#| code-summary: This tells us that there are nearly twice as many trips taken with non-electric bikes as electric bikes. There are differences in cost for casual members, so that might be one determining factor. Also, perhaps the associated health benefits with exercise would help explain higher non-electric bicycle use.
-
+# For the rideable types.
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -652,13 +603,7 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE,
                          check_from = FALSE)
 
-```
-
-```{r}
-#| label: Miles
-#| code-summary: This shows that around 0.3 to 3 miles is the distance traveled on most trips taken. The fact that casual bicycles are used more often perhaps makes a little more sense given that people are not traveling long distances.
-
-# Miles
+# For the miles
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -677,16 +622,9 @@ dplyr::tbl(dbconn,
         conn = dbconn,
         name = "db/freq_miles.db",
         check_from = FALSE,
-        overwrite = TRUE
-    )
+        overwrite = TRUE)
 
-
-```
-
-```{r}
-#| label: MPH
-#| code-summary: The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel.
-
+# For the mph
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -701,12 +639,7 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-```
-
-```{r}
-#| label: Weekday
-#| code-summary: There is a slight reduction in trips taken on Sundays and Mondays. This could be explained by the fact that most trips are taken by annual subscribers, possibly because they are biking to work and such. Much less people will be biking to work on Sundays. Taking 3-day weekends is common in the workplace, where most would likely opt to use up their sick/vacation days on Monday, which might explain the down tick in trips taken on Mondays. Also, those who are working Tuesdays-Saturdays could be taking Sunday and Mondays off.
-
+# For the week days
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -730,12 +663,7 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-```
-
-```{r}
-#| label: Months
-#| code-summary: The monthly ridership does differ substantially between certain months. Summer months in Chicago is when we see the largest increase in ridership. Spring and Fall seasons lie in between Summer and Winter in terms of scale of trips taken.
-
+# For the months.
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -756,12 +684,7 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-```
-
-```{r}
-#| label: tripTime
-#| code-summary: The time riders are usually spending on these trips lies in between 5-15 minutes.
-
+# For the trip times.
 dplyr::tbl(dbconn,
            tblPath_fltrd) |>
     dplyr::mutate(trip_time = round(trip_time,
@@ -775,11 +698,7 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-```
-
-```{r}
-#| label: freq_startNames
-
+# For the start station names
 dplyr::tbl(dbconn,
            tblPath_fltrd) |>
     dplyr::select(start_station_name) |>
@@ -793,11 +712,7 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE)
 
 
-```
-
-```{r}
-#| label: freq_PairNames
-
+# For the station name pairs.
 dplyr::tbl(dbconn,
            tblPath_fltrd) |>
     dplyr::select(start_station_name,
@@ -811,9 +726,8 @@ dplyr::tbl(dbconn,
                          name = "db/freq_pairStations.db",
                          check_from = FALSE,
                          overwrite = TRUE)
-
-
 ```
+
 ::::::::::::
 ::::::::::::::
 :::::::::::::::
@@ -821,13 +735,13 @@ dplyr::tbl(dbconn,
 
 :::::::::::: flex-row-tainer
 ::::::::::: flex-col-tainer
-:::::::::: {.panel-tabset .shadow-lg}
+:::::::::: {.panel-tabset .shadow-sm}
 
-# Memberships
+### Memberships
 
 ::::: {.article}
 
-## Memberships
+#### MEMBERSHIPS
 
 ::: p
 There are nearly twice as many trips taken by annual subscribers than by casual users. Maybe there is a relationship between how often a person uses Divvy Bikes service and whether they make the decision to subscribe to an annual membership plan.
@@ -836,7 +750,6 @@ There are nearly twice as many trips taken by annual subscribers than by casual 
 ::: {.p-3 .align-self-center}
 ```{r}
 #| label: memberFrequency_tblView
-#| echo: false
 
 dplyr::tbl(dbconn,
            "db/freq_member.db") |>
@@ -851,15 +764,13 @@ dplyr::tbl(dbconn,
         table_body.vlines.color = "gray20",
         table_body.hlines.color = "gray20",
         column_labels.hidden = TRUE
-    )
+        )
 ```
 :::
 
-::: {.p-2}
+::: {.p-3}
 ```{r}
 #| label: memberFrequency_plotView
-#| echo: false
-
 
 member_freqTbl <- dplyr::tbl(dbconn,
                              "db/freq_member.db") |>
@@ -878,19 +789,11 @@ member_freqTbl |>
     ggplot2::labs(title = "Membership Frequency",
                   subtitle = "Trips taken by annual subscribers vs non-subscribers") +
     ggplot2::theme(
-    rect = ggplot2::element_rect(
-        fill = rgb(0,0,0, alpha = 0),
-        color = rgb(0,0,0, alpha = 0)),
-    legend.background = ggplot2::element_rect(
-        fill = rgb(0,0,0, alpha = 0)),
-    legend.box.background = ggplot2::element_rect(
-        rgb(0,0,0, alpha = 0)),
     panel.background = ggplot2::element_rect(
-        fill = rgb(0,0,0, alpha = 0),
-            #"gray5",
+        fill = "#222222",
         color = NA),
     plot.background = ggplot2::element_rect(
-        fill = "#212529",
+        fill = "#222222",
         color = NA),
     text = ggplot2::element_text(
         color = "seashell"),
@@ -900,24 +803,36 @@ member_freqTbl |>
     axis.title.y = ggplot2::element_text(
         margin = grid::unit(c(5,5,5,5), "mm")),
     axis.text.x = ggplot2::element_text(
-        color = "Snow"),
+        color = "Snow",
+        margin = grid::unit(c(1,1,1,1), "mm")),
     axis.text.y = ggplot2::element_text(
-        color = "Snow")
-    #panel.ontop = TRUE
-    
+        color = "Snow",
+        margin = grid::unit(c(2,2,2,2), "mm")),
+    axis.ticks = ggplot2::element_line(
+        color = "LavenderBlush"),
+    axis.ticks.y = ggplot2::element_blank(),
+    panel.grid.major.y = ggplot2::element_line(
+        color = "grey30")
     )
-
 ```
 :::
 ::::
-
 :::::
-::::::
-:::::::
-::::::::
 
+### Cycle Types
+
+::::: {.article}
+
+#### CYCLE TYPES
+
+::: p
+There are nearly twice as many trips taken with non-electric bikes as electric bikes. Perhaps, the associated health benefits with exercise would help explain higher non-electric bicycle use?
+:::
+:::: {.d-flex .flex-row}
+::: {.p-3 .align-self-center}
 ```{r}
-#| echo: false
+#| label: Bicycle Types Frequency
+
 
 dplyr::tbl(dbconn,
            "db/freq_rTypes.db") |>
@@ -932,52 +847,74 @@ dplyr::tbl(dbconn,
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
             column_labels.hidden = TRUE
-        )
+            )
+```
+:::
 
-dplyr::tbl(dbconn,
-           "db/freq_miles.db") |>
-    dplyr::arrange(desc(n)) |>
-    head(n = 10) |>
-    gt::gt() |>
-        gt::tab_header(
-            title = "Trip Distance Frequency",
-            subtitle = "Distance is measured in miles"
-        ) |>
-        gt::tab_options(
-            table.background.color = 'transparent',
-            table.font.color = "SeaShell",
-            table_body.vlines.color = "gray20",
-            table_body.hlines.color = "gray20"
-        )
+::: {.p-3}
 
-dplyr::tbl(dbconn,
-           "db/freq_mph.db") |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Mean Speed Frequency",
-        subtitle = "Calculated average speed over the duration of the trip") |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE
+```{r}
+#| label: cycletypes_plotView
+
+ridetype_freqTbl <- dplyr::tbl(dbconn,
+                             "db/freq_rTypes.db") |>
+    dplyr::collect()
+
+ridetype_freqTbl |>
+    ggplot2::ggplot(
+        mapping = ggplot2::aes(
+            x = rideable_type,
+            y = n,
+            fill = n
+            )
+        ) +
+    ggplot2::geom_col(show.legend = FALSE) +
+    ggplot2::labs(title = "Cycle Type Frequency",
+                  subtitle = "Trips taken per cycle type") +
+    ggplot2::theme(
+    panel.background = ggplot2::element_rect(
+        fill = rgb(0,0,0, alpha = 0),
+        color = NA),
+    plot.background = ggplot2::element_rect(
+        fill = "#222222",
+        color = NA),
+    text = ggplot2::element_text(
+        color = "seashell"),
+    panel.grid = ggplot2::element_blank(),
+    axis.title.x = ggplot2::element_text(
+        margin = grid::unit(c(5,5,5,5), "mm")),
+    axis.title.y = ggplot2::element_text(
+        margin = grid::unit(c(5,5,5,5), "mm")),
+    axis.text.x = ggplot2::element_text(
+        color = "Snow",
+        margin = grid::unit(c(1,1,1,1), "mm")),
+    axis.text.y = ggplot2::element_text(
+        color = "Snow",
+        margin = grid::unit(c(2,2,2,2), "mm")),
+    axis.ticks = ggplot2::element_line(
+        color = "LavenderBlush"),
+    axis.ticks.y = ggplot2::element_blank(),
+    panel.grid.major.y = ggplot2::element_line(
+        color = "grey30")
     )
+```
+:::
+::::
+:::::
 
-dplyr::tbl(dbconn,
-           "db/freq_wkday.db") |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Weekday Trip Frequency",
-        subtitle = "Tallies trips taken by the day of the week") |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE
-    )
+### Months
 
+::::: {.article }
+
+#### MONTHS
+
+:::: {.p}
+Trips by month does differ substantially between certain months. late Spring , Summer, to early Fall months in Chicago is when we see the largest increase in ridership. Most likely the ambient temperature is a major contributor for the seasonal patterns in trips taken. 
+::::
+:::: {.d-flex }
+:::{.p-3 .align-self-center}
+```{r}
+#| label: monthfreq_tblView
 
 dplyr::tbl(dbconn,
            "db/freq_month.db") |>
@@ -992,58 +929,31 @@ dplyr::tbl(dbconn,
         table_body.hlines.color = "gray20",
         column_labels.hidden = TRUE
     )
-
-
-dplyr::tbl(dbconn,
-           "db/freq_tripTime.db") |>
-    dplyr::collect() |>
-    dplyr::arrange(desc(n)) |>
-    head(n = 20) |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Trip Duration Frequency",
-        subtitle = "Tallies the duration of time people rent cycles for") |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE
-    )
 ```
-
-
-
-
+:::
+::: {.p-3}
 ```{r}
-#| label: Miles_plot
-#| echo: false
 
-milesTable <- dplyr::tbl(dbconn,
-           "db/freq_miles.db") |>
-    dplyr::collect() |>
-    dplyr::mutate(n = n/1000) |>
-    dplyr::rename("Trips (in thousands)" = n,
-                  "Miles" = miles)
-
-milesPlot <- milesTable |>
+monthlyTable <- dplyr::tbl(dbconn,
+           "db/freq_month.db") |>
+    dplyr::collect()
+    
+monthlyTable |>
     ggplot2::ggplot(
-        mapping = ggplot2::aes(x = Miles,
-                               y = `Trips (in thousands)`)) +
-    ggplot2::geom_count(colour = "seashell",
-                        show.legend = FALSE) +
-    ggplot2::scale_size_area() +
-    ggplot2::labs(title = "Trip Distance Frequency",
-                  subtitle = "Measured in miles") +
+    mapping = ggplot2::aes(
+        x = months,
+        y = n,
+        fill = n)) +
+    ggplot2::geom_col(show.legend = FALSE) +
+    ggplot2::labs(title = "Monthly Trip Frequency",
+                  subtitle = "A total count of trips taken by month") +
     ggplot2::theme(
         panel.background = ggplot2::element_rect(
             fill = rgb(0,0,0, alpha = 0),
-                #"gray5",
             color = NA),
         plot.background = ggplot2::element_rect(
-            fill = 'grey5',
+            fill = '#222222',
             color = NA),
-        #plot.margin = grid::unit(c(10,10,10,10), "mm"),
         text = ggplot2::element_text(
             color = "seashell"),
         panel.grid = ggplot2::element_blank(),
@@ -1051,14 +961,48 @@ milesPlot <- milesTable |>
             margin = grid::unit(c(5,5,5,5), "mm")),
         axis.title.y = ggplot2::element_text(
             margin = grid::unit(c(5,5,5,5), "mm"))
-        )
-
-milesPlot
+    )
 ```
+:::
+::::
+:::::
 
+### Day of Week 
+
+::::: {.article }
+
+#### DAY OF WEEK
+
+:::: {.p}
+There is a slight reduction in trips taken on Sundays and Mondays. This could be explained by the fact that most trips are taken by annual subscribers, possibly because they are commuting to work and such. So, much less people will be biking to work on Sundays. Taking 3-day weekends is common in the workplace, where most would likely opt to use up their sick/vacation days on Monday. That might explain the down tick in trips taken on Mondays. Also, those who are working Tuesdays-Saturdays could be taking Sunday and Mondays off.
+::::
+
+:::: {.d-flex }
+
+:::{.p-3 .align-self-center}
+```{r}
+#| label: freqwkday_tblView
+
+
+dplyr::tbl(dbconn,
+           "db/freq_wkday.db") |>
+    gt::gt() |>
+    gt::tab_header(
+        title = "Weekday Trip Frequency",
+        subtitle = "Tallies trips taken by the day of the week") |>
+    gt::tab_options(
+        table.background.color = 'transparent',
+        table.font.color = "SeaShell",
+        table_body.vlines.color = "gray20",
+        table_body.hlines.color = "gray20",
+        column_labels.hidden = TRUE
+        )
+```
+:::
+
+::: {.p-3}
 ```{r}
 #| label: Weekday Plot
-#| echo: false
 
 weekdayTable <- dplyr::tbl(dbconn,
            "db/freq_wkday.db") |>
@@ -1082,7 +1026,7 @@ weekdayPlot <- weekdayTable |>
             #"gray5",
         color = NA),
     plot.background = ggplot2::element_rect(
-        fill = 'grey5',
+        fill = '#222222',
         color = NA),
     #plot.margin = grid::unit(c(10,10,10,10), "mm"),
     text = ggplot2::element_text(
@@ -1096,10 +1040,123 @@ weekdayPlot <- weekdayTable |>
 
 weekdayPlot
 ```
+:::
+::::
+:::::
 
+### Miles
+
+::::: {.article }
+
+#### MILES
+
+:::: {.p}
+This shows that around 0.3 to 3 miles is the distance traveled on most trips taken. The fact that casual bicycles are used more often perhaps makes a little more sense considering that people are not traveling long distances.
+::::
+
+:::: {.d-flex }
+
+:::{.p-3 .align-self-center}
+```{r}
+#| label: freqMiles_tblView
+
+
+dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 10) |>
+    gt::gt() |>
+        gt::tab_header(
+            title = "Trip Distance Frequency",
+            subtitle = "Distance is measured in miles"
+        ) |>
+        gt::tab_options(
+            table.background.color = 'transparent',
+            table.font.color = "SeaShell",
+            table_body.vlines.color = "gray20",
+            table_body.hlines.color = "gray20"
+        )
+```
+:::
+
+::: {.p-3}
+```{r}
+#| label: Miles_plot
+
+milesTable <- dplyr::tbl(dbconn,
+           "db/freq_miles.db") |>
+    dplyr::collect() |>
+    dplyr::mutate(n = n/1000) |>
+    dplyr::rename("Trips (in thousands)" = n,
+                  "Miles" = miles)
+
+milesPlot <- milesTable |>
+    ggplot2::ggplot(
+        mapping = ggplot2::aes(x = Miles,
+                               y = `Trips (in thousands)`)) +
+    ggplot2::geom_count(colour = "seashell",
+                        show.legend = FALSE) +
+    ggplot2::scale_size_area() +
+    ggplot2::labs(title = "Trip Distance Frequency",
+                  subtitle = "Measured in miles") +
+    ggplot2::theme(
+        panel.background = ggplot2::element_rect(
+            fill = rgb(0,0,0, alpha = 0),
+                #"gray5",
+            color = NA),
+        plot.background = ggplot2::element_rect(
+            fill = '#222222',
+            color = NA),
+        #plot.margin = grid::unit(c(10,10,10,10), "mm"),
+        text = ggplot2::element_text(
+            color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(
+            margin = grid::unit(c(5,5,5,5), "mm")),
+        axis.title.y = ggplot2::element_text(
+            margin = grid::unit(c(5,5,5,5), "mm"))
+        )
+
+milesPlot
+```
+:::
+::::
+:::::
+
+### Mph
+
+::::: {.article }
+
+#### MPH
+
+:::: {.p}
+The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel.
+::::
+
+:::: {.d-flex }
+:::{.p-3 .align-self-center}
+```{r}
+#| label: mphfreq_tblView
+
+dplyr::tbl(dbconn,
+           "db/freq_mph.db") |>
+    gt::gt() |>
+    gt::tab_header(
+        title = "Mean Speed Frequency",
+        subtitle = "Calculated average speed over the duration of the trip") |>
+    gt::tab_options(
+        table.background.color = 'transparent',
+        table.font.color = "SeaShell",
+        table_body.vlines.color = "gray20",
+        table_body.hlines.color = "gray20",
+        column_labels.hidden = TRUE
+        )
+```
+:::
+
+::: {.p-3}
 ```{r}
 #| label: MPH plot
-#| echo: false
 
 mphTable <- dplyr::tbl(dbconn,
            "db/freq_mph.db") |>
@@ -1119,7 +1176,7 @@ mphPlot <- mphTable |>
             fill = rgb(0,0,0, alpha = 0),
             color = NA),
         plot.background = ggplot2::element_rect(
-            fill = 'grey5',
+            fill = '#222222',
             color = NA),
         text = ggplot2::element_text(
             color = "seashell"),
@@ -1127,50 +1184,48 @@ mphPlot <- mphTable |>
         axis.title.x = ggplot2::element_text(
             margin = grid::unit(c(5,5,5,5), "mm")),
         axis.title.y = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm"))
-    )
+            margin = grid::unit(c(5,5,5,5), "mm")))
 
 mphPlot
 ```
+:::
+::::
+:::::
 
+### Trip-Times
+
+::::: {.article }
+
+#### TRIP-TIMES
+
+:::: {.p}
+The time riders are usually spending on these trips lies in between 5-15 minutes.
+::::
+
+:::: {.d-flex }
+
+:::{.p-3 .align-self-center}
 ```{r}
-#| label: Months_plot
-#| echo: false
+#| label: triptimefreq_tblView
 
-monthlyTable <- dplyr::tbl(dbconn,
-           "db/freq_month.db") |>
-    dplyr::collect()
-
-monthlyTable
-    
-monthlyPlot <- monthlyTable |>
-    ggplot2::ggplot(
-    mapping = ggplot2::aes(
-        x = months,
-        y = n,
-        fill = n)) +
-    ggplot2::geom_col(show.legend = FALSE) +
-    ggplot2::labs(title = "Monthly Trip Frequency",
-                  subtitle = "A total count of trips taken by month") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(
-            fill = rgb(0,0,0, alpha = 0),
-            color = NA),
-        plot.background = ggplot2::element_rect(
-            fill = 'grey5',
-            color = NA),
-        text = ggplot2::element_text(
-            color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm")),
-        axis.title.y = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm"))
-    )
-
-monthlyPlot    
+dplyr::tbl(dbconn,
+           "db/freq_tripTime.db") |>
+    dplyr::collect() |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 20) |>
+    gt::gt() |>
+    gt::tab_header(
+        title = "Trip Duration Frequency",
+        subtitle = "Tallies the duration of time people rent cycles for") |>
+    gt::tab_options(
+        table.background.color = 'transparent',
+        table.font.color = "SeaShell",
+        table_body.vlines.color = "gray20",
+        table_body.hlines.color = "gray20",
+        column_labels.hidden = TRUE)
 ```
-
+:::
+::: {.p-3}
 ```{r}
 #| label: tripTime_plot
 #| echo: false
@@ -1178,7 +1233,6 @@ monthlyPlot
 tripTimeTable <- dplyr::tbl(dbconn,
            "db/freq_tripTime.db") |>
     dplyr::collect()
-
 
 tripTimePlot <- tripTimeTable |>
     ggplot2::ggplot(
@@ -1194,7 +1248,7 @@ tripTimePlot <- tripTimeTable |>
             fill = rgb(0,0,0, alpha = 0),
             color = NA),
         plot.background = ggplot2::element_rect(
-            fill = 'grey5',
+            fill = '#222222',
             color = NA),
         text = ggplot2::element_text(
             color = "seashell"),
@@ -1206,17 +1260,22 @@ tripTimePlot <- tripTimeTable |>
     )
 
 tripTimePlot
-  #  plot(main = "Trip-Time Frequencies")
 ```
-
-::: flex-row-tainer
-::: flex-col-tainer
-::: p
-## An Epidemiological View
 :::
+::::
+:::::
+::::::
+:::::::
+::::::::
 
-::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas13" aria-controls="offcanvas"}
+:::::::::::: flex-row-tainer
+::::::::::: flex-col-tainer
+:::::::::: p
+## An Epidemiological View
+::::::::::
+
+:::::::::: {.btn-group role="group" aria-label="third"}
+:::::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas13" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="color: cornflowerblue"></i>
 ```
@@ -1397,7 +1456,8 @@ Plots and Charts
 ::: {.offcanvas-body style="color: black"}
 ::: flex-code
 ::: panel-tabset
-## 1-10
+
+### 1-10
 
 ::: {.p style="color: Black"}
 ```{r}
@@ -1407,7 +1467,7 @@ epiflows::vis_epiflows(ef_test1)
 ```
 :::
 
-## 11-20
+### 11-20
 
 ::: {.p style="color: Black"}
 ```{r}
@@ -1417,7 +1477,7 @@ epiflows::vis_epiflows(ef_test2)
 ```
 :::
 
-## 21-30
+### 21-30
 
 ::: {.p style="color: Black"}
 ```{r}
@@ -1427,7 +1487,7 @@ epiflows::vis_epiflows(ef_test3)
 ```
 :::
 
-## 31-40
+### 31-40
 
 ::: {.p style="color: Black"}
 ```{r}
@@ -1437,7 +1497,7 @@ epiflows::vis_epiflows(ef_test4)
 ```
 :::
 
-## 41-50
+### 41-50
 
 ::: {.p style="color: Black"}
 ```{r}
