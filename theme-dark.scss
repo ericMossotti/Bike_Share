@@ -1,39 +1,26 @@
 /*-- scss:defaults --*/
-$theme: "morph" !default;
+$theme: "darkly" !default;
 
 // Base document colors
-$body-bg: #212529 !default; //212529 181818
+$body-bg: #222 !default; //212529 181818
 $body-color: SeaShell !default;
 $link-color: #FCCB1A !default;
-$btn-border-width: 0px;
-$background-color: #212529 !default;
-$color-bg: #212529 !default;
+$btn-border-width: 0px !default;
+//$background-color: #212529 !default;
+//$color-bg: #212529 !default;
 $headings-color: #FC7307 !default;
-$nav-tabs-link-active-bg: rgb(210, 45, 45) !default;
-$nav-link-hover-color: rgba(255, 26, 26) !default;
+//$nav-tabs-link-active-bg: rgb(210, 45, 45) !default;
+//$nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
+
+a:hover {
+ //   text-shadow: 0 0 5px grey !important;
+}
 
 p {
     max-width: 40vw !important;
 }
 
-.table-tainer {
-  max-width: auto;
-  height: 20%;
-  border: 4px solid yellow;
-  display: flex;
-  flex-direction: row;
-  flex-shrink: 1;
-}
-
-.childTable {
-    display: flex;
-    width: auto;
-    height: 90%;
-    padding: 2%;
-    border: 4px solid black;
-    margin: .5em auto;
-}
 
 .dropdown {
     color: white !important;
@@ -71,16 +58,16 @@ i {
 }
 
 .nav-item {
-    border: none !important;
-    box-shadow: none !important;
+//    border: none !important;
+ //   box-shadow: none !important;
 }
 
 
 
 .panel-tabset, .nav-tabs {
-    background-color: transparent !important; //transparent !important;
-    color: $body-color !important;
-    box-shadow: none !important;
+//    background-color: transparent !important; //transparent !important;
+ //   color: $body-color !important;
+  //  box-shadow: none !important;
 
 }
 
@@ -91,7 +78,7 @@ i {
     max-width: 40vw !important;
 }
 
-.offcanvas{
+.offcanvas {
     background-color: rgba(0,0,0,.5) !important;
 }
 
@@ -127,7 +114,7 @@ i {
 
 pre code {
     color: Orange !important;
-    background-color: rgba(10,0,0,.5) !important;
+    background-color: transparent !important; //rgba(10,0,0,.5)
 }
 
 
@@ -164,10 +151,26 @@ pre code {
     background-color: transparent !important;
 }
 
+.sourceCode {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19) !important;
+    background-color: transparent !important; //rgba(0,0,5,.25)
+    border: none !important;
+
+}
+
+.R, .r {
+    background-color: transparent !important; //rgba(0,0,5,.25)
+    border: none !important;
+    box-shadow: none !important;
+}
+
 //controls the code background in code-fold after dropping down
 .sourceCode, .R, .r {
-    background-color: rgba(0,0,5,.25) !important;
+    background-color: transparent !important; //rgba(0,0,5,.25)
     border: none !important;
+    //border-color: transparent !important;
+    //box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19) !important;
+    //box-shadow: none !important;
 }
 
 
@@ -177,15 +180,17 @@ pre code {
 }
 
 ::marker {
-    color: #ffd108 !important;
+    color: Linen !important; // #ffd108
+    font-synthesis-weight: bold !important;
 }
 
 details>summary {
-    color: #6D9224 !important; //#8A2BE2 // #6D9224
+    color: Linen !important; //#8A2BE2 // #6D9224
     font: 1em "ProFont" !important;
-    background-color: rgba(0, 26, 0, 0.1) !important;
-    text-shadow: 0px 0px 1px #00cc00 !important;
+    background-color: transparent !important;
+    //text-shadow: 0px 0px 1px #00cc00 !important;
     max-width: 25vw !important;
+    margin-left: 10% !important;
 }
 
 
