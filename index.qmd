@@ -460,15 +460,29 @@ summaryProcessTable
 :::::::::::: flex-row-tainer
 ::::::::::: flex-col-tainer
 
+:::p
 By applying distinct() on dupeTable, we see the only distinct value, n, is 2. I conclude that, of the duplicates, each has a minimum and maximum of 1 extra copy. Number of rows in the dupeTable is 36. Because each duplicated observation has one duplicate, n = 2, expected removed obs is 18. The issue is that we need to get rid of not all 36 rows, but just one extra duplicate observation from each. This will result in the expected 18 obs.
+:::
 
-The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect nobs was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed. We can now add the processed table to our database. Might be a good idea to verify the table is where it should be.
-
-::::::::: {.btn .btn-secondary .align-self-center type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas3" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="font-size: 32px; color: cornflowerblue"></i>
+<div class="row">
+
+<div class="col-md-6 col-sm-6">
+<div class="round">
+<article display="inline-block"> 
+<a href="#offcanvas3" data-bs-toggle="offcanvas" aria-controls="offcanvas" shape-outside="
+polygon(10.48px 1.65px, 9.52px 1.35px, 5.52px 14.35px, 6.48px 14.65px)">
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="cornflowerblue" class="bi bi-code-slash" viewBox="0 0 16 16">
+  <path d="M10.478 1.647a.5.5 0 1 0-.956-.294l-4 13a.5.5 0 0 0 .956.294zM4.854 4.146a.5.5 0 0 1 0 .708L1.707 8l3.147 3.146a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0m6.292 0a.5.5 0 0 0 0 .708L14.293 8l-3.147 3.146a.5.5 0 0 0 .708.708l3.5-3.5a.5.5 0 0 0 0-.708l-3.5-3.5a.5.5 0 0 0-.708 0"></path>
+</svg>
+</a>
+</article>
+</div>
+<p>The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect nobs was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed. We can now add the processed table to our database. Might be a good idea to verify the table is where it should be.&emsp;
+</p>
+</div>
+</div>
 ```
-:::::::::
 
 :::::::::::
 ::::::::::::
@@ -778,41 +792,28 @@ member_freqTbl <- dplyr::tbl(dbconn,
 
 
 member_freqTbl |>
-    ggplot2::ggplot(
-        mapping = ggplot2::aes(
-            x = member_casual,
-            y = n,
-            fill = n
-            )
-        ) +
+    ggplot2::ggplot(mapping = ggplot2::aes(x = member_casual,
+                                           y = n,
+                                           fill = n)) +
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Membership Frequency",
                   subtitle = "Trips taken by annual subscribers vs non-subscribers") +
     ggplot2::theme(
-    panel.background = ggplot2::element_rect(
-        fill = "#222222",
-        color = NA),
-    plot.background = ggplot2::element_rect(
-        fill = "#222222",
-        color = NA),
-    text = ggplot2::element_text(
-        color = "seashell"),
-    panel.grid = ggplot2::element_blank(),
-    axis.title.x = ggplot2::element_text(
-        margin = grid::unit(c(5,5,5,5), "mm")),
-    axis.title.y = ggplot2::element_text(
-        margin = grid::unit(c(5,5,5,5), "mm")),
-    axis.text.x = ggplot2::element_text(
-        color = "Snow",
-        margin = grid::unit(c(1,1,1,1), "mm")),
-    axis.text.y = ggplot2::element_text(
-        color = "Snow",
-        margin = grid::unit(c(2,2,2,2), "mm")),
-    axis.ticks = ggplot2::element_line(
-        color = "LavenderBlush"),
-    axis.ticks.y = ggplot2::element_blank(),
-    panel.grid.major.y = ggplot2::element_line(
-        color = "grey30")
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30")
     )
 ```
 :::
@@ -861,41 +862,28 @@ ridetype_freqTbl <- dplyr::tbl(dbconn,
     dplyr::collect()
 
 ridetype_freqTbl |>
-    ggplot2::ggplot(
-        mapping = ggplot2::aes(
-            x = rideable_type,
-            y = n,
-            fill = n
-            )
-        ) +
+    ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type,
+                                           y = n,
+                                           fill = n)) +
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Cycle Type Frequency",
                   subtitle = "Trips taken per cycle type") +
     ggplot2::theme(
-    panel.background = ggplot2::element_rect(
-        fill = rgb(0,0,0, alpha = 0),
-        color = NA),
-    plot.background = ggplot2::element_rect(
-        fill = "#222222",
-        color = NA),
-    text = ggplot2::element_text(
-        color = "seashell"),
-    panel.grid = ggplot2::element_blank(),
-    axis.title.x = ggplot2::element_text(
-        margin = grid::unit(c(5,5,5,5), "mm")),
-    axis.title.y = ggplot2::element_text(
-        margin = grid::unit(c(5,5,5,5), "mm")),
-    axis.text.x = ggplot2::element_text(
-        color = "Snow",
-        margin = grid::unit(c(1,1,1,1), "mm")),
-    axis.text.y = ggplot2::element_text(
-        color = "Snow",
-        margin = grid::unit(c(2,2,2,2), "mm")),
-    axis.ticks = ggplot2::element_line(
-        color = "LavenderBlush"),
-    axis.ticks.y = ggplot2::element_blank(),
-    panel.grid.major.y = ggplot2::element_line(
-        color = "grey30")
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30")
     )
 ```
 :::
@@ -939,28 +927,28 @@ monthlyTable <- dplyr::tbl(dbconn,
     dplyr::collect()
     
 monthlyTable |>
-    ggplot2::ggplot(
-    mapping = ggplot2::aes(
-        x = months,
-        y = n,
-        fill = n)) +
+    ggplot2::ggplot(mapping = ggplot2::aes(x = months,
+                                           y = n,
+                                           fill = n)) +
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Monthly Trip Frequency",
                   subtitle = "A total count of trips taken by month") +
     ggplot2::theme(
-        panel.background = ggplot2::element_rect(
-            fill = rgb(0,0,0, alpha = 0),
-            color = NA),
-        plot.background = ggplot2::element_rect(
-            fill = '#222222',
-            color = NA),
-        text = ggplot2::element_text(
-            color = "seashell"),
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
         panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm")),
-        axis.title.y = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm"))
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30")
     )
 ```
 :::
@@ -1009,33 +997,29 @@ weekdayTable <- dplyr::tbl(dbconn,
     dplyr::collect()
     
 weekdayPlot <- weekdayTable |>
-    ggplot2::ggplot(
-        mapping = ggplot2::aes(
-            x = wkday,
-            y = n,
-            fill = n
-            )
-        ) +
-    ggplot2::coord_cartesian(ylim = c(4*10^5, NA)) +
+    ggplot2::ggplot(mapping = ggplot2::aes(x = wkday,
+                                           y = n,
+                                           fill = n)) +
+    ggplot2::coord_cartesian(ylim = c(4 * 10 ^ 5, NA)) +
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Weekday Trip Frequency",
                   subtitle = "Trips by day of week") +
     ggplot2::theme(
-    panel.background = ggplot2::element_rect(
-        fill = rgb(0,0,0, alpha = 0),
-            #"gray5",
-        color = NA),
-    plot.background = ggplot2::element_rect(
-        fill = '#222222',
-        color = NA),
-    #plot.margin = grid::unit(c(10,10,10,10), "mm"),
-    text = ggplot2::element_text(
-        color = "seashell"),
-    panel.grid = ggplot2::element_blank(),
-    axis.title.x = ggplot2::element_text(
-        margin = grid::unit(c(5,5,5,5), "mm")),
-    axis.title.y = ggplot2::element_text(
-        margin = grid::unit(c(5,5,5,5), "mm"))
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30")
     )
 
 weekdayPlot
@@ -1091,32 +1075,31 @@ milesTable <- dplyr::tbl(dbconn,
                   "Miles" = miles)
 
 milesPlot <- milesTable |>
-    ggplot2::ggplot(
-        mapping = ggplot2::aes(x = Miles,
-                               y = `Trips (in thousands)`)) +
+    ggplot2::ggplot(mapping = ggplot2::aes(x = Miles,
+                                           y = `Trips (in thousands)`)) +
     ggplot2::geom_count(colour = "seashell",
                         show.legend = FALSE) +
     ggplot2::scale_size_area() +
     ggplot2::labs(title = "Trip Distance Frequency",
                   subtitle = "Measured in miles") +
     ggplot2::theme(
-        panel.background = ggplot2::element_rect(
-            fill = rgb(0,0,0, alpha = 0),
-                #"gray5",
-            color = NA),
-        plot.background = ggplot2::element_rect(
-            fill = '#222222',
-            color = NA),
-        #plot.margin = grid::unit(c(10,10,10,10), "mm"),
-        text = ggplot2::element_text(
-            color = "seashell"),
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
         panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm")),
-        axis.title.y = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm"))
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30") 
         )
-
+        
 milesPlot
 ```
 :::
@@ -1158,33 +1141,35 @@ dplyr::tbl(dbconn,
 ```{r}
 #| label: MPH plot
 
+
 mphTable <- dplyr::tbl(dbconn,
-           "db/freq_mph.db") |>
+                       "db/freq_mph.db") |>
     dplyr::collect()
 
 mphPlot <- mphTable |>
-    ggplot2::ggplot(
-        mapping = ggplot2::aes(
-            x = mph,
-            y = n,
-            color = n)) +
+    ggplot2::ggplot(mapping = ggplot2::aes(x = mph,
+                                           y = n,
+                                           color = n)) +
     ggplot2::geom_point(show.legend = FALSE) +
     ggplot2::labs(title = "Mean Speed Frequency",
                   subtitle = "Calculated average speed over the duration of the trip") +
     ggplot2::theme(
-        panel.background = ggplot2::element_rect(
-            fill = rgb(0,0,0, alpha = 0),
-            color = NA),
-        plot.background = ggplot2::element_rect(
-            fill = '#222222',
-            color = NA),
-        text = ggplot2::element_text(
-            color = "seashell"),
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
         panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm")),
-        axis.title.y = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm")))
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30")
+    )
 
 mphPlot
 ```
@@ -1235,32 +1220,33 @@ tripTimeTable <- dplyr::tbl(dbconn,
     dplyr::collect()
 
 tripTimePlot <- tripTimeTable |>
-    ggplot2::ggplot(
-    mapping = ggplot2::aes(
-        x = trip_time,
-        y = n,
-        fill = n)) +
+    ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time,
+                                           y = n,
+                                           fill = n)) +
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Trip Duration Frequency",
                   subtitle = "Tallies the duration of time people rent cycles for") +
     ggplot2::theme(
-        panel.background = ggplot2::element_rect(
-            fill = rgb(0,0,0, alpha = 0),
-            color = NA),
-        plot.background = ggplot2::element_rect(
-            fill = '#222222',
-            color = NA),
-        text = ggplot2::element_text(
-            color = "seashell"),
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
         panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm")),
-        axis.title.y = ggplot2::element_text(
-            margin = grid::unit(c(5,5,5,5), "mm"))
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30")
     )
 
 tripTimePlot
 ```
+
 :::
 ::::
 :::::

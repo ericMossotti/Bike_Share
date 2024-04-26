@@ -13,6 +13,15 @@ $headings-color: #FC7307 !default;
 //$nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
 
+.round {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    float: left !important;
+    shape-outside: circle() !important;
+    background-color: transparent !important;
+}
+
 a:hover {
  //   text-shadow: 0 0 5px grey !important;
 }
