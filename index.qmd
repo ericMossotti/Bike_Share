@@ -8,6 +8,7 @@ source: index.qmd
 abstract-title: "Objective"
 abstract: "Communicate data-driven insights to stakeholders."
 description-meta: "Communicate data-driven insights to stakeholders."
+
 code-links:
     - text: "Project Repo"
       href: repo
@@ -16,16 +17,18 @@ code-copy: hover
 code-overflow: wrap
 code-tools: true
 code-link: true
-# toc: true
-# toc_float: true
-# smooth-scroll: true
+
+toc: true
+#toc_float: true
+
+smooth-scroll: true
 fig-responsive: true
 echo: true
 
-margin-left: 10vw
-margin-right: 5vw
-margin-top: 5vh
-margin-bottom: 5vh
+#margin-left: 10vw
+#margin-right: 5vw
+#margin-top: 5vh
+#margin-bottom: 5vh
 
 #font: merriweather, futura
 ---
@@ -37,22 +40,9 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```
 
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
-
 ## Import and Project Design
 
-:::::::::: {.p-1}
-Data source for this data analysis was obtained from Divvy Data. Thinking ahead with reproducibility in mind, should cover most use cases for tinkering and testing. I have found it helpful to reduce the need to re-download files and re-process all over again if all one needs to do is reconnect to the database that has already been written. [@divvyda]
-
-As a counterpart to the if-else design decision at the top of the project, I've condensed the initial download, import and cleaning steps inside of an R-script. Choosing a persistent DuckDB filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
-::::::::::
-:::::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
-```
-::::::::::
-:::::::::: {#offcanvas1 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+:::::::::: {#offcanvas1 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::::: offcanvas-header
 :::::::: {#offcanvasLabel .h5 .offcanvas-title}
 Stepping Through Code
@@ -116,34 +106,36 @@ dbList <- duckdb::dbListTables(dbconn) |>
         table.font.size = gt::px(13)
     )
 ```
-::::::::
-:::::::::
-::::::::::
-:::::::::::
 
-::: {.p-3 style="margin-left: 10%"}
 ```{r}
 #| label: view_dbList
 #| code-summary: Executes the table view from object created before.
 #| echo: false
 dbList
 ```
+::::::::
+:::::::::
+::::::::::
+
+Data source for this data analysis was obtained from Divvy Data. Thinking ahead with reproducibility in mind, should cover most use cases for tinkering and testing. I have found it helpful to reduce the need to re-download files and re-process all over again if all one needs to do is reconnect to the database that has already been written. [@divvyda]
+
+As a counterpart to the if-else design decision at the top of the project, I've condensed the initial download, import and cleaning steps inside of an R-script. Choosing a persistent DuckDB filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
+
+:::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
+```
 :::
 ::::
 
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
+## Hidden Duplicates?
 
-## Hidden Duplicate Observations?
-:::::::::: p
 Now to go a little deeper, we can check for duplicates. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique. Of the other columns, it seems that the start_time, end_time, start_station, and end_station, if combined, could show if there are possibly hidden duplicated observations. We started with 5,719,877 observations (obs) for dates spanning January to December, 2023, then removed 1,388,170 incomplete obs.
 
 I assumed that having the same times/dates and stations for two different ride IDs was a mistake. Although, I do not know how that error would happen, I could have assumed one person could check out multiple bikes at once. In that instance, each bike would be assigned a unique ride_id. That, however, has only happened 18 times over a year. Since it's only one copy every time, that also raises a red flag in my mind. I did not notice any other correlations with station_id/name, member_casual, or ride_type for those particular duplicated data.
-::::::::::
-:::::::::::
-::::::::::::
 
-:::::::::: {#offcanvas3 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+:::::::::: {#offcanvas2 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::::: offcanvas-header
 :::::::: {.h5 .offcanvas-title}
 Stepping Through the Code
@@ -267,13 +259,11 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE,
                          check_from = FALSE)
 ```
-
 ::::::::
 :::::::::
 ::::::::::
 
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
+::::::::::: {.column-page}
 :::::::::: {.panel-tabset}
 
 ### Duplicates View
@@ -453,69 +443,45 @@ summaryProcessTable <- tidyr::tribble(
 
 summaryProcessTable
 ```
-::::::::::
-:::::::::::
 ::::::::::::
+:::::::::::::
 
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
-
-:::p
 By applying distinct() on dupeTable, we see the only distinct value, n, is 2. I conclude that, of the duplicates, each has a minimum and maximum of 1 extra copy. Number of rows in the dupeTable is 36. Because each duplicated observation has one duplicate, n = 2, expected removed obs is 18. The issue is that we need to get rid of not all 36 rows, but just one extra duplicate observation from each. This will result in the expected 18 obs.
-:::
 
+The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect nobs was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed. We can now add the processed table to our database. Might be a good idea to verify the table is where it should be.
+
+:::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 ```{=html}
-<div class="row">
-
-<div class="col-md-6 col-sm-6">
-<div class="round">
-<article display="inline-block"> 
-<a href="#offcanvas3" data-bs-toggle="offcanvas" aria-controls="offcanvas" shape-outside="
-polygon(10.48px 1.65px, 9.52px 1.35px, 5.52px 14.35px, 6.48px 14.65px)">
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="cornflowerblue" class="bi bi-code-slash" viewBox="0 0 16 16">
-  <path d="M10.478 1.647a.5.5 0 1 0-.956-.294l-4 13a.5.5 0 0 0 .956.294zM4.854 4.146a.5.5 0 0 1 0 .708L1.707 8l3.147 3.146a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0m6.292 0a.5.5 0 0 0 0 .708L14.293 8l-3.147 3.146a.5.5 0 0 0 .708.708l3.5-3.5a.5.5 0 0 0 0-.708l-3.5-3.5a.5.5 0 0 0-.708 0"></path>
-</svg>
-</a>
-</article>
-</div>
-<p>The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect nobs was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed. We can now add the processed table to our database. Might be a good idea to verify the table is where it should be.&emsp;
-</p>
-</div>
-</div>
+<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
 ```
+:::
+::::
 
-:::::::::::
-::::::::::::
-
-::::::::::::: flex-row-tainer
-:::::::::::: flex-col-tainer
 
 ## Outlier Filter
-::::::::::: p
+
 To ensure the conclusions are accurate, outliers should be filtered. Negative and very low trip times might skew trends. The underlying reason for very low trip times is somewhat of an unknown. Perhaps people often change their minds?
 
-
 As in the first part, an if-else code-chunk design was chosen because it makes testing easier. It's not required but is nice-to-have. Removing the nonsensical outliers, on the other hand, is required. This code chunk accomplishes both, regardless if you are just testing and already have the filtered database table or if you still need to create it. A database filtering script was used to make the code chunk easier to follow. We then verify the table does exist now along with all other tables we previously created. So this should have removed outliers from the dataset which don't serve the scope of this analysis or could be erroneous data.
-::::::::::
-:::::::::::
-:::::::::: {.flex-code style="margin-left: 15%; margin-top: 5%"}
+
+::: {.codeDisplayer}
 ```{r}
 #| label: filterScript
 #| code-summary: This would execute if the if-else conditions were met to filter the db/data.db database table
 #| file: "filterDatabase.R"
 #| eval: false 
-#| code-fold: show
-```
-::::::::::
-::::::::::::
 
-::::::::::::: flex-row-tainer
-:::::::::::: flex-col-tainer
-::::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
+```
+:::
+
+:::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
 ```
-:::::::::
+:::
+::::
 
 :::::::: {#offcanvas33 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::: offcanvas-header
@@ -553,29 +519,16 @@ if (duckdb::dbExistsTable(dbconn,
 ::::::
 :::::::
 ::::::::
-:::::::::
-::::::::::
 
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
-:::::::::: p
+
+:::::: {.column-page-inset}
+
 ## Frequency Tables and What They Tell Us
 
 Now we're going to create frequency tables and add those to the database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables. By generating frequency tables, one can quickly glean insights from the data.
-::::::::::
-:::::::::::
-::::::::::::
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
-:::::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
-```
-::::::::
-:::::::::
-::::::::::
 
-:::::::::: {#offcanvas10 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+
+:::::::::: {#offcanvas10 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::::: offcanvas-header
 :::::::: {.h5 .offcanvas-title}
 Stepping Through the Code
@@ -741,14 +694,11 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 ```
+:::::
+::::::
+:::::::
 
-::::::::::::
-::::::::::::::
-:::::::::::::::
 
-
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
 :::::::::: {.panel-tabset .shadow-sm}
 
 ### Memberships
@@ -760,7 +710,7 @@ dplyr::tbl(dbconn,
 ::: p
 There are nearly twice as many trips taken by annual subscribers than by casual users. Maybe there is a relationship between how often a person uses Divvy Bikes service and whether they make the decision to subscribe to an annual membership plan.
 :::
-:::: {.d-flex .flex-row}
+:::: {.d-flex}
 ::: {.p-3 .align-self-center}
 ```{r}
 #| label: memberFrequency_tblView
@@ -798,6 +748,7 @@ member_freqTbl |>
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Membership Frequency",
                   subtitle = "Trips taken by annual subscribers vs non-subscribers") +
+    ggplot2::scale_fill_distiller(palette = "YlOrRd") +
     ggplot2::theme(
         panel.background = ggplot2::element_rect(fill = "#222222",
                                                  color = NA),
@@ -866,6 +817,7 @@ ridetype_freqTbl |>
                                            y = n,
                                            fill = n)) +
     ggplot2::geom_col(show.legend = FALSE) +
+    ggplot2::scale_fill_distiller(palette = "YlOrRd") +
     ggplot2::labs(title = "Cycle Type Frequency",
                   subtitle = "Trips taken per cycle type") +
     ggplot2::theme(
@@ -933,6 +885,7 @@ monthlyTable |>
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Monthly Trip Frequency",
                   subtitle = "A total count of trips taken by month") +
+    ggplot2::scale_fill_distiller(palette = "YlOrRd") +
     ggplot2::theme(
         panel.background = ggplot2::element_rect(fill = "#222222",
                                                  color = NA),
@@ -1004,6 +957,7 @@ weekdayPlot <- weekdayTable |>
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Weekday Trip Frequency",
                   subtitle = "Trips by day of week") +
+    ggplot2::scale_fill_distiller(palette = "YlOrRd") +
     ggplot2::theme(
         panel.background = ggplot2::element_rect(fill = "#222222",
                                                  color = NA),
@@ -1076,10 +1030,13 @@ milesTable <- dplyr::tbl(dbconn,
 
 milesPlot <- milesTable |>
     ggplot2::ggplot(mapping = ggplot2::aes(x = Miles,
-                                           y = `Trips (in thousands)`)) +
-    ggplot2::geom_count(colour = "seashell",
-                        show.legend = FALSE) +
-    ggplot2::scale_size_area() +
+                                           y = `Trips (in thousands)`,
+                                           color = `Trips (in thousands)`)) +
+    ggplot2::geom_point(show.legend = FALSE,
+                        size = 2) +
+    #ggplot2::scale_size_area() +
+    ggplot2::scale_color_distiller(palette = "YlOrRd") +
+
     ggplot2::labs(title = "Trip Distance Frequency",
                   subtitle = "Measured in miles") +
     ggplot2::theme(
@@ -1153,6 +1110,7 @@ mphPlot <- mphTable |>
     ggplot2::geom_point(show.legend = FALSE) +
     ggplot2::labs(title = "Mean Speed Frequency",
                   subtitle = "Calculated average speed over the duration of the trip") +
+    ggplot2::scale_color_distiller(palette = "YlOrRd") +
     ggplot2::theme(
         panel.background = ggplot2::element_rect(fill = "#222222",
                                                  color = NA),
@@ -1226,6 +1184,8 @@ tripTimePlot <- tripTimeTable |>
     ggplot2::geom_col(show.legend = FALSE) +
     ggplot2::labs(title = "Trip Duration Frequency",
                   subtitle = "Tallies the duration of time people rent cycles for") +
+    ggplot2::scale_fill_distiller(palette = "YlOrRd") +
+    ggplot2::xlim(NA, 100) +
     ggplot2::theme(
         panel.background = ggplot2::element_rect(fill = "#222222",
                                                  color = NA),
@@ -1246,39 +1206,35 @@ tripTimePlot <- tripTimeTable |>
 
 tripTimePlot
 ```
-
 :::
 ::::
 :::::
 ::::::
 :::::::
-::::::::
 
-:::::::::::: flex-row-tainer
-::::::::::: flex-col-tainer
-:::::::::: p
-## An Epidemiological View
-::::::::::
-
-:::::::::: {.btn-group role="group" aria-label="third"}
-:::::::::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas13" aria-controls="offcanvas"}
+:::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="color: cornflowerblue"></i>
+<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
 ```
 :::
+::::
 
-::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
-::: {.h5 .offcanvas-title}
+
+## Trip Network
+
+:::::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
+:::: {.h5 .offcanvas-title}
 Stepping Through the Code
-:::
+::::
 
-::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
-:::
-:::
+:::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::
+:::::
 
-::: offcanvas-body
-::: flex-code
+::::: offcanvas-body
+:::: flex-code
 ```{r}
 #| label: createFlows dataframe
 
@@ -1296,6 +1252,8 @@ flowData <- dplyr::tbl(dbconn,
     dplyr::collect() |>
     dplyr::slice_head(n = 50)
 
+flowData50 <- flowData |>
+    dplyr::slice(1:50)
 
 flowData1 <- flowData |>
     dplyr::slice(1:10)
@@ -1358,10 +1316,19 @@ locationData_pivoted <- locationData |>
                                       digits = 0)) |>
 
     dplyr::arrange(trips_toAndfrom)
+
 ```
 
 ```{r}
 #| label: MakeEpiflows
+
+
+
+ef_test50 <- epiflows::make_epiflows(flows = flowData50,
+                                   locations = locationData_pivoted,
+                                   duration_stay = "avg_trip_time",
+                                   num_cases = "trips_toAndfrom")
+
 
 ef_test1 <- epiflows::make_epiflows(flows = flowData1,
                                    locations = locationData_pivoted,
@@ -1388,28 +1355,22 @@ ef_test5 <- epiflows::make_epiflows(flows = flowData5,
                                    duration_stay = "avg_trip_time",
                                    num_cases = "trips_toAndfrom")
 ```
-:::
-:::
-:::
+::::
+:::::
+::::::
 
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas14" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-table" style="color: red;"></i>
-```
-:::
-
-::: {#offcanvas14 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
-::: {.h5 .offcanvas-title}
+:::::: {#offcanvas14 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
+:::: {.h5 .offcanvas-title}
 Tables
-:::
+::::
 
-::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
-:::
-:::
+:::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::
+:::::
 
-::: offcanvas-body
-::: flex-code
+::::: offcanvas-body
+:::: flex-code
 ```{r}
 flowData
 summary(flowData$n)
@@ -1419,29 +1380,22 @@ summary(flowData$n)
 locationData_pivoted |>
     dplyr::arrange(desc(trips_toAndfrom))
 ```
-:::
-:::
-:::
+::::
+:::::
+::::::
 
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas15" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-pie-chart-fill" style="color: green"></i>
+::::: {.column-page}
+:::: {.panel-tabset}
+
+### 1-50
+
+::: {.p style="color: Black"}
+```{r}
+#| label: epiflowViz50
+#| echo: false
+epiflows::vis_epiflows(ef_test50)
 ```
 :::
-
-::: {#offcanvas15 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: 80vw"}
-::: offcanvas-header
-::: {.h5 .offcanvas-title}
-Plots and Charts
-:::
-
-::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
-:::
-:::
-
-::: {.offcanvas-body style="color: black"}
-::: flex-code
-::: panel-tabset
 
 ### 1-10
 
@@ -1492,13 +1446,32 @@ epiflows::vis_epiflows(ef_test4)
 epiflows::vis_epiflows(ef_test5)
 ```
 :::
+::::
+:::::
+
+::::: {.d-flex .justify-content-center}
+:::: {.btn-group role="group" aria-label="third"}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas13" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="color: cornflowerblue"></i>
+```
 :::
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas14" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-table" style="color: red;"></i>
+```
 :::
-:::
-:::
-:::
-:::
-:::
+::::
+:::::
+
+
+
+
+
+
+## Conclusion
+
+There isn't much of a difference between annual subscriber and casual trip behavior other than trip frequency. Annual subs are people who ride more frequently.  Looking into where the main activity is, you can see that they are near stores, schools, and such. 
 
 ```{r}
 #| eval: false
