@@ -23,7 +23,7 @@ format:
         - darkly
         - theme-dark.scss
     toc: false
-    page-layout: custom
+    page-layout: article
     #include-in-header: themeToggle.html
     
 editor: source
