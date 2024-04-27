@@ -14,10 +14,10 @@ $headings-color: #FC7307 !default;
 $btn-close-color: #3366ff !default;
 
 .round {
-    width: 32px !important;
-    height: 32px !important;
+    width: 16px !important;
+    height: 16px !important;
     border-radius: 50% !important;
-    float: left !important;
+    float: right !important;
     shape-outside: circle() !important;
     background-color: transparent !important;
 }
@@ -26,8 +26,9 @@ a:hover {
  //   text-shadow: 0 0 5px grey !important;
 }
 
-p {
-    max-width: 40vw !important;
+p, .p-*, .p {
+   max-width: 45vw !important;
+   
 }
 
 
@@ -134,7 +135,7 @@ pre code {
     margin: 0 !important;
     border: none !important;
     --bs-btn-disabled-opacity: 0.35 !important;
-
+    
 }
 
 
@@ -143,6 +144,10 @@ pre code {
     border: none !important;
     color: rgba(255, 255, 255, 0.75);
     box-shadow: none !important;
+    display: flex !important;
+    justify-content: center !important;
+
+    align-self: center !important;
 }
 
 .flex-col-tainer {
@@ -173,14 +178,6 @@ pre code {
     box-shadow: none !important;
 }
 
-//controls the code background in code-fold after dropping down
-.sourceCode, .R, .r {
-    background-color: transparent !important; //rgba(0,0,5,.25)
-    border: none !important;
-    //border-color: transparent !important;
-    //box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19) !important;
-    //box-shadow: none !important;
-}
 
 
 .cell-code, .cell {
@@ -189,17 +186,18 @@ pre code {
 }
 
 ::marker {
-    color: Linen !important; // #ffd108
+    color: rgb(0, 188, 140) !important; // #ffd108
     font-synthesis-weight: bold !important;
 }
 
 details>summary {
-    color: Linen !important; //#8A2BE2 // #6D9224
+    //color: Linen !important; //#8A2BE2 // #6D9224
     font: 1em "ProFont" !important;
     background-color: transparent !important;
     //text-shadow: 0px 0px 1px #00cc00 !important;
     max-width: 25vw !important;
-    margin-left: 10% !important;
+    //margin-left: 10% !important;
+    color: rgb(52, 152, 219) !important;
 }
 
 
@@ -214,6 +212,18 @@ details>summary {
     background-color: transparent !important;
 }
 
+.codeDisplayer {
+    overflow-y: auto !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #33ccff transparent !important;
+    background-color: transparent !important;
+    max-height: 70vh !important;
+    overflow-x: hidden !important;
+    align-self: center !important;
+    margin-left: 10% !important;
+    max-width: auto !important;
+}
+
 .modal-content{
   background-color: transparent !important;
   margin: .5em !important;
@@ -223,48 +233,3 @@ details>summary {
   border: none !important;
   box-shadow: none !important;
 }
-
-/*
-.btn {
-    --bs-btn-padding-x: 1.5rem;
-    --bs-btn-padding-y: 1rem;
-    --bs-btn-font-family: ;
-    --bs-btn-font-size: 1rem;
-    --bs-btn-font-weight: 600;
-    --bs-btn-line-height: 1.5;
-    --bs-btn-color: white;
-    --bs-btn-bg: transparent;
-    --bs-btn-border-width: 0;
-    --bs-btn-border-color: transparent;
-    --bs-btn-border-radius: 50rem;
-    --bs-btn-hover-border-color: transparent;
-    --bs-btn-box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2), -5px -5px 10px rgba(255, 255, 255, 0.4);
-    --bs-btn-disabled-opacity: 0.65;
-    --bs-btn-focus-box-shadow: 0 0 0 0.25rem rgba(var(--bs-btn-focus-shadow-rgb), .5);
-    display: inline-block;
-    padding: var(--bs-btn-padding-y) var(--bs-btn-padding-x);
-    font-family: var(--bs-btn-font-family);
-    font-size: var(--bs-btn-font-size);
-    font-weight: var(--bs-btn-font-weight);
-    line-height: var(--bs-btn-line-height);
-    color: var(--bs-btn-color);
-    text-align: center;
-    text-decoration: none;
-    -webkit-text-decoration: none;
-    -moz-text-decoration: none;
-    -ms-text-decoration: none;
-    -o-text-decoration: none;
-    vertical-align: middle;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    -o-user-select: none;
-    border: var(--bs-btn-border-width) solid var(--bs-btn-border-color);
-    border-radius: var(--bs-btn-border-radius);
-    background-color: var(--bs-btn-bg);
-    box-shadow: var(--bs-btn-box-shadow);
-    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out
-} 
-*/
