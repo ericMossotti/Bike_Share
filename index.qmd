@@ -1464,7 +1464,131 @@ epiflows::vis_epiflows(ef_test5)
 ::::
 :::::
 
+## Map Test
 
+
+```{r}
+
+allPalette <- colors()
+
+colorfulPal <- purrr::discard(allPalette, 
+                              stringr::str_detect(allPalette,
+                                                  "gr(a|e)y"))
+
+set.seed(239)
+
+n_colors <- 35
+
+randomColors <- sample(colorfulPal,
+                       n_colors)
+```
+
+
+```{r}
+#| eval: false
+
+names50 <- flowData50 |>
+    dplyr::select(from_station,
+                  to_station) |>
+    tidyr::pivot_longer(cols = 1:2,
+                        names_to = NULL,
+                        values_to = "station_names") |>
+    dplyr::distinct()
+
+
+mapData <- dplyr::tbl(dbconn,
+                      tblPath_fltrd,
+                      check_from = FALSE) |>
+    dplyr::select(start_station_name,
+                  start_lat,
+                  start_lng,
+                  end_station_name,
+                  end_lat,
+                  end_lng)
+
+mapData1 <- mapData |>
+    dplyr::collect() |>
+    dplyr::filter(start_station_name %in% names50[[1]],
+                  end_station_name %in% names50[[1]]) |>
+    dplyr::select(start_station_name:start_lng)
+
+mapData2 <- mapData |>
+    dplyr::collect() |>
+    dplyr::filter(start_station_name %in% names50[[1]],
+                  end_station_name %in% names50[[1]]) |>
+    dplyr::select(end_station_name:end_lng)
+
+
+stations_groupMap <- dplyr::bind_rows(mapData1,
+                                  mapData2) |>
+    dplyr::select(start_station_name,
+                  start_lat,
+                  start_lng) |>
+    dplyr::rename("station_names" = start_station_name,
+                  "lat" = start_lat,
+                  "lng" = start_lng) |>
+    dplyr::distinct() |>
+    dplyr::group_by(station_names)
+
+set.seed(113)
+
+sampled_stations <- stations_groupMap |>
+    dplyr::slice_sample(n = 10) |>
+    tidyr::drop_na()
+
+
+sampled_stations |>
+    sf::st_as_sf(coords = c(3:2),
+                 crs = 4326) |>
+    mapview::mapview(zcol = "station_names",
+                     col.regions = randomColors
+                     )
+```
+
+
+
+:::::::::: {.dropdown}
+
+::::::::: {.btn .btn-secondary .dropdown-toggle role="button" data-bs-toggle="dropdown" aria-expanded="false"} 
+Dropdown
+:::::::::
+
+::::::::: {.dropdown-menu}
+
+:::::::: {.dropdown-item href="#"}
+Action
+::::::::
+
+:::::::: {.dropdown-item href="#"}
+Another Action
+::::::::
+
+:::::::: {.dropdown-item href="#"}
+Another Action2
+::::::::
+
+:::::::::
+
+::::::::::
+
+A quick test of the data:
+
+```{r}
+#| eval: false
+
+coordsDF <- mapTest |>
+    dplyr::ungroup() |>
+    dplyr::select(start_lng,
+                  start_lat) |>
+    dplyr::add_count(start_lng,
+                     start_lat) |>
+    dplyr::slice_head(n = 100)
+
+coordsDF |>
+    sf::st_as_sf(coords = c(1:2),
+                 crs = 4326) |>
+    mapview::mapview()
+```
 
 
 
