@@ -18,6 +18,8 @@ code-overflow: wrap
 code-tools: true
 code-link: true
 
+
+toc-expand: true
 toc: true
 #toc_float: true
 
@@ -40,7 +42,15 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```
 
-## Import and Project Design
+:::br
+:::
+
+----
+
+:::br
+:::
+
+# Import and Project Design
 
 :::::::::: {#offcanvas1 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::::: offcanvas-header
@@ -129,7 +139,7 @@ As a counterpart to the if-else design decision at the top of the project, I've 
 :::
 ::::
 
-## Hidden Duplicates?
+# Hidden Duplicates?
 
 Now to go a little deeper, we can check for duplicates. It might not necessarily be the case that each observation (obs) is unique even if all the Rider IDs are, technically, unique. Of the other columns, it seems that the start_time, end_time, start_station, and end_station, if combined, could show if there are possibly hidden duplicated observations. We started with 5,719,877 observations (obs) for dates spanning January to December, 2023, then removed 1,388,170 incomplete obs.
 
@@ -386,7 +396,6 @@ dplyr::tbl(dbconn,
         table_body.hlines.color = "gray20",
         table_body.vlines.color = "gray20",
         table.font.size = gt::pct(75),
-        #column_labels.border.lr.color = "gray20"
     )
 ```
 
@@ -521,12 +530,12 @@ if (duckdb::dbExistsTable(dbconn,
 ::::::::
 
 
-:::::: {.column-page-inset}
+:::::: {.column-body}
 
 ## Frequency Tables and What They Tell Us
 
 Now we're going to create frequency tables and add those to the database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables. By generating frequency tables, one can quickly glean insights from the data.
-
+::::::
 
 :::::::::: {#offcanvas10 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::::: offcanvas-header
@@ -541,7 +550,7 @@ Stepping Through the Code
 ::::::::: offcanvas-body
 :::::::: flex-code
 ```{r}
-#| label: all_frequencyWrites
+#| label: frequencyWrites_totals
 #| code-summary: Writing frequency tables to DuckDB.
 
 # For the membership frequency
@@ -694,24 +703,190 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 ```
+
+
+```{r}
+#| label: frequencyWrites_comparisons
+#| code-summary: Write frequency comparison tables to the database
+
+# For the rideable type comparison
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual,
+                  rideable_type) |>
+    dplyr::group_by(rideable_type,
+                    member_casual) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freqCompare_rType.db",
+                         overwrite = TRUE,
+                         check_from = FALSE)
+
+# For the miles comparison
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual,
+                  miles) |>
+    dplyr::collect() |>
+    dplyr::mutate(miles = dplyr::case_when(
+        miles >= 1 ~ round(miles,
+                           digits = 0),
+        miles < 1 ~ round(signif(miles, 3),
+                          digits = 1)
+    )) |>
+    dplyr::group_by(miles,
+                    member_casual) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(miles) |>
+    duckdb::dbWriteTable(
+        conn = dbconn,
+        name = "db/freqCompare_miles.db",
+        check_from = FALSE,
+        overwrite = TRUE)
+
+# For the mph comparison
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual,
+                  mph) |>
+    dplyr::mutate(mph = round(mph, digits = 0)) |>
+    dplyr::group_by(mph,
+                    member_casual) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    dplyr::arrange(mph) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freqCompare_mph.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+# For the week days  comparison
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual,
+                  started_at) |>
+    dplyr::mutate(wkday = lubridate::wday(started_at)) |>
+    dplyr::group_by(member_casual,
+                    wkday) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(wkday) |>
+    dplyr::collect() |>
+    dplyr::mutate(wkday = c("Sun",
+                            "Mon",
+                            "Tue",
+                            "Wed",
+                            "Thu",
+                            "Fri",
+                            "Sat"),
+                  wkday = forcats::as_factor(wkday),
+                  wkday = forcats::fct_inorder(wkday)) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freqCompare_wkDay.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+# For the months comparison
+dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual,
+                  started_at) |>
+    dplyr::mutate(months = lubridate::month(started_at,
+                                            label = FALSE,
+                                            abbr = TRUE)) |>
+    dplyr::group_by(member_casual,
+                    months) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    dplyr::arrange(months) |>
+    dplyr::mutate(months = c(month.abb),
+                  months = forcats::as_factor(months),
+                  months = forcats::fct_inorder(months)) |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freqCompare_month.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+
+# For the trip times comparison
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
+    dplyr::select(member_casual,
+                  trip_time) |>
+    dplyr::mutate(trip_time = round(trip_time,
+                                    digits = 0)) |>
+    dplyr::group_by(member_casual,
+                    trip_time) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(trip_time,
+                   member_casual) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freqCompare_tripTime.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+# For the start station names comparison
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
+    dplyr::select(member_casual,
+                  start_station_name) |>
+    dplyr::group_by(member_casual,
+                    start_station_name) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(start_station_name,
+                   member_casual) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freqCompare_startNames.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+# For the station name pairs comparison
+dplyr::tbl(dbconn,
+           tblPath_fltrd) |>
+    dplyr::select(member_casual,
+                  start_station_name,
+                  end_station_name) |>
+    dplyr::group_by(start_station_name,
+                    end_station_name,
+                    member_casual) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::arrange(start_station_name,
+                   end_station_name,
+                   member_casual) |>
+    dplyr::collect() |>
+    duckdb::dbWriteTable(conn = dbconn,
+                         name = "db/freqCompare_pairStations.db",
+                         check_from = FALSE,
+                         overwrite = TRUE)
+
+```
 :::::
 ::::::
 :::::::
 
-
+::::::::::: {.d-flex .justify-content-center}
+::::::::::: {.column-screen}
 :::::::::: {.panel-tabset .shadow-sm}
 
 ### Memberships
 
 ::::: {.article}
 
-#### MEMBERSHIPS
+#### Membership Frequency
 
-::: p
+::: {.p}
 There are nearly twice as many trips taken by annual subscribers than by casual users. Maybe there is a relationship between how often a person uses Divvy Bikes service and whether they make the decision to subscribe to an annual membership plan.
 :::
-:::: {.d-flex}
-::: {.p-3 .align-self-center}
+
+:::: {.d-flex .align-content-stretch}
+::: {.p-3}
 ```{r}
 #| label: memberFrequency_tblView
 
@@ -727,11 +902,9 @@ dplyr::tbl(dbconn,
         table.font.color = "SeaShell",
         table_body.vlines.color = "gray20",
         table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE
-        )
+        column_labels.hidden = TRUE)
 ```
 :::
-
 ::: {.p-3}
 ```{r}
 #| label: memberFrequency_plotView
@@ -774,16 +947,37 @@ member_freqTbl |>
 ### Cycle Types
 
 ::::: {.article}
+:::: section
 
-#### CYCLE TYPES
+::::{.d-flex .align-content-stretch}
 
-::: p
+:::{.p-1}
+* #### Contents
+    + [Count](#total_types_freq)
+    + [Group Count](#group_types_freq)
+
+:::
+
+:::{.divBox}
+:::
+
+::: {.p-1 .align-self-center}
 There are nearly twice as many trips taken with non-electric bikes as electric bikes. Perhaps, the associated health benefits with exercise would help explain higher non-electric bicycle use?
 :::
-:::: {.d-flex .flex-row}
-::: {.p-3 .align-self-center}
+::::
+::::
+
+:::br 
+:::
+
+----
+
+##### Total Frequency {#total_types_freq}
+
+:::: {.d-flex .align-content-stretch}
+::: {.p-3}
 ```{r}
-#| label: Bicycle Types Frequency
+#| label: rtypes_tbl
 
 
 dplyr::tbl(dbconn,
@@ -798,13 +992,10 @@ dplyr::tbl(dbconn,
             table.font.color = "SeaShell",
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
-            column_labels.hidden = TRUE
-            )
+            column_labels.hidden = TRUE)
 ```
 :::
-
 ::: {.p-3}
-
 ```{r}
 #| label: cycletypes_plotView
 
@@ -840,19 +1031,87 @@ ridetype_freqTbl |>
 ```
 :::
 ::::
+
+----
+
+##### Group Frequency {#group_types_freq}
+
+:::: {.d-flex .align-content-stretch}
+::: {.p-3}
+```{r}
+#| label: bikeTypes_compare
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_rType.db") |>
+     gt::gt(groupname_col = "rideable_type",
+            row_group_as_column = TRUE) |>
+        gt::tab_header(
+            title = "Bicycle Type to Membership Frequency",
+            subtitle = "Grouped by sub. status"
+        ) |>
+        gt::tab_options(
+            table.background.color = 'transparent',
+            table.font.color = "SeaShell",
+            table_body.vlines.color = "gray20",
+            table_body.hlines.color = "gray20",
+            column_labels.hidden = TRUE)
+```
+:::
+::: {.p-3}
+```{r}
+dplyr::tbl(dbconn,
+           "db/freqCompare_rType.db") |>
+    ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type,
+                                           y = n,
+                                           fill = member_casual)) +
+    ggplot2::geom_col(show.legend = TRUE,
+                      position = 'dodge') +
+    ggplot2::scale_fill_brewer(palette = "Paired",
+                               name = "Subscriber Status") +
+    ggplot2::labs(title = "Cycle Type to Membership Frequency",
+                  subtitle = "Compare trips taken by cycle type to membership status") +
+    ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+        legend.background = ggplot2::element_rect(fill = "#222222")
+        )
+```
+:::
+::::
 :::::
 
-### Months
+### Month
 
 ::::: {.article }
 
-#### MONTHS
+* #### Contents
+    + [Total Frequency](#total_month_freq)
+    + [Group Frequency](#group_month_freq)
 
 :::: {.p}
 Trips by month does differ substantially between certain months. late Spring , Summer, to early Fall months in Chicago is when we see the largest increase in ridership. Most likely the ambient temperature is a major contributor for the seasonal patterns in trips taken. 
 ::::
-:::: {.d-flex }
-:::{.p-3 .align-self-center}
+
+----
+
+##### Total Frequency {#total_month_freq}
+
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
 ```{r}
 #| label: monthfreq_tblView
 
@@ -906,21 +1165,89 @@ monthlyTable |>
 ```
 :::
 ::::
+
+----
+
+##### Group Frequency {#group_month_frequency}
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
+```{r}
+#| label: freqCompare_months Table
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_month.db") |>
+     gt::gt(groupname_col = "months",
+            row_group_as_column = TRUE) |>
+        gt::tab_header(
+            title = "Month to Membership Frequency",
+            subtitle = "Grouped by sub status"
+        ) |>
+        gt::tab_options(
+            table.background.color = 'transparent',
+            table.font.color = "SeaShell",
+            table_body.vlines.color = "gray20",
+            table_body.hlines.color = "gray20",
+            column_labels.hidden = TRUE)
+```
+:::
+::: {.p-3}
+```{r}
+#| label: freqCompare_months Plot
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_month.db") |>
+    ggplot2::ggplot(mapping = ggplot2::aes(x = months,
+                                           y = n,
+                                           fill = member_casual)) +
+    ggplot2::geom_col(show.legend = TRUE,
+                      position = 'dodge') +
+    ggplot2::scale_fill_brewer(palette = "Paired",
+                               name = "Subscriber Status") +
+    ggplot2::labs( title = "Month to Membership Frequency",
+            subtitle = "Grouped by sub status") +
+    ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+        legend.background = ggplot2::element_rect(fill = "#222222")
+        )
+
+```
+:::
+::::
 :::::
 
 ### Day of Week 
 
 ::::: {.article }
 
-#### DAY OF WEEK
+* #### Contents
+    + [Total Frequency](#total_day_freq)
+    + [Group Frequency](#group_day_freq)
 
 :::: {.p}
 There is a slight reduction in trips taken on Sundays and Mondays. This could be explained by the fact that most trips are taken by annual subscribers, possibly because they are commuting to work and such. So, much less people will be biking to work on Sundays. Taking 3-day weekends is common in the workplace, where most would likely opt to use up their sick/vacation days on Monday. That might explain the down tick in trips taken on Mondays. Also, those who are working Tuesdays-Saturdays could be taking Sunday and Mondays off.
 ::::
 
-:::: {.d-flex }
+----
 
-:::{.p-3 .align-self-center}
+##### Total Frequency {#total_day_freq}
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
 ```{r}
 #| label: freqwkday_tblView
 
@@ -980,24 +1307,90 @@ weekdayPlot
 ```
 :::
 ::::
+
+----
+
+##### Group Frequency {#group_day_freq}
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
+```{r}
+#| label: wkdayCompare_tbl
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_wkday.db") |>
+     gt::gt(groupname_col = "wkday",
+            row_group_as_column = TRUE) |>
+        gt::tab_header(
+            title = "Day to Membership Frequency",
+            subtitle = "Grouped by sub status"
+        ) |>
+        gt::tab_options(
+            table.background.color = 'transparent',
+            table.font.color = "SeaShell",
+            table_body.vlines.color = "gray20",
+            table_body.hlines.color = "gray20",
+            column_labels.hidden = TRUE)
+```
+:::
+::: {.p-3}
+```{r}
+#| label: wkdayCompare_plot
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_wkday.db") |>
+    ggplot2::ggplot(mapping = ggplot2::aes(x = wkday,
+                                           y = n,
+                                           fill = member_casual)) +
+    ggplot2::geom_col(show.legend = TRUE,
+                      position = 'dodge') +
+    ggplot2::scale_fill_brewer(palette = "Paired",
+                               name = "Subscriber Status") +
+    ggplot2::labs( title = "Weekday to Membership Frequency",
+            subtitle = "Grouped by sub status") +
+    ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+        legend.background = ggplot2::element_rect(fill = "#222222")
+        )
+```
+:::
+::::
 :::::
 
 ### Miles
 
 ::::: {.article }
 
-#### MILES
+* #### Contents
+    + [Total Frequency](#total_miles_freq)
+    + [Grouped Frequency](#group_miles_freq)
 
 :::: {.p}
 This shows that around 0.3 to 3 miles is the distance traveled on most trips taken. The fact that casual bicycles are used more often perhaps makes a little more sense considering that people are not traveling long distances.
 ::::
 
-:::: {.d-flex }
+----
 
-:::{.p-3 .align-self-center}
+##### Total Frequency {#total_miles_freq}
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
 ```{r}
 #| label: freqMiles_tblView
-
 
 dplyr::tbl(dbconn,
            "db/freq_miles.db") |>
@@ -1016,7 +1409,6 @@ dplyr::tbl(dbconn,
         )
 ```
 :::
-
 ::: {.p-3}
 ```{r}
 #| label: Miles_plot
@@ -1061,20 +1453,87 @@ milesPlot
 ```
 :::
 ::::
+
+----
+
+##### Group Frequency {#group_miles_freq}
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
+```{r}
+dplyr::tbl(dbconn,
+           "db/freqCompare_miles.db") |>
+     gt::gt(groupname_col = "miles",
+            row_group_as_column = TRUE) |>
+        gt::tab_header(
+            title = "Miles to Membership Frequency",
+            subtitle = "Grouped by sub status"
+        ) |>
+        gt::tab_options(
+            table.background.color = 'transparent',
+            table.font.color = "SeaShell",
+            table_body.vlines.color = "gray20",
+            table_body.hlines.color = "gray20",
+            column_labels.hidden = TRUE)
+```
+:::
+::: {.p-3}
+```{r}
+#| label: freq_milesCompare_plot
+
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_miles.db") |>
+    ggplot2::ggplot(mapping = ggplot2::aes(x = miles,
+                                           y = n,
+                                           fill = member_casual)) +
+    ggplot2::geom_area(show.legend = TRUE,
+                      #position = 'dodge'
+                      ) +
+    ggplot2::scale_color_brewer(palette = "Paired",
+                               name = "Subscriber Status") +
+    ggplot2::labs( title = "Miles to Membership Frequency",
+            subtitle = "Grouped by sub status") +
+    ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+        legend.background = ggplot2::element_rect(fill = "#222222")
+        )
+```
+:::
+::::
 :::::
 
 ### Mph
 
 ::::: {.article }
 
-#### MPH
+* #### Contents
+    + [Total Frequency](#total_mph_freq)
+    + [Grouped Frequency](#group_mph_freq)
+
+
+#### Total Frequency {#total_mph_freq}
 
 :::: {.p}
 The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel.
 ::::
 
-:::: {.d-flex }
-:::{.p-3 .align-self-center}
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
 ```{r}
 #| label: mphfreq_tblView
 
@@ -1093,7 +1552,6 @@ dplyr::tbl(dbconn,
         )
 ```
 :::
-
 ::: {.p-3}
 ```{r}
 #| label: MPH plot
@@ -1133,21 +1591,91 @@ mphPlot
 ```
 :::
 ::::
+
+----
+
+#### MPH Frequency by Membership {#group_mph_freq}
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
+```{r}
+#| label: mphCompare_table
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_mph.db") |>
+     gt::gt(groupname_col = "mph",
+            row_group_as_column = TRUE) |>
+        gt::tab_header(
+            title = "Mph to Membership Frequency",
+            subtitle = "Grouped by sub status"
+        ) |>
+        gt::tab_options(
+            table.background.color = 'transparent',
+            table.font.color = "SeaShell",
+            table_body.vlines.color = "gray20",
+            table_body.hlines.color = "gray20",
+            column_labels.hidden = TRUE)
+
+
+```
+:::
+::: {.p-3}
+```{r}
+#| label: mphCompare_plot
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_mph.db") |>
+    ggplot2::ggplot(mapping = ggplot2::aes(x = mph,
+                                           y = n,
+                                           fill = member_casual)) +
+    ggplot2::geom_area(show.legend = TRUE,
+                      #position = 'dodge'
+                      ) +
+    ggplot2::scale_color_brewer(palette = "Paired",
+                               name = "Subscriber Status") +
+    ggplot2::labs( title = "Mph to Membership Frequency",
+            subtitle = "Grouped by sub status") +
+    ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+        legend.background = ggplot2::element_rect(fill = "#222222")
+        )
+```
+:::
+::::
 :::::
 
 ### Trip-Times
 
-::::: {.article }
+::::: {.article}
 
-#### TRIP-TIMES
+* #### Contents
+    + [Total Frequency](#total_tripTime_freq)
+    + [Grouped Frequency](#group_tripTime_freq)
 
 :::: {.p}
-The time riders are usually spending on these trips lies in between 5-15 minutes.
+The time riders are usually spending on these trips lies between 5 to 15 minutes.
 ::::
 
-:::: {.d-flex }
+----
 
-:::{.p-3 .align-self-center}
+#### Total Frequency {#total_tripTime_freq}
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
 ```{r}
 #| label: triptimefreq_tblView
 
@@ -1174,7 +1702,7 @@ dplyr::tbl(dbconn,
 #| echo: false
 
 tripTimeTable <- dplyr::tbl(dbconn,
-           "db/freq_tripTime.db") |>
+                            "db/freq_tripTime.db") |>
     dplyr::collect()
 
 tripTimePlot <- tripTimeTable |>
@@ -1208,9 +1736,77 @@ tripTimePlot
 ```
 :::
 ::::
+
+----
+
+#### Group Frequency {#group_tripTime_freq}
+
+:::: {.d-flex .align-content-stretch}
+:::{.p-3}
+```{r}
+#| label: triptimeCompare_table
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_tripTime.db") |>
+    dplyr::collect() |>
+    dplyr::arrange(desc(n)) |>
+    head(n = 20) |>
+    gt::gt(groupname_col = "trip_time",
+           row_group_as_column = TRUE) |>
+    gt::tab_header(title = "Trip-Time to Membership Frequency",
+                   subtitle = "Grouped by sub status") |>
+    gt::tab_options(
+        table.background.color = 'transparent',
+        table.font.color = "SeaShell",
+        table_body.vlines.color = "gray20",
+        table_body.hlines.color = "gray20",
+        column_labels.hidden = TRUE
+    )
+
+```
+:::
+::: {.p-3}
+```{r}
+#| label: triptimeCompare_plot
+
+dplyr::tbl(dbconn,
+           "db/freqCompare_tripTime.db") |>
+    ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time,
+                                           y = n,
+                                           fill = member_casual)) +
+    ggplot2::geom_area(show.legend = TRUE,
+                      #position = 'dodge'
+                      ) +
+    ggplot2::xlim(NA, 100) +
+    ggplot2::scale_color_brewer(palette = "Paired",
+                               name = "Subscriber Status") +
+    ggplot2::labs( title = "Trip-Time to Membership Frequency",
+            subtitle = "Grouped by sub status") +
+    ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "#222222",
+                                                 color = NA),
+        plot.background = ggplot2::element_rect(fill = "#222222",
+                                                color = NA),
+        text = ggplot2::element_text(color = "seashell"),
+        panel.grid = ggplot2::element_blank(),
+        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+        axis.text.x = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
+        axis.text.y = ggplot2::element_text(color = "Snow",
+                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
+        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+        legend.background = ggplot2::element_rect(fill = "#222222")
+        )
+```
+:::
+::::
 :::::
-::::::
 :::::::
+::::::::
+::::::::
 
 :::: {.d-flex .justify-content-center}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
@@ -1314,15 +1910,12 @@ locationData_pivoted <- locationData |>
                      ) |>
     dplyr::mutate(avg_trip_time = round(avg_trip_time,
                                       digits = 0)) |>
-
     dplyr::arrange(trips_toAndfrom)
 
 ```
 
 ```{r}
 #| label: MakeEpiflows
-
-
 
 ef_test50 <- epiflows::make_epiflows(flows = flowData50,
                                    locations = locationData_pivoted,
@@ -1474,7 +2067,6 @@ allPalette <- colors()
 colorfulPal <- purrr::discard(allPalette, 
                               stringr::str_detect(allPalette,
                                                   "gr(a|e)y"))
-
 set.seed(239)
 
 n_colors <- 35
@@ -1485,7 +2077,7 @@ randomColors <- sample(colorfulPal,
 
 
 ```{r}
-#| eval: false
+#| eval: true
 
 names50 <- flowData50 |>
     dplyr::select(from_station,
@@ -1537,59 +2129,24 @@ sampled_stations <- stations_groupMap |>
     tidyr::drop_na()
 
 
-sampled_stations |>
-    sf::st_as_sf(coords = c(3:2),
-                 crs = 4326) |>
-    mapview::mapview(zcol = "station_names",
-                     col.regions = randomColors
-                     )
+sampled_stations
 ```
 
-
-
-:::::::::: {.dropdown}
-
-::::::::: {.btn .btn-secondary .dropdown-toggle role="button" data-bs-toggle="dropdown" aria-expanded="false"} 
-Dropdown
-:::::::::
-
-::::::::: {.dropdown-menu}
-
-:::::::: {.dropdown-item href="#"}
-Action
-::::::::
-
-:::::::: {.dropdown-item href="#"}
-Another Action
-::::::::
-
-:::::::: {.dropdown-item href="#"}
-Another Action2
-::::::::
-
-:::::::::
-
-::::::::::
-
-A quick test of the data:
 
 ```{r}
-#| eval: false
+#| column: screen-inset
 
-coordsDF <- mapTest |>
-    dplyr::ungroup() |>
-    dplyr::select(start_lng,
-                  start_lat) |>
-    dplyr::add_count(start_lng,
-                     start_lat) |>
-    dplyr::slice_head(n = 100)
-
-coordsDF |>
-    sf::st_as_sf(coords = c(1:2),
-                 crs = 4326) |>
-    mapview::mapview()
+sampled_stations_sf <- sampled_stations |>
+    sf::st_as_sf(coords = c(3:2),
+                 crs = 4326)
+    
+mapview::mapview(
+    x = sampled_stations_sf,
+    zcol = "station_names",
+    col.regions = randomColors,
+    map.types = "OpenStreetMap",
+    legend = TRUE)
 ```
-
 
 
 
