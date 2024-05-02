@@ -13,12 +13,88 @@ $headings-color: #FC7307 !default;
 //$nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
 
-
-p, .p-*, .p {
-   max-width: 45vw !important;
-   
+//img.leaflet-tile {
+ // padding: 0;
+ // margin: 0;
+ // border-radius: 0;
+ // border: none;
+//}
+/*
+.figure {
+    background-color: #222222 !important;
 }
 
+img .img-fluid .figure-img {
+    background-color: #222222 !important;
+}
+
+
+.leaflet-top .leaflet-right {
+    overflow-y: auto !important;
+    max-height: 80vh !important;
+}
+
+.leaflet-container {
+    overflow-y: auto !important;
+    max-height: 90vh !important; 
+}
+
+.leaflet-bottom .leaflet-right {
+    overflow-y: auto !important;
+    max-height: 80vh !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #33ccff transparent !important;
+    background-color: transparent !important;
+
+
+}
+
+.leaflet-control-container {
+   // display: flex !important;
+    //flex-direction: column !important;
+    //flex-wrap: true !important;
+  //  overflow-y: auto !important;
+//    max-height: 80vh !important;
+}
+*/
+
+/*
+.leaflet .info {
+  padding: 2px 4px !important;
+  font: 10px/12px Arial, Helvetica, sans-serif !important; //14px/16px Arial, Helvetica, sans-serif;
+  background: #222222 !important; //white;
+  background: #222222 !important;//rgba(255,255,255,0.8);
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  border-radius: 1px;
+}
+
+.leaflet .legend {
+    line-height: 10px !important;
+    color: SeaShell !important;
+    //overflow-y: auto !important;
+//    max-height: 70vh !important;
+    //scrollbar-width: thin !important;
+    //scrollbar-color: #33ccff transparent !important;
+    background-color: transparent !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: wrap !important;
+    gap: 0px !important;
+}
+*/
+
+.divBox {
+    width: 1% !important;
+    height: auto !important;
+    border-radius: 0px !important;
+    background-color: grey !important;
+    opacity: .25 !important;
+    margin: 2% !important;
+} 
+
+p, .p {
+   max-width: 45vw !important;
+}
 
 .dropdown {
     color: white !important;
@@ -160,13 +236,13 @@ pre code {
 }
 
 details>summary {
-    //color: Linen !important; //#8A2BE2 // #6D9224
-    font: 1em "ProFont" !important;
+    color: Linen !important; //#8A2BE2 // #6D9224
+    font: 1em "Cascadia Mono SemiLight" !important;
     background-color: transparent !important;
     //text-shadow: 0px 0px 1px #00cc00 !important;
     max-width: 25vw !important;
     //margin-left: 10% !important;
-    color: rgb(52, 152, 219) !important;
+    //color: rgb(52, 152, 219) !important;
 }
 
 
