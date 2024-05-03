@@ -2062,17 +2062,6 @@ epiflows::vis_epiflows(ef_test5)
 
 ```{r}
 
-allPalette <- colors()
-
-colorfulPal <- purrr::discard(allPalette, 
-                              stringr::str_detect(allPalette,
-                                                  "gr(a|e)y"))
-set.seed(239)
-
-n_colors <- 35
-
-randomColors <- sample(colorfulPal,
-                       n_colors)
 ```
 
 
@@ -2111,16 +2100,13 @@ mapData2 <- mapData |>
     dplyr::select(end_station_name:end_lng)
 
 
-stations_groupMap <- dplyr::bind_rows(mapData1,
-                                  mapData2) |>
-    dplyr::select(start_station_name,
-                  start_lat,
-                  start_lng) |>
-    dplyr::rename("station_names" = start_station_name,
-                  "lat" = start_lat,
-                  "lng" = start_lng) |>
-    dplyr::distinct() |>
-    dplyr::group_by(station_names)
+stations_groupMap <- dplyr::bind_rows(mapData1, mapData2) |>
+dplyr::select(start_station_name, start_lat, start_lng) |>
+dplyr::rename("station_names" = start_station_name,
+"lat" = start_lat,
+"lng" = start_lng) |>
+dplyr::distinct() |>
+dplyr::group_by(station_names)
 
 set.seed(113)
 
@@ -2128,31 +2114,78 @@ sampled_stations <- stations_groupMap |>
     dplyr::slice_sample(n = 10) |>
     tidyr::drop_na()
 
-
-sampled_stations
 ```
+
+
+
 
 
 ```{r}
 #| column: screen-inset
+#| echo: false
+#| layout-nrow: 2
 
-sampled_stations_sf <- sampled_stations |>
-    sf::st_as_sf(coords = c(3:2),
-                 crs = 4326)
-    
-mapview::mapview(
-    x = sampled_stations_sf,
-    zcol = "station_names",
-    col.regions = randomColors,
-    map.types = "OpenStreetMap",
-    legend = TRUE)
+slicerVector <- list(c(1:9), c(10:18), c(19:27), c(28:34))
+
+source("mapViewer.R")
+
+allPalette <- colors()
+
+colorfulPal <- purrr::discard(allPalette, stringr::str_detect(allPalette, "gr(a|e)y"))
+
+n_colors <- 10
+
+set.seed(240)
+randomColors <- sample(colorfulPal, n_colors)
+mapViewer(slicerVector[[1]])
+
+
+set.seed(241)
+randomColors <- sample(colorfulPal, n_colors)
+mapViewer(slicerVector[[2]])
+
+
+set.seed(242)
+randomColors <- sample(colorfulPal, n_colors)
+mapViewer(slicerVector[[3]])
+
+
+set.seed(243)
+randomColors <- sample(colorfulPal, n_colors)
+mapViewer(slicerVector[[4]])
 ```
+
+
+::: {.callout}
+Note that there are five types of callouts, including:
+`note`, `warning`, `important`, `tip`, and `caution`.
+
+::: {.callout collapse="true"}
+## Expand To Learn About Collapse
+
+This is an example of a 'folded' caution callout that can be expanded by the user. You can use `collapse="true"` to collapse it by default or `collapse="false"` to make a collapsible callout that is expanded by default.
+:::
+
+::: {.callout-caution collapse="true"}
+## Expand To Learn About Collapse
+
+This is an example of a 'folded' caution callout that can be expanded by the user. You can use `collapse="true"` to collapse it by default or `collapse="false"` to make a collapsible callout that is expanded by default.
+:::
+
+
+:::
+
+
+
+
 
 
 
 ## Conclusion
 
-There isn't much of a difference between annual subscriber and casual trip behavior other than trip frequency. Annual subs are people who ride more frequently.  Looking into where the main activity is, you can see that they are near stores, schools, and such. 
+
+
+There isn't much of a difference between annual subscriber and casual trip behavior other than trip frequency. Annual subs are people who ride more frequently.  Looking into where the main activity is, you can see that they are near stores, schools, and such. If the goal is to get more people to ride bicycles instead of drive, the answer might lie outside the scope of this analysis. 
 
 ```{r}
 #| eval: false
