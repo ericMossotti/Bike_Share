@@ -42,13 +42,8 @@ knitr::opts_chunk$set(message = FALSE,
 
 ```
 
-:::br
-:::
 
 ----
-
-:::br
-:::
 
 # Import and Project Design
 
@@ -89,14 +84,15 @@ if(exists("dbconn") == FALSE &&
 
 ```{r}
 #| label: importProcessScript
-#| code-summary: The above would source and execute this script code if the conditions were met.
+#| code-summary: Second, this executes if the right if-else conditions are met. Usually, this would only execute if you have never before executed or have deleted the database. 
 #| file: "import_clean_initial.R"
 #| eval: false 
 ```
 
 ```{r}
-#| label: dbList
-#| code-summary: It would be helpful to verify the tables that were made.
+#| label: tbl-dbList
+#| code-summary: Third, it would now be helpful to verify the tables that were made.
+#| tbl-cap: Database Table List
 
 dbList <- duckdb::dbListTables(dbconn) |>
     data.frame() |>
@@ -115,14 +111,10 @@ dbList <- duckdb::dbListTables(dbconn) |>
         row.striping.include_table_body = TRUE,
         table.font.size = gt::px(13)
     )
-```
 
-```{r}
-#| label: view_dbList
-#| code-summary: Executes the table view from object created before.
-#| echo: false
 dbList
 ```
+
 ::::::::
 :::::::::
 ::::::::::
@@ -157,7 +149,7 @@ Stepping Through the Code
 :::::::: flex-code
 ```{r}
 #| label: duplicates_gt
-#| code-summary: create gt of duplicates for illustration
+#| code-summary: First, creates a table containing the duplicated observations.
 
 # This is a separate table used to analyze the observations 
 #  returned as not distinct (n > 1). 
@@ -183,7 +175,7 @@ dupeTable <- dplyr::tbl(dbconn,
 
 ```{r}
 #| label: duplicateObs count
-#| code-summary: To count distinct duplicates and total obs.
+#| code-summary: Second, records a count of distinct duplicates and total observations.
 
 distinctCopiesCount <- dupeTable |>
     dplyr::distinct(n) |>
@@ -194,7 +186,7 @@ duplicateObs <- length(dupeTable[[1]])
 
 ```{r}
 #| label: undupedTable
-#| code-summary: create table of the duplicated obs
+#| code-summary:  Third, creates a table of the now unduplicated observations we saw before.
 
 # The issue is, we need to get rid of not all of these rows,
 #  but just the extra duplicate observations. 
@@ -213,7 +205,7 @@ undupedTable <- dupeTable |>
 
 ```{r}
 #| label: incorrect distinct obs count
-#| code-summary: count of incorrect obs
+#| code-summary: Fourth, records a count of the incorrect observations.
 
 # Run an incorrect count on how many rows or observations 
 #  there are in the dataset.
@@ -228,7 +220,7 @@ count_incorrectDists <- dplyr::tbl(dbconn,
 
 ```{r}
 #| label: count_correctDists count
-#| code-summary: count of correct obs
+#| code-summary: Fifth, records a count of the correct observations.
 
 # For the correct count of obs
 count_correctDists <- dplyr::tbl(dbconn,
@@ -249,7 +241,7 @@ count_correctDists <- dplyr::tbl(dbconn,
 
 ```{r}
 #| label: 'overwrite file with correct obs'
-#| code-summary: writing dupeless db
+#| code-summary: Sixth, writes the unduplicated data to the database.
 
 dupelessPath <- "db/dupeless.db"
  
@@ -279,7 +271,8 @@ dplyr::tbl(dbconn,
 ### Duplicates View
 
 ```{r}
-#| label: gt table of duplicates view
+#| label: tbl-duplicates
+#| tbl-cap: Duplicates Table
 
 gtDupes <- dupeTable |>
     dplyr::group_by(started_at) |>
@@ -324,7 +317,8 @@ gtDupes
 ### Unduplicated View
 
 ```{r}
-#| label: unduplicatedGT
+#| label: tbl-unduplicated
+#| tbl-cap: Un-duplicated Table
 
 
 undupedTable |>
@@ -370,7 +364,8 @@ undupedTable |>
 ### Verify Dupeless
 
 ```{r}
-#| label: output_dupelessPath
+#| label: tbl-dupelessDB
+#| tbl-cap: Database Table Contents
 
 dplyr::tbl(dbconn,
            dupelessPath) |>
@@ -402,7 +397,8 @@ dplyr::tbl(dbconn,
 ### Summary of Processsing
 
 ```{r}
-#| label: output_summaryProcessTable
+#| label: tbl-observationHistory
+#| tbl-cap: Observation Processing History
 
 # To see the history of obs in our dataset.
 summaryProcessTable <- tidyr::tribble(
@@ -468,19 +464,22 @@ The count of distinct n-values for the un-duplicated table was indeed 18. So now
 ::::
 
 
-## Outlier Filter
+# Outlier Filter
 
-To ensure the conclusions are accurate, outliers should be filtered. Negative and very low trip times might skew trends. The underlying reason for very low trip times is somewhat of an unknown. Perhaps people often change their minds?
+It might be helpful to remove some outliers to better see the trends. Negative and low trip times are noted but might skew trends. The underlying reason for low trip times could be from people just wanting to try it out. I don't know why there were observations with negative trip times. There were observations that didn't make much sense, but we try to retain most of the data.
 
-As in the first part, an if-else code-chunk design was chosen because it makes testing easier. It's not required but is nice-to-have. Removing the nonsensical outliers, on the other hand, is required. This code chunk accomplishes both, regardless if you are just testing and already have the filtered database table or if you still need to create it. A database filtering script was used to make the code chunk easier to follow. We then verify the table does exist now along with all other tables we previously created. So this should have removed outliers from the dataset which don't serve the scope of this analysis or could be erroneous data.
+As in the first part, an if-else code-chunk design was chosen because it makes testing easier. It's not required but is nice-to-have. Removing the nonsensical outliers, on the other hand, is required. This code chunk accomplishes both, regardless, or if you are just testing and already have the filtered database table or if you still need to create it. 
+
+A database filtering script was used to make the code chunk easier to follow. We then verify the table does exist now along with all other tables we previously created. So this should have removed outliers from the dataset which don't serve the scope of this analysis or could be erroneous data.
+
 
 ::: {.codeDisplayer}
 ```{r}
-#| label: filterScript
+#| label: lst-filterScript
 #| code-summary: This would execute if the if-else conditions were met to filter the db/data.db database table
 #| file: "filterDatabase.R"
-#| eval: false 
-
+#| eval: false
+#| lst-cap: "Filter Database Script"
 ```
 :::
 
@@ -495,7 +494,7 @@ As in the first part, an if-else code-chunk design was chosen because it makes t
 :::::::: {#offcanvas33 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::: offcanvas-header
 :::::: {.h5 .offcanvas-title}
-Stepping Through the Code
+Filter Database 
 ::::::
 :::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 ::::::
@@ -504,7 +503,7 @@ Stepping Through the Code
 :::::: flex-code
 ```{r}
 #| label: filtering db
-#| code-summary: So you do not have to re-download or re-filter after making further adjustments. This is for people who re-use this code.
+#| code-summary: First, if you happen to be re-using this code - this is so you do not have to re-download or re-filter after making further adjustments.
 
 tblPath <- "db/data.db"
 dupelessPath <- "db/dupeless.db"
@@ -529,18 +528,17 @@ if (duckdb::dbExistsTable(dbconn,
 :::::::
 ::::::::
 
-
 :::::: {.column-body}
 
-## Frequency Tables and What They Tell Us
+# Frequency Tables and What They Tell Us
 
-Now we're going to create frequency tables and add those to the database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables. By generating frequency tables, one can quickly glean insights from the data.
+Now we're going to create frequency tables and add those to the database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place to start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables. By generating frequency tables, one can quickly glean insights from the data.
 ::::::
 
 :::::::::: {#offcanvas10 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::::::: offcanvas-header
 :::::::: {.h5 .offcanvas-title}
-Stepping Through the Code
+Frequency Tables (other code)
 ::::::::
 
 :::::::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
@@ -551,7 +549,7 @@ Stepping Through the Code
 :::::::: flex-code
 ```{r}
 #| label: frequencyWrites_totals
-#| code-summary: Writing frequency tables to DuckDB.
+#| code-summary: First, writes the totals frequency tables to database.
 
 # For the membership frequency
 dplyr::tbl(dbconn,
@@ -707,7 +705,7 @@ dplyr::tbl(dbconn,
 
 ```{r}
 #| label: frequencyWrites_comparisons
-#| code-summary: Write frequency comparison tables to the database
+#| code-summary: Second, writes all of the frequency comparison tables to the database.
 
 # For the rideable type comparison
 dplyr::tbl(dbconn,
@@ -875,20 +873,33 @@ dplyr::tbl(dbconn,
 ::::::::::: {.column-screen}
 :::::::::: {.panel-tabset .shadow-sm}
 
-### Memberships
+## Memberships
 
 ::::: {.article}
+::::: section
+:::: {.d-flex .align-content-stretch}
 
-#### Membership Frequency
+### Membership Frequency
 
-::: {.p}
-There are nearly twice as many trips taken by annual subscribers than by casual users. Maybe there is a relationship between how often a person uses Divvy Bikes service and whether they make the decision to subscribe to an annual membership plan.
+:::{.divBox}
 :::
+
+::: {.p-1 .align-self-center}
+There are nearly twice as many trips taken by annual subscribers than by casual users. Maybe there is a relationship between how often a person uses Divvy Bikes service and whether they make the decision to subscribe to an annual membership plan. [See table](#tbl-totalmemberFrequency)
+:::
+::::
+:::::
+
+:::br 
+:::
+
+----
 
 :::: {.d-flex .align-content-stretch}
 ::: {.p-3}
 ```{r}
-#| label: memberFrequency_tblView
+#| label: tbl-totalmemberFrequency
+#| tbl-cap: Total Member Frequency
 
 dplyr::tbl(dbconn,
            "db/freq_member.db") |>
@@ -907,7 +918,8 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: memberFrequency_plotView
+#| label: fig-totalmemberFrequency
+#| fig-cap: Total Member Frequency
 
 member_freqTbl <- dplyr::tbl(dbconn,
                              "db/freq_member.db") |>
@@ -944,17 +956,20 @@ member_freqTbl |>
 ::::
 :::::
 
-### Cycle Types
+## Cycle Types
 
-::::: {.article}
-:::: section
-
-::::{.d-flex .align-content-stretch}
+:::::: {.article}
+::::: section
+:::: {.d-flex .align-content-stretch}
 
 :::{.p-1}
-* #### Contents
+* ### Contents
     + [Count](#total_types_freq)
+        - [Table](#tbl-ctypeTotal)
+        - [Plot](#fig-ctypeTotal)
     + [Group Count](#group_types_freq)
+        - [Table](#tbl-ctypeCompare)
+        - [Plot](#fig-ctypeTotal)
 
 :::
 
@@ -965,19 +980,20 @@ member_freqTbl |>
 There are nearly twice as many trips taken with non-electric bikes as electric bikes. Perhaps, the associated health benefits with exercise would help explain higher non-electric bicycle use?
 :::
 ::::
-::::
+:::::
 
 :::br 
 :::
 
 ----
 
-##### Total Frequency {#total_types_freq}
+#### Total Frequency {#total_types_freq}
 
 :::: {.d-flex .align-content-stretch}
 ::: {.p-3}
 ```{r}
-#| label: rtypes_tbl
+#| label: tbl-ctypeTotal
+#| tbl-cap: Cycle Type Total Frequency
 
 
 dplyr::tbl(dbconn,
@@ -997,7 +1013,8 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: cycletypes_plotView
+#| label: fig-ctypeTotals
+#| fig-cap: Cycle Type Total Frequency 
 
 ridetype_freqTbl <- dplyr::tbl(dbconn,
                              "db/freq_rTypes.db") |>
@@ -1034,12 +1051,13 @@ ridetype_freqTbl |>
 
 ----
 
-##### Group Frequency {#group_types_freq}
+#### Group Frequency {#group_types_freq}
 
 :::: {.d-flex .align-content-stretch}
 ::: {.p-3}
 ```{r}
-#| label: bikeTypes_compare
+#| label: tbl-ctypeCompare
+#| tbl-cap: Cycle Type Group Frequency
 
 dplyr::tbl(dbconn,
            "db/freqCompare_rType.db") |>
@@ -1059,6 +1077,9 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
+#| label: fig-ctypeCompare
+#| fig-cap: Cycle Type Group Frequency
+
 dplyr::tbl(dbconn,
            "db/freqCompare_rType.db") |>
     ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type,
@@ -1093,27 +1114,43 @@ dplyr::tbl(dbconn,
 ::::
 :::::
 
-### Month
+## Month
 
-::::: {.article }
+:::::: {.article}
 
-* #### Contents
+::::: section
+:::: {.d-flex .align-content-stretch}
+
+* ### Contents
     + [Total Frequency](#total_month_freq)
+        - [Table](#tbl-monthTotals)
+        - [Plot](#fig-monthTotals)
     + [Group Frequency](#group_month_freq)
+        - [Table](#tbl-monthGroup)
+        - [Plot](#fig-monthGroup)
 
-:::: {.p}
+:::{.divBox}
+:::
+
+::: {.p-1 .align-self-center}
 Trips by month does differ substantially between certain months. late Spring , Summer, to early Fall months in Chicago is when we see the largest increase in ridership. Most likely the ambient temperature is a major contributor for the seasonal patterns in trips taken. 
+:::
+
 ::::
+:::::
+
+:::br
+:::
 
 ----
 
-##### Total Frequency {#total_month_freq}
-
+#### Total Frequency {#total_month_freq}
 
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: monthfreq_tblView
+#| label: tbl-monthTotals
+#| tbl-cap: Month Total Frequency
 
 dplyr::tbl(dbconn,
            "db/freq_month.db") |>
@@ -1132,6 +1169,9 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
+#| label: fig-monthTotals
+#| fig-cap: Month Total Frequency
+
 
 monthlyTable <- dplyr::tbl(dbconn,
            "db/freq_month.db") |>
@@ -1168,12 +1208,14 @@ monthlyTable |>
 
 ----
 
-##### Group Frequency {#group_month_frequency}
+#### Group Frequency {#group_month_frequency}
 
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: freqCompare_months Table
+#| label: tbl-monthCompare
+#| tbl-cap: Month Group Frequency
+#| cap-location: margin
 
 dplyr::tbl(dbconn,
            "db/freqCompare_month.db") |>
@@ -1193,7 +1235,9 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: freqCompare_months Plot
+#| label: fig-monthCompare
+#| fig-cap: Month Group Frequency
+
 
 dplyr::tbl(dbconn,
            "db/freqCompare_month.db") |>
@@ -1230,26 +1274,46 @@ dplyr::tbl(dbconn,
 ::::
 :::::
 
-### Day of Week 
+## Day of Week 
 
-::::: {.article }
+:::::: {.article}
 
-* #### Contents
+:::::: section
+::::: {.d-flex .align-content-stretch}
+
+::: {.p-1}
+* ### Contents
     + [Total Frequency](#total_day_freq)
+        - [Table](#tbl-wkdayTotals)
+        - [Plot](#fig-wkdayTotals)
     + [Group Frequency](#group_day_freq)
+        - [Table](#tbl-wkdayCompare)
+        - [Plot](#fig-wkdayCompare)
 
-:::: {.p}
+:::
+
+:::{.divBox}
+:::
+
+:::: {.p-1 .align-self-center}
 There is a slight reduction in trips taken on Sundays and Mondays. This could be explained by the fact that most trips are taken by annual subscribers, possibly because they are commuting to work and such. So, much less people will be biking to work on Sundays. Taking 3-day weekends is common in the workplace, where most would likely opt to use up their sick/vacation days on Monday. That might explain the down tick in trips taken on Mondays. Also, those who are working Tuesdays-Saturdays could be taking Sunday and Mondays off.
 ::::
 
+:::::
+::::::
+
+:::br
+:::
+
 ----
 
-##### Total Frequency {#total_day_freq}
+#### Total Frequency {#total_day_freq}
 
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: freqwkday_tblView
+#| label: tbl-wkdayTotals
+#| tbl-cap: Weekday Total Frequency
 
 
 dplyr::tbl(dbconn,
@@ -1270,7 +1334,8 @@ dplyr::tbl(dbconn,
 
 ::: {.p-3}
 ```{r}
-#| label: Weekday Plot
+#| label: fig-wkdayTotals
+#| fig-cap: Weekday Totals Frequency
 
 weekdayTable <- dplyr::tbl(dbconn,
            "db/freq_wkday.db") |>
@@ -1310,12 +1375,13 @@ weekdayPlot
 
 ----
 
-##### Group Frequency {#group_day_freq}
+#### Group Frequency {#group_day_freq}
 
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: wkdayCompare_tbl
+#| label: tbl-wkdayCompare
+#| tbl-cap: Weekday Group Frequency
 
 dplyr::tbl(dbconn,
            "db/freqCompare_wkday.db") |>
@@ -1335,7 +1401,8 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: wkdayCompare_plot
+#| label: fig-wkdayCompare
+#| fig-cap: Weekday Group Frequency
 
 dplyr::tbl(dbconn,
            "db/freqCompare_wkday.db") |>
@@ -1371,26 +1438,45 @@ dplyr::tbl(dbconn,
 ::::
 :::::
 
-### Miles
+## Miles
 
-::::: {.article }
+::::: {.article}
+:::::: section
+::::: {.d-flex .align-content-stretch}
 
-* #### Contents
+::::{.p-1}
+* ### Contents
     + [Total Frequency](#total_miles_freq)
+        - [Table](#tbl-milesTotals)
+        - [Plot](#fig-milesTotals)
     + [Grouped Frequency](#group_miles_freq)
+        - [Table](#tbl-milesCompare)
+        - [Plot](#fig-milesCompare)
 
-:::: {.p}
+::::
+
+::::{.divBox}
+::::
+
+:::: {.p-1 .align-self-center}
 This shows that around 0.3 to 3 miles is the distance traveled on most trips taken. The fact that casual bicycles are used more often perhaps makes a little more sense considering that people are not traveling long distances.
 ::::
 
+:::::
+::::::
+
+:::br
+:::
+
 ----
 
-##### Total Frequency {#total_miles_freq}
+#### Total Frequency {#total_miles_freq}
 
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: freqMiles_tblView
+#| label: tbl-milesTotals
+#| tbl-cap: Miles Total Frequency
 
 dplyr::tbl(dbconn,
            "db/freq_miles.db") |>
@@ -1411,7 +1497,8 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: Miles_plot
+#| label: fig-milesTotals
+#| fig-cap: Miles Total Frequency
 
 milesTable <- dplyr::tbl(dbconn,
            "db/freq_miles.db") |>
@@ -1456,11 +1543,14 @@ milesPlot
 
 ----
 
-##### Group Frequency {#group_miles_freq}
+#### Group Frequency {#group_miles_freq}
 
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
+#| label: tbl-milesCompare
+#| tbl-cap: Miles Group Frequency
+
 dplyr::tbl(dbconn,
            "db/freqCompare_miles.db") |>
      gt::gt(groupname_col = "miles",
@@ -1479,7 +1569,8 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: freq_milesCompare_plot
+#| label: fig-milesCompare
+#| fig-cap: Miles Group Frequency
 
 
 dplyr::tbl(dbconn,
@@ -1517,25 +1608,46 @@ dplyr::tbl(dbconn,
 ::::
 :::::
 
-### Mph
+## Mph
 
-::::: {.article }
+::::: {.article}
 
-* #### Contents
+:::::: section
+::::: {.d-flex .align-content-stretch}
+
+:::: {.p-1}
+* ### Contents
     + [Total Frequency](#total_mph_freq)
+        - [Table](#tbl-mphTotals)
+        - [Plot](#fig-mphTotals)
     + [Grouped Frequency](#group_mph_freq)
+        - [Table](#tbl-mphCompare)
+        - [Plot](#fig-mphCompare)
 
+::::
 
-#### Total Frequency {#total_mph_freq}
+::::{.divBox}
+::::
 
-:::: {.p}
+:::: {.p-1 .align-self-center}
 The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel.
 ::::
+
+:::::
+::::::
+
+:::br
+:::
+
+----
+
+#### Total Frequency {#total_mph_freq}
 
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: mphfreq_tblView
+#| label: tbl-mphTotals
+#| tbl-cap: Mph Total Frequency
 
 dplyr::tbl(dbconn,
            "db/freq_mph.db") |>
@@ -1554,7 +1666,8 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: MPH plot
+#| label: fig-mphTotals
+#| fig-cap: Mph Total Frequency
 
 
 mphTable <- dplyr::tbl(dbconn,
@@ -1594,12 +1707,13 @@ mphPlot
 
 ----
 
-#### MPH Frequency by Membership {#group_mph_freq}
+#### Group Frequency {#group_mph_freq}
 
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: mphCompare_table
+#| label: tbl-mphCompare
+#| tbl-cap: Mph Group Frequency
 
 dplyr::tbl(dbconn,
            "db/freqCompare_mph.db") |>
@@ -1621,7 +1735,8 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: mphCompare_plot
+#| label: fig-mphCompare
+#| fig-cap: Mph Group Frequency
 
 dplyr::tbl(dbconn,
            "db/freqCompare_mph.db") |>
@@ -1658,17 +1773,35 @@ dplyr::tbl(dbconn,
 ::::
 :::::
 
-### Trip-Times
+## Trip-Times
 
-::::: {.article}
+:::::: {.article}
+:::::: section
+::::: {.d-flex .align-content-stretch}
 
-* #### Contents
+:::: {.p-1}
+* ### Contents
     + [Total Frequency](#total_tripTime_freq)
+        - [Table](#tbl-triptimeTotals)
+        - [Plot](#fig-triptimeTotals)
     + [Grouped Frequency](#group_tripTime_freq)
+        - [Table](#tbl-triptimeCompare)
+        - [Plot](#fig-triptimeCompare)
 
-:::: {.p}
+::::
+
+:::{.divBox}
+:::
+
+:::: {.p-1 .align-self-center}
 The time riders are usually spending on these trips lies between 5 to 15 minutes.
 ::::
+
+:::::
+::::::
+
+:::br
+:::
 
 ----
 
@@ -1677,7 +1810,8 @@ The time riders are usually spending on these trips lies between 5 to 15 minutes
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: triptimefreq_tblView
+#| label: tbl-triptimeTotals
+#| tbl-cap: Trip-Time Totals
 
 dplyr::tbl(dbconn,
            "db/freq_tripTime.db") |>
@@ -1698,8 +1832,8 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: tripTime_plot
-#| echo: false
+#| label: fig-triptimeTotal
+#| fig-cap: Trip-Time Totals
 
 tripTimeTable <- dplyr::tbl(dbconn,
                             "db/freq_tripTime.db") |>
@@ -1744,7 +1878,8 @@ tripTimePlot
 :::: {.d-flex .align-content-stretch}
 :::{.p-3}
 ```{r}
-#| label: triptimeCompare_table
+#| label: tbl-triptimeCompare
+#| tbl-cap: Trip Time Comparison
 
 dplyr::tbl(dbconn,
            "db/freqCompare_tripTime.db") |>
@@ -1767,16 +1902,15 @@ dplyr::tbl(dbconn,
 :::
 ::: {.p-3}
 ```{r}
-#| label: triptimeCompare_plot
+#| label: fig-triptimeFrequency
+#| fig-cap: Trip-Time Group Frequency 
 
 dplyr::tbl(dbconn,
            "db/freqCompare_tripTime.db") |>
     ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time,
                                            y = n,
                                            fill = member_casual)) +
-    ggplot2::geom_area(show.legend = TRUE,
-                      #position = 'dodge'
-                      ) +
+    ggplot2::geom_area(show.legend = TRUE) +
     ggplot2::xlim(NA, 100) +
     ggplot2::scale_color_brewer(palette = "Paired",
                                name = "Subscriber Status") +
@@ -1817,7 +1951,7 @@ dplyr::tbl(dbconn,
 ::::
 
 
-## Trip Network
+# Trip Network
 
 :::::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::: offcanvas-header
@@ -1833,6 +1967,7 @@ Stepping Through the Code
 :::: flex-code
 ```{r}
 #| label: createFlows dataframe
+#| code-summary: First, creates the frequency of trips taken to and from pairs of stations. We are only going to look deeper into the top 50 most traveled pairs.
 
 flowData <- dplyr::tbl(dbconn,
                        tblPath_fltrd) |>
@@ -1847,30 +1982,11 @@ flowData <- dplyr::tbl(dbconn,
                   "to_station" = end_station_name) |>
     dplyr::collect() |>
     dplyr::slice_head(n = 50)
-
-flowData50 <- flowData |>
-    dplyr::slice(1:50)
-
-flowData1 <- flowData |>
-    dplyr::slice(1:10)
-
-flowData2 <- flowData |>
-    dplyr::slice(11:20)
-
-flowData3 <- flowData |>
-    dplyr::slice(21:30)
-
-flowData4 <- flowData |>
-    dplyr::slice(31:40)
-
-flowData5 <- flowData |>
-    dplyr::slice(41:50)
-
 ```
 
 ```{r}
 #| label: location stats
-#| code-summary: Now we need to obtain statistics but also combine the statistics for every unique station name. 
+#| code-summary: Second, we need statistics but also to combine the statistics for every unique station name. 
 
 locationData <- dplyr::tbl(dbconn,
                             tblPath_fltrd) |>
@@ -1916,34 +2032,10 @@ locationData_pivoted <- locationData |>
 
 ```{r}
 #| label: MakeEpiflows
+#| code-summary: Third, creates epiflow objects, which take in a pair of dataframes and creates the flows between them. 
 
-ef_test50 <- epiflows::make_epiflows(flows = flowData50,
-                                   locations = locationData_pivoted,
-                                   duration_stay = "avg_trip_time",
-                                   num_cases = "trips_toAndfrom")
-
-
-ef_test1 <- epiflows::make_epiflows(flows = flowData1,
-                                   locations = locationData_pivoted,
-                                   duration_stay = "avg_trip_time",
-                                   num_cases = "trips_toAndfrom")
-
-ef_test2 <- epiflows::make_epiflows(flows = flowData2,
-                                   locations = locationData_pivoted,
-                                   duration_stay = "avg_trip_time",
-                                   num_cases = "trips_toAndfrom")
-
-ef_test3 <- epiflows::make_epiflows(flows = flowData3,
-                                   locations = locationData_pivoted,
-                                   duration_stay = "avg_trip_time",
-                                   num_cases = "trips_toAndfrom")
-
-ef_test4 <- epiflows::make_epiflows(flows = flowData4,
-                                   locations = locationData_pivoted,
-                                   duration_stay = "avg_trip_time",
-                                   num_cases = "trips_toAndfrom")
-
-ef_test5 <- epiflows::make_epiflows(flows = flowData5,
+# for all the pairs
+ef_test <- epiflows::make_epiflows(flows = flowData,
                                    locations = locationData_pivoted,
                                    duration_stay = "avg_trip_time",
                                    num_cases = "trips_toAndfrom")
@@ -1965,11 +2057,18 @@ Tables
 ::::: offcanvas-body
 :::: flex-code
 ```{r}
+#| label: summaryFlowData
+#| code-summary: First, just a quick view of the flow data table we made earlier.
+#| title: Flow Data View
+
 flowData
-summary(flowData$n)
 ```
 
 ```{r}
+#| label: pivotedLocations
+#| code-summary: Second, another quick view, but for thethe location data we pivoted earlier.
+#| title: Pivoted Location Data
+
 locationData_pivoted |>
     dplyr::arrange(desc(trips_toAndfrom))
 ```
@@ -1977,70 +2076,24 @@ locationData_pivoted |>
 :::::
 ::::::
 
-::::: {.column-page}
-:::: {.panel-tabset}
+:::: br
+::::
 
-### 1-50
+:::: {.column-screen-inset}
 
-::: {.p style="color: Black"}
+# Epiflow Diagram
+
+::: {.article style="color: Black"}
 ```{r}
-#| label: epiflowViz50
+#| label: fig-epiflowNetwork
+#| fig-cap: EpiFlow Network
 #| echo: false
-epiflows::vis_epiflows(ef_test50)
-```
-:::
 
-### 1-10
-
-::: {.p style="color: Black"}
-```{r}
-#| label: epiflowViz1
-#| echo: false
-epiflows::vis_epiflows(ef_test1)
-```
-:::
-
-### 11-20
-
-::: {.p style="color: Black"}
-```{r}
-#| label: epiflowViz2
-#| echo: false
-epiflows::vis_epiflows(ef_test2)
-```
-:::
-
-### 21-30
-
-::: {.p style="color: Black"}
-```{r}
-#| label: epiflowViz3
-#| echo: false
-epiflows::vis_epiflows(ef_test3)
-```
-:::
-
-### 31-40
-
-::: {.p style="color: Black"}
-```{r}
-#| label: epiflowViz4
-#| echo: false
-epiflows::vis_epiflows(ef_test4)
-```
-:::
-
-### 41-50
-
-::: {.p style="color: Black"}
-```{r}
-#| label: epiflowViz5
-#| echo: false
-epiflows::vis_epiflows(ef_test5)
+epiflows::vis_epiflows(ef_test)
 ```
 :::
 ::::
-:::::
+
 
 ::::: {.d-flex .justify-content-center}
 :::: {.btn-group role="group" aria-label="third"}
@@ -2057,18 +2110,41 @@ epiflows::vis_epiflows(ef_test5)
 ::::
 :::::
 
-## Map Test
+# A Street-Level View
 
+::: {.callout-tip collapse="false" title="A Street-Level View"}
 
-```{r}
+## The Most Traveled Stations
 
+You can expand and collapse the following four maps. The original dataset used for these maps into four so that the 'burst' buttons would fit inside the window. Click on the burst buttons to zoom into the sample groups. This is to better understand the logic of where the top most traveled bike stations are located in an effort to better inform future station locations.  
+
+:::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas20" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
 ```
+:::
+::::
 
+:::::: {#offcanvas20 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
+:::: {.h5 .offcanvas-title}
+Code for Mapping
+::::
+
+:::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+::::
+:::::
+
+::::: offcanvas-body
+:::: flex-code
 
 ```{r}
-#| eval: true
+#| label: mapData
+#| code-summary: "Processing 'flowData' created earlier to include geolocation data for mapview plots."
 
-names50 <- flowData50 |>
+# All distinct stations in one column
+names <- flowData |>
     dplyr::select(from_station,
                   to_station) |>
     tidyr::pivot_longer(cols = 1:2,
@@ -2077,6 +2153,7 @@ names50 <- flowData50 |>
     dplyr::distinct()
 
 
+# The important geo-coordinates corresponding to station names
 mapData <- dplyr::tbl(dbconn,
                       tblPath_fltrd,
                       check_from = FALSE) |>
@@ -2087,19 +2164,23 @@ mapData <- dplyr::tbl(dbconn,
                   end_lat,
                   end_lng)
 
+# Filter to include all observations that match the station names listed in 'names'. We need the geo-coordinates alongside the names.
 mapData1 <- mapData |>
     dplyr::collect() |>
-    dplyr::filter(start_station_name %in% names50[[1]],
-                  end_station_name %in% names50[[1]]) |>
+# Filter through a vector of conditions.
+    dplyr::filter(start_station_name %in% names[[1]],
+                  end_station_name %in% names[[1]]) |>
     dplyr::select(start_station_name:start_lng)
 
+
+# Had to split 'mapData' into two and pivot into a single table.
 mapData2 <- mapData |>
     dplyr::collect() |>
-    dplyr::filter(start_station_name %in% names50[[1]],
-                  end_station_name %in% names50[[1]]) |>
+    dplyr::filter(start_station_name %in% names[[1]],
+                  end_station_name %in% names[[1]]) |>
     dplyr::select(end_station_name:end_lng)
 
-
+# Nice grouping
 stations_groupMap <- dplyr::bind_rows(mapData1, mapData2) |>
 dplyr::select(start_station_name, start_lat, start_lng) |>
 dplyr::rename("station_names" = start_station_name,
@@ -2108,75 +2189,106 @@ dplyr::rename("station_names" = start_station_name,
 dplyr::distinct() |>
 dplyr::group_by(station_names)
 
+# Setting seed for sampling
 set.seed(113)
 
+# Taking 10 random samples from each station_name group
 sampled_stations <- stations_groupMap |>
     dplyr::slice_sample(n = 10) |>
     tidyr::drop_na()
-
 ```
 
 
+```{r}
+#| label: mapColors
+#| code-summary: "Creates a map coloring palette excluding grays."
 
+# All of the r-colors
+allPalette <- colors()
+
+# The grays are vast so we don't want that.
+colorfulPal <- purrr::discard(allPalette, stringr::str_detect(allPalette, "gr(a|e)y"))
+
+# When we sample the colors, 10 should be slightly more than needed.
+n_colors <- 10
+```
 
 
 ```{r}
-#| column: screen-inset
-#| echo: false
-#| layout-nrow: 2
+#| label: mapViewer
+#| code-summary: First, sourcing the script needed to generate the maps and creating the list of vectors used as input. These vectors are the slices of the top most traveled stations.
 
 slicerVector <- list(c(1:9), c(10:18), c(19:27), c(28:34))
-
 source("mapViewer.R")
+```
 
-allPalette <- colors()
+```{r}
+#| file: "mapViewer.R"
+#| eval: false
+#| code-summary: "The script used to generate the maps."
+#| label: mapViewerScript
+```
+::::
+:::::
+::::::
 
-colorfulPal <- purrr::discard(allPalette, stringr::str_detect(allPalette, "gr(a|e)y"))
+::: {.callout-tip title="Benson Ave & Church St - Ellis Ave & 60th St" collapse="true"}
 
-n_colors <- 10
+```{r}
+#| label: fig-map1
+#| fig-cap: "Benson Ave & Church St - Ellis Ave & 60th St"
 
 set.seed(240)
 randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[1]])
 
+```
+
+:::
+
+::: {.callout-tip title="Greenview Ave & Fullteron Ave - Loomis Ave & Lexington St" collapse="true"}
+
+```{r}
+#| label: fig-map2
+#| echo: false
+#| fig-cap: "Greenview Ave & Fullteron Ave - Loomis Ave & Lexington St"
 
 set.seed(241)
 randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[2]])
 
+```
+
+:::
+
+::: {.callout-tip title="Michigan Ave & Oak St - State St & 33rd St" collapse="true"}
+
+```{r}
+#| label: fig-map3
+#| echo: false
+#| fig-cap: "Michigan Ave & Oak St - State St & 33rd St"
 
 set.seed(242)
 randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[3]])
 
+```
+
+:::
+
+::: {.callout-tip title="Street Dr & Grand Ave - Woodlawn Ave & 55th St" collapse="true"}
+
+```{r}
+#| label: fig-map4
+#| fig-cap: "Street Dr & Grand Ave - Woodlawn Ave & 55th St"
 
 set.seed(243)
 randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[4]])
 ```
 
-
-::: {.callout}
-Note that there are five types of callouts, including:
-`note`, `warning`, `important`, `tip`, and `caution`.
-
-::: {.callout collapse="true"}
-## Expand To Learn About Collapse
-
-This is an example of a 'folded' caution callout that can be expanded by the user. You can use `collapse="true"` to collapse it by default or `collapse="false"` to make a collapsible callout that is expanded by default.
 :::
-
-::: {.callout-caution collapse="true"}
-## Expand To Learn About Collapse
-
-This is an example of a 'folded' caution callout that can be expanded by the user. You can use `collapse="true"` to collapse it by default or `collapse="false"` to make a collapsible callout that is expanded by default.
-:::
-
-
-:::
-
-
-
+::::
 
 
 
