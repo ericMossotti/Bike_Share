@@ -83,6 +83,11 @@ img .img-fluid .figure-img {
 }
 */
 
+
+canvas {
+    filter: invert(100%) !important;
+}
+
 .divBox {
     width: 1% !important;
     height: auto !important;
@@ -107,7 +112,7 @@ p, .p {
 
 .vis-network {
     color: black !important;
-    background-color: rgba(168,168,168, 0.85) !important;
+    background-color: transparent !important;
 }
 
 
