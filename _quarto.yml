@@ -6,9 +6,6 @@ execute:
   cache: false
   freeze: auto
 
-#execute: 
-# freeze: auto
-
 website:
   title: "BikeShare Analysis"
 #  navbar:
@@ -24,6 +21,5 @@ format:
         - theme-dark.scss
     toc: false
     page-layout: article
-    #include-in-header: themeToggle.html
-    
+
 editor: source
