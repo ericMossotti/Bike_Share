@@ -83,6 +83,14 @@ img .img-fluid .figure-img {
 }
 */
 
+.leaflet{
+    filter: invert(100%) !important;
+}
+
+.tableScroller {
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+}
 
 canvas {
     filter: invert(100%) !important;
