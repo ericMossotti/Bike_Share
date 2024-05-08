@@ -18,7 +18,6 @@ code-overflow: wrap
 code-tools: true
 code-link: true
 
-
 toc-expand: true
 toc: true
 #toc_float: true
@@ -26,6 +25,8 @@ toc: true
 smooth-scroll: true
 fig-responsive: true
 echo: true
+
+#html-math-method: katex
 
 #margin-left: 10vw
 #margin-right: 5vw
@@ -81,6 +82,13 @@ if(exists("dbconn") == FALSE &&
         check_from = FALSE
     )
 }
+
+tblPath <- "db/data.db"
+dupelessPath <- "db/dupeless.db"
+tblPath_fltrd <- "db/data_fltrd.db"
+
+
+
 ```
 
 ```{r}
@@ -207,7 +215,8 @@ undupedTable <- dupeTable |>
                      start_station_name,
                      ended_at,
                      end_station_name,
-                     .keep_all = TRUE)
+                     #.keep_all = TRUE
+)
 ```
 
 ```{r}
@@ -238,9 +247,7 @@ count_correctDists <- dplyr::tbl(dbconn,
             "started_at",
             "start_station_name",
             "ended_at",
-            "end_station_name"
-        )
-    ) |>
+            "end_station_name")) |>
     dplyr::count() |>
     dplyr::collect() |>
     as.integer()
@@ -284,8 +291,7 @@ gtDupes <- dupeTable |>
     dplyr::group_by(started_at) |>
     gt::gt(rowname_col = "row",
            groupname_col = "started_at",
-           row_group_as_column = TRUE,
-           caption = "Duplicates_Table1") |>
+           row_group_as_column = TRUE) |>
     gt::tab_style(
     style = list(
         gt::cell_text(weight = "bold",
@@ -307,7 +313,7 @@ gtDupes <- dupeTable |>
                    target_columns = gt::everything(),
                    method = "auto",
                    palette = "basetheme::brutal") |>
-    gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
+#    gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
     gt::tab_header(title = "Duplicate Observations",
                    subtitle = "By the starting date-time") |>
     gt::tab_options(
@@ -321,8 +327,6 @@ gtDupes
 ```
 
 ### Unduplicated View
-
-
 
 ```{r}
 #| label: tbl-unduplicated
@@ -356,7 +360,7 @@ undupedTable |>
                    target_columns = gt::everything(),
                    method = "auto",
                    palette = "basetheme::brutal") |>
-    gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
+    #gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
     gt::tab_header(title = "Un-Duplicated Observations",
                    subtitle = "Grouped by start date)") |>
     gt::tab_options(
@@ -398,8 +402,7 @@ dplyr::tbl(dbconn,
         row.striping.include_table_body = TRUE,
         table_body.hlines.color = "gray20",
         table_body.vlines.color = "gray20",
-        table.font.size = gt::pct(75),
-    )
+        table.font.size = gt::pct(75))
 ```
 
 ### Summary of Processsing
@@ -473,15 +476,14 @@ The count of distinct n-values for the un-duplicated table was indeed 18. So now
 
 # Outlier Filter
 
-Removing outliers that do not serve a purpose might help to better see trends. Negative and low trip times are noted but might skew trends. The underlying reason for low trip times could be from people just wanting to try it out. It is uknown why there were observations with negative trip times. There were observations that did not make much sense, but most of the data was retained. @filterScript
+Removing outliers that do not serve a purpose might help to better see trends. Negative and low trip times are noted but might skew trends. The underlying reason for low trip times could be from people just wanting to try it out. It is uknown why there were observations with negative trip times. There were observations that did not make much sense, but most of the data was retained. [script](#filterScript)
 
 As in the first part, an if-else code-chunk design was chosen because it makes testing easier. If re-using this code for testing and have filtered the database table, or if you still need to create it.
 
 A database filtering script was used to make the code chunk easier to follow. We then verify the table was created along with all other tables we previously created. So this should have removed outliers from the dataset which do not serve the scope of this analysis or is potentially erroneous data.
 
-::: {.callout-note title="Filter the database"}
-## Filter Database
-
+::: {.d-flex .justify-content-center max-width="auto"}
+::: {.callout-note title="Filter the database" style="min-width: auto; max-width: auto"}
 ::: {#filterScript .codeDisplayer}
 ```{r}
 #| label: filterScript
@@ -489,6 +491,7 @@ A database filtering script was used to make the code chunk easier to follow. We
 #| file: "filterDatabase.R"
 #| eval: false
 ```
+:::
 :::
 :::
 
@@ -542,7 +545,15 @@ if (duckdb::dbExistsTable(dbconn,
 ::: column-body
 # Frequency Tables and What They Tell Us
 
-Now we're going to create frequency tables and add those to the database. We can retain the outliers in those tables and perhaps filter as needed later. This is a good place to start. If needed, we can dive deeper into other statistical techniques or adjust parameters in these code chunks and overwrite or create new db tables. By generating frequency tables, one can quickly glean insights from the data.
+The rationale for frequency tables is to gain insight into the data. It is taking a methodical approach that, while simple, provides an entry into the trends that could be useful.
+:::
+
+::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
+```
+:::
 :::
 
 ::: {#offcanvas10 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -883,13 +894,15 @@ dplyr::tbl(dbconn,
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
-### Membership Frequency
+::: p-1
+### Membership Groups Analysis
+:::
 
 ::: divBox
 :::
 
 ::: {.p-1 .align-self-center}
-
+@tbl-memberTotals gives the total count of trips taken by members and casuals. The rest of the tabs in this section will give total counts along with group counts by membership status.
 :::
 :::
 :::
@@ -902,7 +915,7 @@ dplyr::tbl(dbconn,
 ::: {.d-flex .align-content-stretch}
 ::: p-3
 ```{r}
-#| label: tbl-totalmemberFrequency
+#| label: tbl-memberTotals
 #| tbl-cap: Total Member Frequency
 
 dplyr::tbl(dbconn,
@@ -967,26 +980,25 @@ member_freqTbl |>
 ::: section
 ::: {.d-flex .align-content-stretch}
 ::: p-1
+```         
+### Contents
 
-    ### Contents
-
-    -   [Count](#total_types_freq)
-        -   [Table](#tbl-ctypeTotal)
-        -   [Plot](#fig-ctypeTotal)
-    -   [Group Count](#group_types_freq)
-        -   [Table](#tbl-ctypeCompare)
-        -   [Plot](#fig-ctypeTotal)
+-   [Count](#total_types_freq)
+    -   [Table](#tbl-ctypeTotal)
+    -   [Plot](#fig-ctypeTotal)
+-   [Group Count](#group_types_freq)
+    -   [Table](#tbl-ctypeCompare)
+    -   [Plot](#fig-ctypeTotal)
+```
 :::
 
 ::: divBox
 :::
 
 ::: {.p-1 .align-self-center}
+In @tbl-ctypeTotals and @fig-ctypeTotals, the total trips taken on conventional bicycles and electric bicycles are compared. Clearly, electric bicycles are not used as much as conventional.
 
-In @tbl-ctypeTotals and @fig-ctypeTotals, the total trips taken on conventional bicycles and electric bicycles are compared. Clearly, electric bicycles are not used as much as conventional. 
-
-Moving to @tbl-ctypeCompare and @fig-ctypeCompare, the frequency of trips taken is split into groups of membership status. There is a large disparity not only between the scale of trips taken between annual subscribers and casual users, but also within the the group of subscribers themselves. While there is a small difference between trips taken by casual members on conventional compared to electric, that said difference is more pronounced in the annual subscriber group.  
-
+Moving to @tbl-ctypeCompare and @fig-ctypeCompare, the frequency of trips taken is split into groups of membership status. There is a large disparity not only between the scale of trips taken between annual subscribers and casual users, but also within the the group of subscribers themselves. While there is a small difference between trips taken by casual members on conventional compared to electric, that said difference is more pronounced in the annual subscriber group.
 :::
 :::
 :::
@@ -1023,7 +1035,7 @@ dplyr::tbl(dbconn,
 
 ::: p-3
 ```{r}
-#| label: fig-ctypeTotal
+#| label: fig-ctypeTotals
 #| fig-cap: Cycle Type Total Frequency 
 
 ridetype_freqTbl <- dplyr::tbl(dbconn,
@@ -1145,9 +1157,9 @@ dplyr::tbl(dbconn,
 :::
 
 ::: {.p-1 .align-self-center}
-Looking at @tbl-monthTotals and @fig-monthTotals, the warmer months appear to coincide with higher trip frequency, in total. 
+Looking at @tbl-monthTotals and @fig-monthTotals, the warmer months appear to coincide with higher trip frequency, in total.
 
-In @tbl-monthCompare and @fig-monthCompare, trip frequency in both groups are impacted by the seasons. Although, it would appear that trip frequency of subscribers fluctuates less than for casuals. The disparity in frequency change is more apparent in the comparison of winter to summer months between member groups. 
+In @tbl-monthCompare and @fig-monthCompare, trip frequency in both groups are impacted by the seasons. Although, it would appear that trip frequency of subscribers fluctuates less than for casuals. The disparity in frequency change is more apparent in the comparison of winter to summer months between member groups.
 :::
 :::
 :::
@@ -1225,7 +1237,7 @@ monthlyTable |>
 #### Group Frequency {#group_month_frequency}
 
 ::: {.d-flex .align-content-stretch}
-::: p-3
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-monthCompare
 #| tbl-cap: Month Group Frequency
@@ -1294,22 +1306,23 @@ dplyr::tbl(dbconn,
 ::: section
 ::: {.d-flex .align-content-stretch}
 ::: p-1
+```         
+### Contents
 
-    ### Contents
-
-    -   [Total Frequency](#total_day_freq)
-        -   [Table](#tbl-wkdayTotals)
-        -   [Plot](#fig-wkdayTotals)
-    -   [Group Frequency](#group_day_freq)
-        -   [Table](#tbl-wkdayCompare)
-        -   [Plot](#fig-wkdayCompare)
+-   [Total Frequency](#total_day_freq)
+    -   [Table](#tbl-wkdayTotals)
+    -   [Plot](#fig-wkdayTotals)
+-   [Group Frequency](#group_day_freq)
+    -   [Table](#tbl-wkdayCompare)
+    -   [Plot](#fig-wkdayCompare)
+```
 :::
 
 ::: divBox
 :::
 
 ::: {.p-1 .align-self-center}
-In @tbl-wkdayTotals and @fig-wkdayTotals, there appears to be more trips taken in total between Tuesday through Saturday than Sunday through Monday.  
+In @tbl-wkdayTotals and @fig-wkdayTotals, there appears to be more trips taken in total between Tuesday through Saturday than Sunday through Monday.
 
 The trend is more complicated in the weekday comparison groups seen in @tbl-wkdayCompare and @fig-wkdayCompare. Trips taken by the casual group rises towards the weekend and dips on days corresponding to days when members are taking more trips. When members are less active, casual riders are more active.
 :::
@@ -1475,10 +1488,9 @@ dplyr::tbl(dbconn,
 :::
 
 ::: {.p-1 .align-self-center}
-The distance of most observed trips in @tbl-milesTotals and @fig-milesTotals fall in between 0.3 to 3 miles. 
+The distance of most observed trips in @tbl-milesTotals and @fig-milesTotals fall in between 0.3 to 3 miles.
 
-
-The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the same pattern. The casual and member differ mainly in overall scale of trips taken between the 0.3 and 3 mile trip distances.  
+The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the same pattern. The casual and member differ mainly in overall scale of trips taken between the 0.3 and 3 mile trip distances.
 :::
 :::
 :::
@@ -1491,7 +1503,7 @@ The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the s
 #### Total Frequency {#total_miles_freq}
 
 ::: {.d-flex .align-content-stretch}
-::: p-3
+::: {.p-3 style="max-height: 80vh"}
 ```{r}
 #| label: tbl-milesTotals
 #| tbl-cap: Miles Total Frequency
@@ -1526,13 +1538,11 @@ milesTable <- dplyr::tbl(dbconn,
     dplyr::rename("Trips (in thousands)" = n,
                   "Miles" = miles)
 
-milesTable
-
 milesPlot <- milesTable |>
     ggplot2::ggplot(mapping = ggplot2::aes(x = Miles,
                                            y = `Trips (in thousands)`,
                                            color = `Trips (in thousands)`)) +
-    ggplot2::geom_point(show.legend = FALSE,
+    ggplot2::geom_line(show.legend = FALSE,
                         size = 2) +
     ggplot2::scale_color_distiller(palette = "YlOrRd") +
     ggplot2::labs(title = "Trip Distance Frequency",
@@ -1564,7 +1574,7 @@ milesPlot
 #### Group Frequency {#group_miles_freq}
 
 ::: {.d-flex .align-content-stretch}
-::: p-3
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-milesCompare
 #| tbl-cap: Miles Group Frequency
@@ -1596,8 +1606,8 @@ dplyr::tbl(dbconn,
            "db/freqCompare_miles.db") |>
     ggplot2::ggplot(mapping = ggplot2::aes(x = miles,
                                            y = n,
-                                           fill = member_casual)) +
-    ggplot2::geom_area(show.legend = TRUE) +
+                                           color = member_casual)) +
+    ggplot2::geom_line(show.legend = TRUE) +
     ggplot2::scale_color_brewer(palette = "Paired",
                                name = "Subscriber Status") +
     ggplot2::labs(title = "Miles to Membership Frequency",
@@ -1647,10 +1657,9 @@ dplyr::tbl(dbconn,
 :::
 
 ::: {.p-1 .align-self-center}
-Most of the mean mph observations fall in between 2-12 mph, as seen in @tbl-mphTotals and @fig-mphTotals. 
+The majority of mph observations fall in between 2-12 mph, as seen in @tbl-mphTotals and @fig-mphTotals.
 
-
-The most common overall mph for trips fall in between 2-11 mph. This is what we might expect for city travel.
+Member mph observations skew towards a higher mph than casual riders, as seen in @tbl-mphCompare and @fig-mphCompare.
 :::
 :::
 :::
@@ -1663,7 +1672,7 @@ The most common overall mph for trips fall in between 2-11 mph. This is what we 
 #### Total Frequency {#total_mph_freq}
 
 ::: {.d-flex .align-content-stretch}
-::: p-3
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-mphTotals
 #| tbl-cap: Mph Total Frequency
@@ -1692,33 +1701,26 @@ dplyr::tbl(dbconn,
 
 mphTable <- dplyr::tbl(dbconn,
                        "db/freq_mph.db") |>
-    dplyr::collect()
+dplyr::collect()
 
 mphPlot <- mphTable |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = mph,
-                                           y = n,
-                                           color = n)) +
-    ggplot2::geom_point(show.legend = FALSE) +
-    ggplot2::labs(title = "Mean Speed Frequency",
-                  subtitle = "Calculated average speed over the duration of the trip") +
-    ggplot2::scale_color_distiller(palette = "YlOrRd") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30")
-    )
+ggplot2::ggplot(mapping = ggplot2::aes(x = mph, y = n, color = n)) +
+ggplot2::geom_point(show.legend = FALSE) +
+ggplot2::labs(title = "Mean Speed Frequency", subtitle = "Calculated average speed over the duration of the trip") +
+ggplot2::scale_color_distiller(palette = "YlOrRd") +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30")
+)
 
 mphPlot
 ```
@@ -1730,7 +1732,7 @@ mphPlot
 #### Group Frequency {#group_mph_freq}
 
 ::: {.d-flex .align-content-stretch}
-::: p-3
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-mphCompare
 #| tbl-cap: Mph Group Frequency
@@ -1748,8 +1750,6 @@ dplyr::tbl(dbconn,
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
             column_labels.hidden = TRUE)
-
-
 ```
 :::
 
@@ -1805,7 +1805,9 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 :::
 
 ::: {.p-1 .align-self-center}
-The time riders are usually spending on these trips lies between 5 to 15 minutes.
+The time riders are usually spending on these trips lies between 5 to 15 minutes, as seen in @tbl-triptimeTotals and @fig-triptimeTotals.
+
+The groups as seen in @tbl-triptimeCompare and @fig-triptimeCompare both follow the totals pattern, largely. At the 42 minute mark in the table and plot, the casual riders count becomes greater than for members. Though members ride more frequently, casual riders are more likely to take longer trips.
 :::
 :::
 :::
@@ -1818,7 +1820,7 @@ The time riders are usually spending on these trips lies between 5 to 15 minutes
 #### Total Frequency {#total_tripTime_freq}
 
 ::: {.d-flex .align-content-stretch}
-::: p-3
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-triptimeTotals
 #| tbl-cap: Trip-Time Totals
@@ -1843,7 +1845,7 @@ dplyr::tbl(dbconn,
 
 ::: p-3
 ```{r}
-#| label: fig-triptimeTotal
+#| label: fig-triptimeTotals
 #| fig-cap: Trip-Time Totals
 
 tripTimeTable <- dplyr::tbl(dbconn,
@@ -1887,7 +1889,7 @@ tripTimePlot
 #### Group Frequency {#group_tripTime_freq}
 
 ::: {.d-flex .align-content-stretch}
-::: p-3
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-triptimeCompare
 #| tbl-cap: Trip Time Comparison
@@ -1896,7 +1898,6 @@ dplyr::tbl(dbconn,
            "db/freqCompare_tripTime.db") |>
     dplyr::collect() |>
     dplyr::arrange(desc(n)) |>
-   # dplyr::slice(1:20) |>
     gt::gt(groupname_col = "trip_time",
            row_group_as_column = TRUE) |>
     gt::tab_header(title = "Trip-Time to Membership Frequency",
@@ -1906,15 +1907,13 @@ dplyr::tbl(dbconn,
         table.font.color = "SeaShell",
         table_body.vlines.color = "gray20",
         table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE
-    )
-
+        column_labels.hidden = TRUE)
 ```
 :::
 
 ::: p-3
 ```{r}
-#| label: fig-triptimeFrequency
+#| label: fig-triptimeCompare
 #| fig-cap: Trip-Time Group Frequency 
 
 dplyr::tbl(dbconn,
@@ -1944,8 +1943,7 @@ dplyr::tbl(dbconn,
         axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
         axis.ticks.y = ggplot2::element_blank(),
         panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-        legend.background = ggplot2::element_rect(fill = "#222222")
-        )
+        legend.background = ggplot2::element_rect(fill = "#222222"))
 ```
 :::
 :::
@@ -1954,20 +1952,126 @@ dplyr::tbl(dbconn,
 :::
 :::
 
-::: {.d-flex .justify-content-center}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
-```
-:::
-:::
+# Statistics
 
-# Trip Network
+```{r}
+
+duckdb::dbListTables(dbconn)
+
+miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(member_casual, miles) |>
+dplyr::collect() |>
+dplyr::mutate(miles = dplyr::case_when(
+miles >= 1 ~ round(miles, digits = 0),
+miles < 1 ~ round(signif(miles, 3), digits = 1))) |>
+dplyr::arrange(miles)
+
+miles_asNums$member_casual <- stringr::str_replace(miles_asNums$member_casual, pattern = "casual", "0")
+
+miles_asNums$member_casual <- stringr::str_replace(miles_asNums$member_casual, pattern = "member", "1")
+
+miles_asNums$member_casual <- miles_asNums$member_casual |> as.integer()
+
+miles_asNums$member_casual <- factor(
+miles_asNums$member_casual,
+levels = c(0, 1),
+labels = c("casual", "member")
+)
+
+milesModel <- stats::glm(member_casual ~ miles, data = miles_asNums, family = binomial)
+
+summary(milesModel)
+
+summary(miles_asNums)
+
+# B1 < 0, probability that Y = 1 decreases with X 
+# the probability that members ride decreases with trip distance, measured in miles
+```
+
+\
+$\beta_1 = \neg 0.1000920$
+
+```{r}
+
+mph_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(mph, member_casual) |>
+dplyr::mutate(mph = round(mph, digits = 0)) |>
+dplyr::arrange(mph) |>
+dplyr::collect()
+
+
+mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "casual", "0")
+
+mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "member", "1")
+
+mph_asNums$member_casual <- mph_asNums$member_casual |> as.integer()
+
+mph_asNums$member_casual <- factor(
+mph_asNums$member_casual,
+levels = c(0, 1),
+labels = c("casual", "member")
+)
+
+mphModel <- stats::glm(member_casual ~ mph, data = mph_asNums, family = binomial)
+
+summary(mphModel)
+
+summary(mph_asNums)
+
+# B > 0, so the probability of a higher average trip speed is more likely for members than casuals
+```
+
+```{r}
+#| label: tripTimeStats
+
+# For the trip times comparison
+triptime_asNums <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(member_casual, trip_time) |>
+dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
+dplyr::arrange(trip_time) |>
+dplyr::collect()
+
+triptime_asNums$member_casual <- stringr::str_replace(triptime_asNums$member_casual, pattern = "casual", "0")
+
+triptime_asNums$member_casual <- stringr::str_replace(triptime_asNums$member_casual, pattern = "member", "1")
+
+triptime_asNums$member_casual <- triptime_asNums$member_casual |> as.integer()
+
+triptime_asNums$member_casual <- factor(
+triptime_asNums$member_casual,
+levels = c(0, 1),
+labels = c("casual", "member")
+)
+
+triptimeModel <- stats::glm(member_casual ~ trip_time, data = triptime_asNums, family = binomial)
+
+summary(triptimeModel) |>
+kableExtra::kable()
+
+triptime_asNums |>
+#psych::describe()
+#Hmisc::describe()
+
+triptime_asNums |>
+gtsummary::tbl_regression()
+
+
+
+# B < 0, so the probability of a lower trip-time is higher for members than casuals
+```
+
+
+
+# The Streets
+
+::: p-3
+For an interesting birds-eye view of trip behaviors, check out @fig-epiflowNetwork. This epiflow diagram is interactive, so one can click the circles (nodes), the lines connecting the nodes or use the drop-down window to further explore the data. The top 34 most traveled stations were used for this analysis. The line thickness roughly corresponds with amount of trips taken, so thicker lines means more trips between nodes. [@moragab]
+:::
 
 ::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
-Stepping Through the Code
+Creating an Epiflow
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
@@ -1993,6 +2097,8 @@ flowData <- dplyr::tbl(dbconn,
                   "to_station" = end_station_name) |>
     dplyr::collect() |>
     dplyr::slice_head(n = 50)
+
+flowData
 ```
 
 ```{r}
@@ -2000,7 +2106,7 @@ flowData <- dplyr::tbl(dbconn,
 #| code-summary: Second, we need statistics but also to combine the statistics for every unique station name. 
 
 locationData <- dplyr::tbl(dbconn,
-                            tblPath_fltrd) |>
+                           tblPath_fltrd) |>
     dplyr::select(start_station_name,
                   end_station_name,
                   started_at,
@@ -2023,6 +2129,8 @@ locationData <- dplyr::tbl(dbconn,
                ) |>
     dplyr::arrange(desc(trip_count)) |>
     dplyr::collect()
+
+
 
 # Need to combine all names to single column and recalculate 
 # or retain other stats.
@@ -2048,7 +2156,7 @@ locationData_pivoted <- locationData |>
 # for all the pairs
 ef_test <- epiflows::make_epiflows(flows = flowData,
                                    locations = locationData_pivoted,
-                                   duration_stay = "avg_trip_time",
+                                   #duration_stay = "avg_trip_time",
                                    num_cases = "trips_toAndfrom")
 ```
 :::
@@ -2087,12 +2195,6 @@ locationData_pivoted |>
 :::
 :::
 
-::: br
-:::
-
-::: column-screen-inset
-# Epiflow Diagram
-
 ::: {.article style="color: Black"}
 ```{r}
 #| label: fig-epiflowNetwork
@@ -2101,7 +2203,6 @@ locationData_pivoted |>
 
 epiflows::vis_epiflows(ef_test)
 ```
-:::
 :::
 
 ::: {.d-flex .justify-content-center}
@@ -2120,20 +2221,9 @@ epiflows::vis_epiflows(ef_test)
 :::
 :::
 
-# A Street-Level View
+## Map-Views
 
-::: {.callout-tip collapse="false" title="A Street-Level View"}
-## The Most Traveled Stations
-
-You can expand and collapse the following four maps. The original dataset used for these maps into four so that the 'burst' buttons would fit inside the window. Click on the burst buttons to zoom into the sample groups. This is to better understand the logic of where the top most traveled bike stations are located in an effort to better inform future station locations.
-
-::: {.d-flex .justify-content-center}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas20" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
-```
-:::
-:::
+This section is meant to close the divide between abstraction and concrete reality. You can expand and collapse four maps found in the callout section below. The original dataset used for these maps has been split into four so that the burst buttons could fit into the viewing window. The maps are interactive, so the default views are zoomable and movable. The transparent burst buttons enable snappy zooming-in of the station groups.
 
 ::: {#offcanvas20 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -2238,7 +2328,16 @@ source("mapViewer.R")
 :::
 :::
 
-::: {.callout-tip title="Benson Ave & Church St - Ellis Ave & 60th St" collapse="true"}
+::: {#accordionParent .accordion}
+::: accordion-item
+::: {#headingOne .accordion-header}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne"}
+Item #1
+:::
+:::
+
+::: {#collapseOne .accordion-collapse .collapse aria-labelledby="headingOne" data-bs-parent="#accordionParent"}
+::: accordion-body
 ```{r}
 #| label: fig-map1
 #| fig-cap: "Benson Ave & Church St - Ellis Ave & 60th St"
@@ -2249,8 +2348,18 @@ mapViewer(slicerVector[[1]])
 
 ```
 :::
+:::
+:::
 
-::: {.callout-tip title="Greenview Ave & Fullteron Ave - Loomis Ave & Lexington St" collapse="true"}
+::: accordion-item
+::: {#headingTwo .accordion-header}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo"}
+Item \# 2
+:::
+:::
+
+::: {#collapseTwo .accordion-collapse .collapse aria-labelledby="headingTwo" data-bs-parent="#accordionParent"}
+::: accordion-body
 ```{r}
 #| label: fig-map2
 #| echo: false
@@ -2262,8 +2371,18 @@ mapViewer(slicerVector[[2]])
 
 ```
 :::
+:::
+:::
 
-::: {.callout-tip title="Michigan Ave & Oak St - State St & 33rd St" collapse="true"}
+::: accordion-item
+::: {#headingThree .accordion-header}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree"}
+Item #3
+:::
+:::
+
+::: {#collapseThree .accordion-collapse .collapse aria-labelledby="headingThree" data-bs-parent="#accordionParent"}
+::: accordion-body
 ```{r}
 #| label: fig-map3
 #| echo: false
@@ -2275,8 +2394,18 @@ mapViewer(slicerVector[[3]])
 
 ```
 :::
+:::
+:::
 
-::: {.callout-tip title="Street Dr & Grand Ave - Woodlawn Ave & 55th St" collapse="true"}
+::: accordion-item
+::: {#headingFour .accordion-header}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour"}
+Item #4
+:::
+:::
+
+::: {#collapseFour .accordion-collapse .collapse aria-labelledby="headingFour" data-bs-parent="#accordionParent"}
+::: accordion-body
 ```{r}
 #| label: fig-map4
 #| fig-cap: "Street Dr & Grand Ave - Woodlawn Ave & 55th St"
@@ -2287,8 +2416,10 @@ mapViewer(slicerVector[[4]])
 ```
 :::
 :::
+:::
+:::
 
-## Conclusion
+# Conclusion
 
 There isn't much of a difference between annual subscriber and casual trip behavior other than trip frequency. Annual subs are people who ride more frequently. Looking into where the main activity is, you can see that they are near stores, schools, and such. If the goal is to get more people to ride bicycles instead of drive, the answer might lie outside the scope of this analysis.
 
