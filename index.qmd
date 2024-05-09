@@ -2059,6 +2059,52 @@ gtsummary::tbl_regression()
 
 # B < 0, so the probability of a lower trip-time is higher for members than casuals
 ```
+## Testing Frequency Distribution with Chi-Square
+
+```{r}
+#| label: chi-square for months
+
+duckdb::dbListTables(dbconn)
+
+
+months4chi <- dplyr::tbl(dbconn,
+           tblPath_fltrd,
+           check_from = FALSE) |>
+    dplyr::select(member_casual,
+                  started_at) |>
+    dplyr::mutate(months = lubridate::month(started_at,
+                                            label = FALSE,
+                                            abbr = TRUE)) |>
+    dplyr::group_by(member_casual,
+                    months) |>
+    dplyr::summarize(n = dplyr::n()) |>
+    dplyr::collect() |>
+    dplyr::arrange(months, member_casual) |>
+    dplyr::mutate(months = c(month.abb),
+                  months = forcats::as_factor(months),
+                  months = forcats::fct_inorder(months))
+
+
+uniqueMonths <- months4chi$months |> as.character() |> unique()
+
+
+months4chiMatrix <- matrix(c(months4chi$n), nrow = 2)
+rownames(months4chiMatrix) <- c("casual", "member")
+colnames(months4chiMatrix) <- uniqueMonths
+
+
+monthChi <- chisq.test(months4chiMatrix)
+
+
+monthChi_expected <- monthChi$expected
+monthChi_observed <- monthChi$observed
+
+monthChi_expected
+monthChi_observed
+
+# p < 0.05, evidence that the Null Hypothesis can be rejected,
+#  there is a strong chance that there is an association between how likely a rider uses the service during a given month, and what their membership status is
+```
 
 
 
