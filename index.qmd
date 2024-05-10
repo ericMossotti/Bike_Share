@@ -918,19 +918,28 @@ dplyr::tbl(dbconn,
 #| label: tbl-memberTotals
 #| tbl-cap: Total Member Frequency
 
-dplyr::tbl(dbconn,
-           "db/freq_member.db") |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Subscriber Frequency",
-        subtitle = "Annual and casual rider trip counts"
-    ) |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE)
+
+dplyr::tbl(dbconn, "db/freq_member.db") |>
+gt::gt() |>
+gt::tab_header(title = "Subscriber Frequency", subtitle = "Annual and casual rider trip counts") |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+column_labels.hidden = TRUE
+)
+
+members_totalSummary <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(member_casual) |>
+dplyr::collect() |>
+gtsummary::tbl_summary() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 ```
 :::
 
@@ -939,36 +948,27 @@ dplyr::tbl(dbconn,
 #| label: fig-totalmemberFrequency
 #| fig-cap: Total Member Frequency
 
-member_freqTbl <- dplyr::tbl(dbconn,
-                             "db/freq_member.db") |>
-    dplyr::collect()
-
+member_freqTbl <- dplyr::tbl(dbconn, "db/freq_member.db") |>
+dplyr::collect()
 
 member_freqTbl |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = member_casual,
-                                           y = n,
-                                           fill = n)) +
-    ggplot2::geom_col(show.legend = FALSE) +
-    ggplot2::labs(title = "Membership Frequency",
-                  subtitle = "Trips taken by annual subscribers vs non-subscribers") +
-    ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30")
-    )
+ggplot2::ggplot(mapping = ggplot2::aes(x = member_casual, y = n, fill = n)) +
+ggplot2::geom_col(show.legend = FALSE) +
+ggplot2::labs(title = "Membership Frequency", subtitle = "Trips taken by annual subscribers vs non-subscribers") +
+ggplot2::scale_fill_distiller(palette = "YlOrRd") +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30")
+)
 ```
 :::
 :::
@@ -999,6 +999,10 @@ member_freqTbl |>
 In @tbl-ctypeTotals and @fig-ctypeTotals, the total trips taken on conventional bicycles and electric bicycles are compared. Clearly, electric bicycles are not used as much as conventional.
 
 Moving to @tbl-ctypeCompare and @fig-ctypeCompare, the frequency of trips taken is split into groups of membership status. There is a large disparity not only between the scale of trips taken between annual subscribers and casual users, but also within the the group of subscribers themselves. While there is a small difference between trips taken by casual members on conventional compared to electric, that said difference is more pronounced in the annual subscriber group.
+
+
+With $p < 0.05$, there appears to be a strong association between members and casuals with regards to the type of bicycles people are likely to ride. @tbl-chiTypes
+
 :::
 :::
 :::
@@ -1016,7 +1020,6 @@ Moving to @tbl-ctypeCompare and @fig-ctypeCompare, the frequency of trips taken 
 #| label: tbl-ctypeTotals
 #| tbl-cap: Cycle Type Total Frequency
 
-
 dplyr::tbl(dbconn,
            "db/freq_rTypes.db") |>
      gt::gt() |>
@@ -1030,6 +1033,18 @@ dplyr::tbl(dbconn,
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
             column_labels.hidden = TRUE)
+
+
+ctype_totalSumm <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(rideable_type) |>
+dplyr::collect() |>
+gtsummary::tbl_summary() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 ```
 :::
 
@@ -1038,35 +1053,27 @@ dplyr::tbl(dbconn,
 #| label: fig-ctypeTotals
 #| fig-cap: Cycle Type Total Frequency 
 
-ridetype_freqTbl <- dplyr::tbl(dbconn,
-                             "db/freq_rTypes.db") |>
-    dplyr::collect()
+ridetype_freqTbl <- dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
+dplyr::collect()
 
 ridetype_freqTbl |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type,
-                                           y = n,
-                                           fill = n)) +
-    ggplot2::geom_col(show.legend = FALSE) +
-    ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-    ggplot2::labs(title = "Cycle Type Frequency",
-                  subtitle = "Trips taken per cycle type") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30")
-    )
+ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type, y = n, fill = n)) +
+ggplot2::geom_col(show.legend = FALSE) +
+ggplot2::scale_fill_distiller(palette = "YlOrRd") +
+ggplot2::labs(title = "Cycle Type Frequency", subtitle = "Trips taken per cycle type") +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30")
+)
 ```
 :::
 :::
@@ -1081,20 +1088,30 @@ ridetype_freqTbl |>
 #| label: tbl-ctypeCompare
 #| tbl-cap: Cycle Type Group Frequency
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_rType.db") |>
-     gt::gt(groupname_col = "rideable_type",
-            row_group_as_column = TRUE) |>
-        gt::tab_header(
-            title = "Bicycle Type to Membership Frequency",
-            subtitle = "Grouped by sub. status"
-        ) |>
-        gt::tab_options(
-            table.background.color = 'transparent',
-            table.font.color = "SeaShell",
-            table_body.vlines.color = "gray20",
-            table_body.hlines.color = "gray20",
-            column_labels.hidden = TRUE)
+
+dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+gt::gt(groupname_col = "rideable_type", row_group_as_column = TRUE) |>
+gt::tab_header(title = "Bicycle Type to Membership Frequency", subtitle = "Grouped by sub. status") |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+column_labels.hidden = TRUE)
+
+ctype_compareSummary <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(rideable_type, member_casual) |>
+dplyr::collect() |>
+gtsummary::tbl_summary(by = member_casual, label = list(rideable_type = "Bicycle Type", member_casual = "Membership")) |>
+gtsummary::add_p()
+
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
+
 ```
 :::
 
@@ -1103,38 +1120,52 @@ dplyr::tbl(dbconn,
 #| label: fig-ctypeCompare
 #| fig-cap: Cycle Type Group Frequency
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_rType.db") |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type,
-                                           y = n,
-                                           fill = member_casual)) +
-    ggplot2::geom_col(show.legend = TRUE,
-                      position = 'dodge') +
-    ggplot2::scale_fill_brewer(palette = "Paired",
-                               name = "Subscriber Status") +
-    ggplot2::labs(title = "Cycle Type to Membership Frequency",
-                  subtitle = "Compare trips taken by cycle type to membership status") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-        legend.background = ggplot2::element_rect(fill = "#222222")
-        )
+dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type, y = n, fill = member_casual)) +
+ggplot2::geom_col(show.legend = TRUE, position = 'dodge') +
+ggplot2::scale_fill_brewer(palette = "Paired", name = "Subscriber Status") +
+ggplot2::labs(title = "Cycle Type to Membership Frequency", subtitle = "Compare trips taken by cycle type to membership status") +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+legend.background = ggplot2::element_rect(fill = "#222222")
+)
+
 ```
 :::
 :::
+
+___
+
+#### Summary
+
+```{r}
+#| label: tbl-chiTypes
+
+rTypes4chi <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+dplyr::arrange(rideable_type, member_casual) |>
+dplyr::collect()
+
+uniqueTypes <- rTypes4chi$rideable_type |> as.character() |> unique()
+
+rTypes4chiMatrix <- matrix(c(rTypes4chi$n), nrow = 2)
+rownames(rTypes4chiMatrix) <- c("casual", "member")
+colnames(rTypes4chiMatrix) <- uniqueTypes
+
+rTypesChi <- chisq.test(rTypes4chiMatrix)
+
+
+rTypesChi
+```
 :::
 
 ## Month
@@ -1160,6 +1191,9 @@ dplyr::tbl(dbconn,
 Looking at @tbl-monthTotals and @fig-monthTotals, the warmer months appear to coincide with higher trip frequency, in total.
 
 In @tbl-monthCompare and @fig-monthCompare, trip frequency in both groups are impacted by the seasons. Although, it would appear that trip frequency of subscribers fluctuates less than for casuals. The disparity in frequency change is more apparent in the comparison of winter to summer months between member groups.
+
+Given $p < 0.05$, it is likely that membership status is associated with a given member's or non-member's use of the service during a particular month or season. @tbl-chiMonths 
+
 :::
 :::
 :::
@@ -1256,6 +1290,25 @@ dplyr::tbl(dbconn,
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
             column_labels.hidden = TRUE)
+
+
+month_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(member_casual, started_at) |>
+dplyr::mutate(months = lubridate::month(started_at, label = TRUE, abbr = TRUE)) |>
+dplyr::collect() |>
+dplyr::mutate(months = forcats::as_factor(months), months = forcats::fct_inorder(months))
+
+month_compareSummary <- months1 |>
+dplyr::select(months, member_casual) |>
+gtsummary::tbl_summary(by = member_casual, label = list(months = "Month", member_casual = "Membership")) |>
+gtsummary::add_p()
+
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 ```
 :::
 
@@ -1265,39 +1318,55 @@ dplyr::tbl(dbconn,
 #| fig-cap: Month Group Frequency
 
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_month.db") |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = months,
-                                           y = n,
-                                           fill = member_casual)) +
-    ggplot2::geom_col(show.legend = TRUE,
-                      position = 'dodge') +
-    ggplot2::scale_fill_brewer(palette = "Paired",
-                               name = "Subscriber Status") +
-    ggplot2::labs( title = "Month to Membership Frequency",
-            subtitle = "Grouped by sub status") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-        legend.background = ggplot2::element_rect(fill = "#222222")
-        )
+dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
+ggplot2::ggplot(mapping = ggplot2::aes(x = months, y = n, fill = member_casual)) +
+ggplot2::geom_col(show.legend = TRUE, position = 'dodge') +
+ggplot2::scale_fill_brewer(palette = "Paired", name = "Subscriber Status") +
+ggplot2::labs(title = "Month to Membership Frequency", subtitle = "Grouped by sub status") +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+legend.background = ggplot2::element_rect(fill = "#222222")
+)
 
 ```
 :::
 :::
+
+___
+
+#### Summary
+
+```{r}
+#| label: tbl-chiMonths
+
+# Make sure the members and casuals are ordered within each month for the matrix further below.
+months4chi <- dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
+dplyr::arrange(months, member_casual) |>
+dplyr::collect()
+
+# Need a vector of months without duplicate month names
+uniqueMonths <- months4chi$months |> as.character() |> unique()
+
+# Probably more than one way to do this, but decided that creating a matrix was easy enough and effective. Now we can use the months vector. 
+months4chiMatrix <- matrix(c(months4chi$n), nrow = 2)
+rownames(months4chiMatrix) <- c("casual", "member")
+colnames(months4chiMatrix) <- uniqueMonths
+
+monthChi <- chisq.test(months4chiMatrix)
+
+monthChi
+```
+
 :::
 
 ## Day of Week
@@ -1325,6 +1394,8 @@ dplyr::tbl(dbconn,
 In @tbl-wkdayTotals and @fig-wkdayTotals, there appears to be more trips taken in total between Tuesday through Saturday than Sunday through Monday.
 
 The trend is more complicated in the weekday comparison groups seen in @tbl-wkdayCompare and @fig-wkdayCompare. Trips taken by the casual group rises towards the weekend and dips on days corresponding to days when members are taking more trips. When members are less active, casual riders are more active.
+
+Given, $p < 0.05$, the likelihood of using the service on a particular day depends on membership status. @tbl-chiDays
 :::
 :::
 :::
@@ -1424,6 +1495,28 @@ dplyr::tbl(dbconn,
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
             column_labels.hidden = TRUE)
+
+
+# For the week days  comparison
+day_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(member_casual, started_at) |>
+dplyr::mutate(wkday = lubridate::wday(started_at, label = TRUE, abbr = TRUE)) |>
+dplyr::collect() |>
+dplyr::mutate(wkday = forcats::as_factor(wkday),
+wkday = forcats::fct_inorder(wkday))
+
+days_compareSummary <- day_tbl |>
+dplyr::select(wkday, member_casual) |>
+gtsummary::tbl_summary(by = member_casual, label = list(wkday = "Day", member_casual = "Membership")) |>
+gtsummary::add_p()
+
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
+
 ```
 :::
 
@@ -1464,6 +1557,30 @@ dplyr::tbl(dbconn,
 ```
 :::
 :::
+
+___
+
+#### Summary
+
+```{r}
+#| label: tbl-chiDays
+
+wkdays4chi <- dplyr::tbl(dbconn, "db/freqCompare_wkDay.db") |>
+dplyr::arrange(wkday, member_casual) |>
+dplyr::collect()
+
+uniqueDays <- wkdays4chi$wkday |> as.character() |> unique()
+
+wkdays4chiMatrix <- matrix(c(wkdays4chi$n), nrow = 2)
+rownames(wkdays4chiMatrix) <- c("casual", "member")
+colnames(wkdays4chiMatrix) <- uniqueDays
+
+daysChi <- chisq.test(wkdays4chiMatrix)
+
+daysChi
+```
+
+
 :::
 
 ## Miles
@@ -1491,6 +1608,10 @@ dplyr::tbl(dbconn,
 The distance of most observed trips in @tbl-milesTotals and @fig-milesTotals fall in between 0.3 to 3 miles.
 
 The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the same pattern. The casual and member differ mainly in overall scale of trips taken between the 0.3 and 3 mile trip distances.
+
+$\beta_1 < 0$, members are less likely to ride as distance traveled in a given trip increases. So, members tend to take shorter trips compared to casual users. @tbl-milesLog
+
+
 :::
 :::
 :::
@@ -1539,30 +1660,23 @@ milesTable <- dplyr::tbl(dbconn,
                   "Miles" = miles)
 
 milesPlot <- milesTable |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = Miles,
-                                           y = `Trips (in thousands)`,
-                                           color = `Trips (in thousands)`)) +
-    ggplot2::geom_line(show.legend = FALSE,
-                        size = 2) +
-    ggplot2::scale_color_distiller(palette = "YlOrRd") +
-    ggplot2::labs(title = "Trip Distance Frequency",
-                  subtitle = "Measured in miles") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30"))
+ggplot2::ggplot(mapping = ggplot2::aes(x = Miles, y = `Trips (in thousands)`, color = `Trips (in thousands)`)) +
+ggplot2::geom_line(show.legend = FALSE, size = 2) +
+ggplot2::scale_color_distiller(palette = "YlOrRd") +
+ggplot2::labs(title = "Trip Distance Frequency", subtitle = "Measured in miles") +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30")
+)
         
 milesPlot
 ```
@@ -1593,6 +1707,31 @@ dplyr::tbl(dbconn,
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
             column_labels.hidden = TRUE)
+
+# For the miles comparison
+
+miles_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(member_casual, miles) |>
+dplyr::collect() |>
+dplyr::mutate(miles = dplyr::case_when(
+miles >= 1 ~ round(miles, digits = 0),
+miles < 1 ~ round(signif(miles, 3), digits = 1)
+)) |>
+dplyr::arrange(miles) |>
+dplyr::mutate(miles = forcats::as_factor(miles),
+miles = forcats::fct_inorder(miles)
+)
+
+miles_compareSummary <- miles_tbl |>
+dplyr::select(miles, member_casual) |>
+gtsummary::tbl_summary(by = member_casual, label = list(miles = "Miles", member_casual = "Membership")) |>
+#gtsummary::add_p() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 ```
 :::
 
@@ -1602,37 +1741,85 @@ dplyr::tbl(dbconn,
 #| fig-cap: Miles Group Frequency
 
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_miles.db") |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = miles,
-                                           y = n,
-                                           color = member_casual)) +
-    ggplot2::geom_line(show.legend = TRUE) +
-    ggplot2::scale_color_brewer(palette = "Paired",
-                               name = "Subscriber Status") +
-    ggplot2::labs(title = "Miles to Membership Frequency",
-            subtitle = "Grouped by sub status") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-        legend.background = ggplot2::element_rect(fill = "#222222")
-        )
+dplyr::tbl(dbconn, "db/freqCompare_miles.db") |>
+ggplot2::ggplot(mapping = ggplot2::aes(x = miles, y = n, color = member_casual)) +
+ggplot2::geom_line(show.legend = TRUE) +
+ggplot2::scale_color_brewer(palette = "Paired", name = "Subscriber Status") +
+ggplot2::labs(title = "Miles to Membership Frequency", subtitle = "Grouped by sub status") +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+legend.background = ggplot2::element_rect(fill = "#222222")
+)
 ```
 :::
 :::
+
+#### Summary 
+
+```{r}
+#| label: tbl-milesLog
+
+
+ctype_compareTbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(member_casual, miles) |>
+dplyr::collect() |>
+gtsummary::tbl_summary(by = member_casual, label = list(rideable_type = "Bicycle Type", member_casual = "Membership")) |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
+
+miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(member_casual, miles) |>
+dplyr::collect() |>
+dplyr::mutate(miles = dplyr::case_when(
+miles >= 1 ~ round(miles, digits = 0),
+miles < 1 ~ round(signif(miles, 3), digits = 1)
+)) |>
+dplyr::arrange(miles)
+
+miles_asNums$member_casual <- stringr::str_replace(miles_asNums$member_casual, pattern = "casual", "0")
+
+miles_asNums$member_casual <- stringr::str_replace(miles_asNums$member_casual, pattern = "member", "1")
+
+miles_asNums$member_casual <- miles_asNums$member_casual |> as.integer()
+
+miles_asNums$member_casual <- factor(
+miles_asNums$member_casual,
+levels = c(0, 1),
+labels = c("casual", "member")
+)
+
+milesModel <- stats::glm(member_casual ~ miles, data = miles_asNums, family = binomial)
+
+# summary(milesModel)$coefficients
+
+mileStats_tbl <- milesModel |>
+gtsummary::tbl_regression(label = list(miles = "Miles", member_casual = "Membership"))
+
+mileStats_tbl |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
+
+```
+
+
 :::
 
 ## Mph
@@ -1660,6 +1847,9 @@ dplyr::tbl(dbconn,
 The majority of mph observations fall in between 2-12 mph, as seen in @tbl-mphTotals and @fig-mphTotals.
 
 Member mph observations skew towards a higher mph than casual riders, as seen in @tbl-mphCompare and @fig-mphCompare.
+
+Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for the duration of their trips compared to casuals. @tbl-mphLog
+
 :::
 :::
 :::
@@ -1750,6 +1940,27 @@ dplyr::tbl(dbconn,
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
             column_labels.hidden = TRUE)
+
+
+mph_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(mph, member_casual) |>
+dplyr::mutate(mph = round(mph, digits = 0)) |>
+dplyr::collect() |>
+dplyr::arrange(mph) |>
+dplyr::mutate(mph = forcats::as_factor(mph),
+mph = forcats::fct_inorder(mph)
+)
+
+mph_compareSummary <- mph_tbl |>
+dplyr::select(mph, member_casual) |>
+gtsummary::tbl_summary(by = member_casual, label = list(mph = "Mph", member_casual = "Membership")) |>
+#gtsummary::add_p() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 ```
 :::
 
@@ -1781,6 +1992,42 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 ```
 :::
 :::
+
+___
+
+#### Summary
+
+```{r}
+#| tbl-mphLogAlt1
+
+mph_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(mph, member_casual) |>
+dplyr::mutate(mph = round(mph, digits = 0)) |>
+dplyr::arrange(mph) |>
+dplyr::collect()
+
+
+mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "casual", "0")
+
+mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "member", "1")
+
+mph_asNums$member_casual <- mph_asNums$member_casual |> as.integer()
+
+mph_asNums$member_casual <- factor(
+mph_asNums$member_casual,
+levels = c(0, 1),
+labels = c("casual", "member")
+)
+
+mphModel <- stats::glm(member_casual ~ mph, data = mph_asNums, family = binomial)
+
+summary(mphModel)
+
+#summary(mph_asNums)
+
+```
+
+
 :::
 
 ## Trip-Times
@@ -1808,6 +2055,9 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 The time riders are usually spending on these trips lies between 5 to 15 minutes, as seen in @tbl-triptimeTotals and @fig-triptimeTotals.
 
 The groups as seen in @tbl-triptimeCompare and @fig-triptimeCompare both follow the totals pattern, largely. At the 42 minute mark in the table and plot, the casual riders count becomes greater than for members. Though members ride more frequently, casual riders are more likely to take longer trips.
+
+Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of how many minutes they ride for on their trips than casuals. @tbl-triptimesLog
+
 :::
 :::
 :::
@@ -1908,6 +2158,28 @@ dplyr::tbl(dbconn,
         table_body.vlines.color = "gray20",
         table_body.hlines.color = "gray20",
         column_labels.hidden = TRUE)
+
+
+tripTime_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(member_casual, trip_time) |>
+dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
+dplyr::arrange(trip_time) |>
+dplyr::collect() |>
+dplyr::mutate(
+trip_time = forcats::as_factor(trip_time),
+trip_time = forcats::fct_inorder(trip_time)
+)
+
+triptime_compareSummary <- tripTime_tbl |>
+dplyr::select(trip_time, member_casual) |>
+gtsummary::tbl_summary(by = member_casual, label = list(trip_time = "Time (minutes)", member_casual = "Membership")) |>
+#gtsummary::add_p() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 ```
 :::
 
@@ -1947,82 +2219,13 @@ dplyr::tbl(dbconn,
 ```
 :::
 :::
-:::
-:::
-:::
-:::
 
-# Statistics
+___
+
+#### Summary
 
 ```{r}
-
-duckdb::dbListTables(dbconn)
-
-miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
-dplyr::select(member_casual, miles) |>
-dplyr::collect() |>
-dplyr::mutate(miles = dplyr::case_when(
-miles >= 1 ~ round(miles, digits = 0),
-miles < 1 ~ round(signif(miles, 3), digits = 1))) |>
-dplyr::arrange(miles)
-
-miles_asNums$member_casual <- stringr::str_replace(miles_asNums$member_casual, pattern = "casual", "0")
-
-miles_asNums$member_casual <- stringr::str_replace(miles_asNums$member_casual, pattern = "member", "1")
-
-miles_asNums$member_casual <- miles_asNums$member_casual |> as.integer()
-
-miles_asNums$member_casual <- factor(
-miles_asNums$member_casual,
-levels = c(0, 1),
-labels = c("casual", "member")
-)
-
-milesModel <- stats::glm(member_casual ~ miles, data = miles_asNums, family = binomial)
-
-summary(milesModel)
-
-summary(miles_asNums)
-
-# B1 < 0, probability that Y = 1 decreases with X 
-# the probability that members ride decreases with trip distance, measured in miles
-```
-
-\
-$\beta_1 = \neg 0.1000920$
-
-```{r}
-
-mph_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
-dplyr::select(mph, member_casual) |>
-dplyr::mutate(mph = round(mph, digits = 0)) |>
-dplyr::arrange(mph) |>
-dplyr::collect()
-
-
-mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "casual", "0")
-
-mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "member", "1")
-
-mph_asNums$member_casual <- mph_asNums$member_casual |> as.integer()
-
-mph_asNums$member_casual <- factor(
-mph_asNums$member_casual,
-levels = c(0, 1),
-labels = c("casual", "member")
-)
-
-mphModel <- stats::glm(member_casual ~ mph, data = mph_asNums, family = binomial)
-
-summary(mphModel)
-
-summary(mph_asNums)
-
-# B > 0, so the probability of a higher average trip speed is more likely for members than casuals
-```
-
-```{r}
-#| label: tripTimeStats
+#| label: tbl-triptimesLog
 
 # For the trip times comparison
 triptime_asNums <- dplyr::tbl(dbconn, tblPath_fltrd) |>
@@ -2045,73 +2248,49 @@ labels = c("casual", "member")
 
 triptimeModel <- stats::glm(member_casual ~ trip_time, data = triptime_asNums, family = binomial)
 
-summary(triptimeModel) |>
-kableExtra::kable()
-
-triptime_asNums |>
-#psych::describe()
-#Hmisc::describe()
-
-triptime_asNums |>
-gtsummary::tbl_regression()
-
-
-
-# B < 0, so the probability of a lower trip-time is higher for members than casuals
+summary(triptimeModel)
 ```
-## Testing Frequency Distribution with Chi-Square
+
+:::
+:::
+:::
+:::
+
+
 
 ```{r}
-#| label: chi-square for months
-
-duckdb::dbListTables(dbconn)
+#| label: groupSummaries
 
 
-months4chi <- dplyr::tbl(dbconn,
-           tblPath_fltrd,
-           check_from = FALSE) |>
-    dplyr::select(member_casual,
-                  started_at) |>
-    dplyr::mutate(months = lubridate::month(started_at,
-                                            label = FALSE,
-                                            abbr = TRUE)) |>
-    dplyr::group_by(member_casual,
-                    months) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
-    dplyr::arrange(months, member_casual) |>
-    dplyr::mutate(months = c(month.abb),
-                  months = forcats::as_factor(months),
-                  months = forcats::fct_inorder(months))
+stacks <- list(ctype_compareSummary, month_compareSummary, days_compareSummary)
 
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 
-uniqueMonths <- months4chi$months |> as.character() |> unique()
+gtsummary::tbl_stack(stacks)
 
-
-months4chiMatrix <- matrix(c(months4chi$n), nrow = 2)
-rownames(months4chiMatrix) <- c("casual", "member")
-colnames(months4chiMatrix) <- uniqueMonths
-
-
-monthChi <- chisq.test(months4chiMatrix)
-
-
-monthChi_expected <- monthChi$expected
-monthChi_observed <- monthChi$observed
-
-monthChi_expected
-monthChi_observed
-
-# p < 0.05, evidence that the Null Hypothesis can be rejected,
-#  there is a strong chance that there is an association between how likely a rider uses the service during a given month, and what their membership status is
+allGroups_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(member_casual, rideable_type, months, ) |>
+dplyr::collect() |>
+gtsummary::tbl_summary(by = member_casual, label = list(rideable_type ~ "Bicycle Type", member_casual ~ "Membership")) |>
+gtsummary::add_p() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 ```
-
 
 
 # The Streets
 
 ::: p-3
-For an interesting birds-eye view of trip behaviors, check out @fig-epiflowNetwork. This epiflow diagram is interactive, so one can click the circles (nodes), the lines connecting the nodes or use the drop-down window to further explore the data. The top 34 most traveled stations were used for this analysis. The line thickness roughly corresponds with amount of trips taken, so thicker lines means more trips between nodes. [@moragab]
+For an interesting birds-eye view of trip behaviors, see @fig-epiflowNetwork. This epiflow diagram is interactive, so one can click the circles (nodes), the lines connecting the nodes or use the drop-down window to further explore the data. The top 34 most traveled stations were used for this analysis. The line thickness roughly corresponds with amount of trips taken, so thicker lines means more trips between nodes. [@moragab]
 :::
 
 ::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -2167,7 +2346,7 @@ locationData <- dplyr::tbl(dbconn,
         "trip_count" = dplyr::n(),
         "first_date" = min(started_at),
         "last_date" = max(ended_at),
-        "avg_trip_time" = mean(trip_time)
+        #"avg_trip_time" = mean(trip_time)
     ) |>
     dplyr::ungroup() |>
     dplyr::rename("from_station" = start_station_name,
@@ -2187,10 +2366,10 @@ locationData_pivoted <- locationData |>
     dplyr::summarize("trips_toAndfrom" = sum(trip_count),
                      first_date = min(first_date),
                      last_date = max(last_date),
-                     avg_trip_time = mean(avg_trip_time)
+                    # avg_trip_time = mean(avg_trip_time)
                      ) |>
-    dplyr::mutate(avg_trip_time = round(avg_trip_time,
-                                      digits = 0)) |>
+    #dplyr::mutate(avg_trip_time = round(avg_trip_time,
+    #                                  digits = 0)) |>
     dplyr::arrange(trips_toAndfrom)
 
 ```
@@ -2311,7 +2490,7 @@ mapData <- dplyr::tbl(dbconn,
 # Filter to include all observations that match the station names listed in 'names'. We need the geo-coordinates alongside the names.
 mapData1 <- mapData |>
     dplyr::collect() |>
-# Filter through a vector of conditions.
+# Filter, but through a vector of conditions.
     dplyr::filter(start_station_name %in% names[[1]],
                   end_station_name %in% names[[1]]) |>
     dplyr::select(start_station_name:start_lng)
