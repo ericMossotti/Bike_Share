@@ -13,78 +13,12 @@ $headings-color: #FC7307 !default;
 //$nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
 
-//img.leaflet-tile {
- // padding: 0;
- // margin: 0;
- // border-radius: 0;
- // border: none;
-//}
-/*
-.figure {
-    background-color: #222222 !important;
+.plotExpander{
+    min-width: 60vw !important;
 }
-
-img .img-fluid .figure-img {
-    background-color: #222222 !important;
-}
-
-
-.leaflet-top .leaflet-right {
-    overflow-y: auto !important;
-    max-height: 80vh !important;
-}
-
-.leaflet-container {
-    overflow-y: auto !important;
-    max-height: 90vh !important; 
-}
-
-.leaflet-bottom .leaflet-right {
-    overflow-y: auto !important;
-    max-height: 80vh !important;
-    scrollbar-width: thin !important;
-    scrollbar-color: #33ccff transparent !important;
-    background-color: transparent !important;
-
-
-}
-
-.leaflet-control-container {
-   // display: flex !important;
-    //flex-direction: column !important;
-    //flex-wrap: true !important;
-  //  overflow-y: auto !important;
-//    max-height: 80vh !important;
-}
-*/
-
-/*
-.leaflet .info {
-  padding: 2px 4px !important;
-  font: 10px/12px Arial, Helvetica, sans-serif !important; //14px/16px Arial, Helvetica, sans-serif;
-  background: #222222 !important; //white;
-  background: #222222 !important;//rgba(255,255,255,0.8);
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
-  border-radius: 1px;
-}
-
-.leaflet .legend {
-    line-height: 10px !important;
-    color: SeaShell !important;
-    //overflow-y: auto !important;
-//    max-height: 70vh !important;
-    //scrollbar-width: thin !important;
-    //scrollbar-color: #33ccff transparent !important;
-    background-color: transparent !important;
-    display: flex !important;
-    flex-direction: column !important;
-    flex-wrap: wrap !important;
-    gap: 0px !important;
-}
-*/
 
 .leaflet{
-    filter: invert(100%) !important;
+   // filter: invert(100%) !important;
 }
 
 .tableScroller {
