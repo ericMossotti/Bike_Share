@@ -1,7 +1,7 @@
 ---
 title: "Bike-Sharing in the Streets of Chicago"
 author: "Eric Mossotti"
-date: "05-11-2024"
+date: "05-12-2024"
 bibliography: references.bib
 repo: https://github.com/ericMossotti/Bike_Share
 source: index.qmd
@@ -79,9 +79,6 @@ if(exists("dbconn") == FALSE &&
 tblPath <- "db/data.db"
 dupelessPath <- "db/dupeless.db"
 tblPath_fltrd <- "db/data_fltrd.db"
-
-
-
 ```
 
 ```{r}
@@ -274,13 +271,16 @@ dplyr::tbl(dbconn,
 
 ## Dealing with Duplicates
 
-::: {.column-screen-inset}
-::: {layout="[ [1,1,1] ]" style="max-height: 75vh; overflow-y: auto"}
+::: {.m-1}
+By applying distinct() on dupeTable, we see the only distinct value, n, is 2. Of the duplicates, each has a minimum and maximum of one extra copy. The number of rows in the dupeTable is 36. Each duplicated observation has one duplicate, 'n' is always equal to '2', so the expected removed obs is 18. The issue is that we need to get rid of not all 36 rows, but just one extra duplicate observation from each. This will result in the expected 18 obs. The duplicates were removed, while still leaving. @tbl-unduplicated
+:::
 
+::: {.column-page}
+::: {.d-flex .justify-content-around .m-3}
+:::{.tableScroller .m-2}
 ```{r}
 #| label: tbl-duplicates
 #| tbl-cap: Duplicates Table
-#| code-fold: true
 
 gtDupes <- dupeTable |>
     dplyr::group_by(started_at) |>
@@ -321,13 +321,11 @@ gtDupes <- dupeTable |>
 
 gtDupes
 ```
-
-
+:::
+:::{.p-2 .m-2 .tableScroller}
 ```{r}
 #| label: tbl-unduplicated
 #| tbl-cap: Un-duplicated Table
-#| code-fold: true
-#| echo
 
 gt_undupes <- undupedTable |>
     dplyr::collect() |>
@@ -369,12 +367,29 @@ gt_undupes <- undupedTable |>
 
 gt_undupes
 ```
+:::
+:::
+:::
 
+::: {.column-page-right}
+::: {.d-flex .justify-content-around}
+:::{.mr-4 .mt-3 .align-self-center}
+The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect nobs was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed. We can now add the processed table to our database. @tbl-observationHistory
+
+::: {.mt-3 .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
+```
+:::
+:::
+:::
+
+
+:::{.m-1 .tableScroller}
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
-#| code-fold: true
-#| echo: true
 
 # To see the history of obs in our dataset.
 summaryProcessTable <- tidyr::tribble(
@@ -426,18 +441,8 @@ summaryProcessTable
 ```
 :::
 :::
-
-By applying distinct() on dupeTable, we see the only distinct value, n, is 2. Of the duplicates, each has a minimum and maximum of one extra copy. The number of rows in the dupeTable is 36. Each duplicated observation has one duplicate, 'n' is always equal to '2', so the expected removed obs is 18. The issue is that we need to get rid of not all 36 rows, but just one extra duplicate observation from each. This will result in the expected 18 obs. The duplicates were removed, while still leaving. @tbl-unduplicated
-
-The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect nobs was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed. We can now add the processed table to our database. @tbl-observationHistory
-
-::: {.d-flex .justify-content-center}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
-```
 :::
-:::
+
 
 # Outlier Filter
 
@@ -886,15 +891,15 @@ dplyr::tbl(dbconn,
 :::
 :::
 
+::: {.column-screen}
 ::: {.d-flex .justify-content-center}
-::: column-screen
 ::: {.panel-tabset .shadow-sm}
-## Memberships
+## Membership
 
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
-::: p-1
+::: {.p-3 .align-self-center}
 ### Membership Groups Analysis
 :::
 
@@ -979,17 +984,15 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
-::: p-1
-```         
-### Contents
+::: {.p-3 .align-self-center}
+         
+*  [Totals Summary](#total_types_freq)
+    +   [table](#tbl-ctypeTotals)
+    +   [plot](#fig-ctypeTotal)
+*   [Membership Summary](#group_types_freq)
+    +   [table](#tbl-ctypeCompare)
+    +   [plot](#fig-ctypeTotals)
 
--   [Count](#total_types_freq)
-    -   [Table](#tbl-ctypeTotal)
-    -   [Plot](#fig-ctypeTotal)
--   [Group Count](#group_types_freq)
-    -   [Table](#tbl-ctypeCompare)
-    -   [Plot](#fig-ctypeTotal)
-```
 :::
 
 ::: divBox
@@ -1104,14 +1107,6 @@ dplyr::select(rideable_type, member_casual) |>
 dplyr::collect() |>
 gtsummary::tbl_summary(by = member_casual, label = list(rideable_type = "Bicycle Type", member_casual = "Membership")) |>
 gtsummary::add_p()
-
-#gtsummary::as_gt() |>
-#gt::tab_options(
-#table.background.color = 'transparent',
-#table.font.color = "SeaShell",
-#table_body.vlines.color = "gray20",
-#table_body.hlines.color = "gray20")
-
 ```
 :::
 
@@ -1121,8 +1116,8 @@ gtsummary::add_p()
 #| fig-cap: Cycle Type Group Frequency
 
 dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type, y = n, fill = member_casual, color = "black")) +
-ggplot2::geom_col(show.legend = TRUE, position = "stack") +
+ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type, y = n, fill = member_casual)) +
+ggplot2::geom_col(show.legend = TRUE, position = "dodge") +
 ggplot2::scale_fill_brewer(palette = "Paired", name = "Subscriber Status") +
 ggplot2::labs(title = "Cycle Type to Membership Frequency", subtitle = "Compare trips taken by cycle type to membership status") +
 ggplot2::theme(
@@ -1166,6 +1161,7 @@ rTypesChi <- chisq.test(rTypes4chiMatrix)
 
 rTypesChi
 ```
+
 :::
 
 
@@ -1175,17 +1171,17 @@ rTypesChi
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
--   
 
-    ### Contents
+::: {.p-3 .align-self-center}
 
-    -   [Total Frequency](#total_month_freq)
-        -   [Table](#tbl-monthTotals)
-        -   [Plot](#fig-monthTotals)
-    -   [Group Frequency](#group_month_freq)
-        -   [Table](#tbl-monthGroup)
-        -   [Plot](#fig-monthGroup)
+*   [Totals Summary](#total_month_freq)
+    +   [table](#tbl-monthTotals)
+    +   [plot](#fig-monthTotals)
+*   [Membership Summary](#group_month_freq)
+    +   [table](#tbl-monthGroup)
+    +   [plot](#fig-monthGroup)
 
+:::
 ::: divBox
 :::
 
@@ -1207,7 +1203,7 @@ Given $p < 0.05$, it is likely that membership status is associated with a given
 
 #### Total Frequency {#total_month_freq}
 
-::: {.d-flex .align-content-stretch}
+::: {.d-flex}
 ::: p-3
 ```{r}
 #| label: tbl-monthTotals
@@ -1266,7 +1262,7 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 
 #### Group Frequency {#group_month_frequency}
 
-::: {.d-flex .align-content-stretch}
+::: {.d-flex}
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-monthCompare
@@ -1308,17 +1304,18 @@ gtsummary::add_p()
 ```
 :::
 
-::: p-3
+::: {.ml-5}
 ```{r}
 #| label: fig-monthCompare
 #| fig-cap: Month Group Frequency
 
-
 dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = months, y = n, fill = member_casual)) +
-ggplot2::geom_col(show.legend = TRUE, position = 'dodge') +
-ggplot2::scale_fill_brewer(palette = "Paired", name = "Subscriber Status") +
-ggplot2::labs(title = "Month to Membership Frequency", subtitle = "Grouped by sub status") +
+dplyr::collect() |>
+ggplot2::ggplot(mapping = ggplot2::aes(x = months, y = n, fill = n)) +
+ggplot2::geom_col(show.legend = TRUE) +
+ggplot2::facet_grid(rows = "member_casual") +
+ggplot2::scale_fill_distiller(palette = "YlGnBu") +
+ggplot2::labs(title = "Month to Membership Frequency", subtitle = "Grouped by sub status", x = "Month", y = "Trips") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
 plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -1365,22 +1362,20 @@ monthChi
 
 :::
 
-## Day of Week
+## Day
 
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
-::: p-1
-```         
-### Contents
+::: {.p-2 .align-self-center}
 
--   [Total Frequency](#total_day_freq)
-    -   [Table](#tbl-wkdayTotals)
-    -   [Plot](#fig-wkdayTotals)
--   [Group Frequency](#group_day_freq)
-    -   [Table](#tbl-wkdayCompare)
-    -   [Plot](#fig-wkdayCompare)
-```
+*   [Totals Summary](#total_day_freq)
+    +   [table](#tbl-wkdayTotals)
+    +   [plot](#fig-wkdayTotals)
+*   [Membership Summary](#group_day_freq)
+    +   [table](#tbl-wkdayCompare)
+    +   [plot](#fig-wkdayCompare)
+
 :::
 
 ::: divBox
@@ -1403,7 +1398,7 @@ Given, $p < 0.05$, the likelihood of using the service on a particular day depen
 
 #### Total Frequency {#total_day_freq}
 
-::: {.d-flex .align-content-stretch}
+::: {.d-flex}
 ::: p-3
 ```{r}
 #| label: tbl-wkdayTotals
@@ -1464,7 +1459,7 @@ weekdayPlot
 
 #### Group Frequency {#group_day_freq}
 
-::: {.d-flex .align-content-stretch}
+::: {.d-flex}
 ::: p-3
 ```{r}
 #| label: tbl-wkdayCompare
@@ -1509,16 +1504,17 @@ gtsummary::add_p()
 ```
 :::
 
-::: p-3
+::: {.ml-5 .align-self-center}
 ```{r}
 #| label: fig-wkdayCompare
 #| fig-cap: Weekday Group Frequency
 
 dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = wkday, y = n, fill = member_casual)) +
-ggplot2::geom_col(show.legend = TRUE, position = 'dodge') +
-ggplot2::scale_fill_brewer(palette = "Paired", name = "Subscriber Status") +
-ggplot2::labs(title = "Weekday to Membership Frequency", subtitle = "Grouped by sub status") +
+ggplot2::ggplot(mapping = ggplot2::aes(x = wkday, y = n, fill = n)) +
+ggplot2::geom_col(show.legend = TRUE) +
+ggplot2::facet_grid(rows = "member_casual") +
+ggplot2::scale_fill_distiller(palette = "YlGnBu", name = "Subscriber Status") +
+ggplot2::labs(title = "Weekday to Membership Frequency", subtitle = "Grouped by sub status", x = "Day", y = "Trips") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
 plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -1567,16 +1563,16 @@ daysChi
 ::::: {.article}
 :::: section
 ::: {.d-flex .align-content-stretch}
+:::{.p-3 .align-self-center}
 
-    ### Hour of the Day
-
-    -   [Total Frequency](#total_hour_freq)
-        -   [Table](#tbl-hourTotals)
-        -   [Plot](#fig-hourTotals)
-    -   [Group Frequency](#group_hour_freq)
-        -   [Table](#tbl-hourGroup)
-        -   [Plot](#fig-hourGroup)
-
+*   [Totals Summary](#total_hour_freq)
+    +   [table](#tbl-hourTotals)
+    +   [plot](#fig-hourTotals)
+*   [Membership Summary](#group_hour_freq)
+    +   [table](#tbl-hourGroup)
+    +   [plot](#fig-hourGroup)
+    
+:::
 ::: divBox
 :::
 
@@ -1590,7 +1586,7 @@ ___
 
 #### Total Frequency {#total_hour_freq}
 
-:::: {.d-flex}
+:::: {.d-flex .justify-content-around}
 
 ```{r}
 #| label: simplifyHoursFormat
@@ -1614,7 +1610,7 @@ simpleTimes <- stringr::str_c(x, sep = " ", y)
 hours_of_Riders[[1]] <- simpleTimes
 ```
 
-::: {.p-3}
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-hourTotals
 #| tbl-cap: Total freqeuncy by the hour of day
@@ -1641,21 +1637,19 @@ column_labels.hidden = TRUE
 #| label: 'fig-hourTotals'
 #| fig-cap: "Total frequency by hour of day."
 
-hoursAnimate <-
+hours_of_Riders |>
 ggplot2::ggplot(
-data = hours_of_Riders,
 mapping = ggplot2::aes(
 x = reorder(hour, .data$index),
 y = Total_Riders,
 fill = Total_Riders
 )
 ) +
-ggplot2::geom_col() +
+ggplot2::geom_col(show.legend = FALSE) +
 #ggplot2::coord_radial(start = 2 * pi, inner.radius = .2) +
-ggplot2::xlab(NULL) +
-ggplot2::ylab(NULL) +
 ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-ggplot2::labs(title = "Average Riders by the Hour of Day") +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
+ggplot2::labs(title = "Average Riders by the Hour of Day", x = "Hour", y = "Trips") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
 plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -1678,8 +1672,8 @@ ___
 
 ### Group Frequency
 
-:::: {.d-flex .align-content-stretch}
-::: {.p-3}
+:::: {.d-flex .justify-content-around .align-content-stretch}
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-hourCompare
 #| tbl-cap: Grouped hour frequency
@@ -1734,17 +1728,18 @@ column_labels.hidden = TRUE
 ```
 :::
 
-::: {.p-3 .flex-grow-1}
+::: {.p-3 .align-self-center}
 ```{r}
 #| label: fig-hourCompare
 #| fig-cap: Grouped hour frequency
 
 hour_tbl |>
-ggplot2::ggplot(ggplot2::aes(x = hour, y = Total_Riders, fill = member_casual)) +
-ggplot2::geom_col(position = "dodge2") +
-ggplot2::scale_fill_brewer(palette = "Paired", name = "Membership") +
+ggplot2::ggplot(ggplot2::aes(x = hour, y = Total_Riders, fill = Total_Riders)) +
+ggplot2::geom_col(show.legend = TRUE) +
+ggplot2::facet_grid(rows = "member_casual") +
+ggplot2::scale_fill_distiller(palette = "YlGnBu", name = "Membership") +
 ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
-ggplot2::labs(title = "Hour to Membership Count") +
+ggplot2::labs(title = "Hour to Membership Count", x = "Hour", y = "Trips") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
 plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -1770,17 +1765,15 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
-::: p-1
--   
+::: {.p-3 .align-self-center}
 
-    ### Contents
+*   [Totals Summary](#total_miles_freq)
+    +   [table](#tbl-milesTotals)
+    +   [plot](#fig-milesTotals)
+*   [Membership Summary](#group_miles_freq)
+    +   [table](#tbl-milesCompare)
+    +   [plot](#fig-milesCompare)
 
-    -   [Total Frequency](#total_miles_freq)
-        -   [Table](#tbl-milesTotals)
-        -   [Plot](#fig-milesTotals)
-    -   [Grouped Frequency](#group_miles_freq)
-        -   [Table](#tbl-milesCompare)
-        -   [Plot](#fig-milesCompare)
 :::
 
 ::: divBox
@@ -1805,8 +1798,9 @@ $\beta_1 < 0$, members are less likely to ride as distance traveled in a given t
 
 #### Total Frequency {#total_miles_freq}
 
-::: {.d-flex .align-content-stretch}
-::: {.p-3 style="max-height: 80vh"}
+::: {.d-flex .justify-content-around}
+
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-milesTotals
 #| tbl-cap: Miles Total Frequency
@@ -1834,20 +1828,19 @@ dplyr::tbl(dbconn,
 #| label: fig-milesTotals
 #| fig-cap: Miles Total Frequency
 
-milesTable <- dplyr::tbl(dbconn, "db/freq_miles.db") |>
+dplyr::tbl(dbconn, "db/freq_miles.db") |>
 dplyr::collect() |>
 dplyr::mutate(
 n = n / 1000,
 miles = forcats::as_factor(miles),
 miles = forcats::fct_inorder(miles)
 ) |>
-dplyr::rename("Trips (in thousands)" = n, "Miles" = miles)
-
-milesTable |>
+dplyr::rename("Trips (in thousands)" = n, "Miles" = miles) |>
 ggplot2::ggplot(mapping = ggplot2::aes(x = Miles, y = `Trips (in thousands)`, fill = `Trips (in thousands)`)) +
 ggplot2::geom_col(show.legend = FALSE) +
 ggplot2::scale_fill_distiller(palette = "YlOrRd") +
 ggplot2::labs(title = "Trip Distance Frequency", subtitle = "Measured in miles") +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
 plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -1861,8 +1854,7 @@ axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
 axis.ticks.y = ggplot2::element_blank(),
 panel.grid.major.y = ggplot2::element_line(color = "grey30")
 )
-        
-milesPlot
+
 ```
 :::
 :::
@@ -1871,8 +1863,8 @@ milesPlot
 
 #### Group Frequency {#group_miles_freq}
 
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
+::: {.d-flex .justify-content-around}
+::: {.p-2 .tableScroller style="max-width: 17vw"}
 ```{r}
 #| label: tbl-milesCompare
 #| tbl-cap: Miles Group Frequency
@@ -1891,8 +1883,6 @@ dplyr::tbl(dbconn,
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
             column_labels.hidden = TRUE)
-
-
 
 # For the miles group frequency membership comparison
 milesCompare_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
@@ -1926,7 +1916,7 @@ miles_compareSummary
 ```
 :::
 
-::: p-3
+::: {.p-2}
 ```{r}
 #| label: fig-milesCompare
 #| fig-cap: Miles Group Frequency
@@ -1939,6 +1929,7 @@ ggplot2::ggplot(mapping = ggplot2::aes(x = miles, y = n, fill = n)) +
 ggplot2::geom_col(show.legend = FALSE) +
 ggplot2::facet_grid(rows = ggplot2::vars(member_casual)) +
 ggplot2::scale_fill_distiller(palette = "YlGnBu", name = "Subscriber Status") +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
 ggplot2::labs(title = "Miles to Membership Frequency", subtitle = "Grouped by sub status") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -2021,17 +2012,15 @@ table_body.hlines.color = "gray20")
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
-::: p-1
--   
+::: {.p-3 .align-self-center}
 
-    ### Contents
+*   [Totals Summary](#total_mph_freq)
+    +   [table](#tbl-mphTotals)
+    +   [plot](#fig-mphTotals)
+*   [Membership Summary](#group_mph_freq)
+    +   [table](#tbl-mphCompare)
+    +   [plot](#fig-mphCompare)
 
-    -   [Total Frequency](#total_mph_freq)
-        -   [Table](#tbl-mphTotals)
-        -   [Plot](#fig-mphTotals)
-    -   [Grouped Frequency](#group_mph_freq)
-        -   [Table](#tbl-mphCompare)
-        -   [Plot](#fig-mphCompare)
 :::
 
 ::: divBox
@@ -2229,17 +2218,15 @@ summary(mphModel)
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
-::: p-1
--   
+::: {.p-3 .align-self-center}
 
-    ### Contents
+*   [Totals Summary](#total_tripTime_freq)
+    +   [table](#tbl-triptimeTotals)
+    +   [plot](#fig-triptimeTotals)
+*   [Membership Summary](#group_tripTime_freq)
+    +   [table](#tbl-triptimeCompare)
+    +   [plot](#fig-triptimeCompare)
 
-    -   [Total Frequency](#total_tripTime_freq)
-        -   [Table](#tbl-triptimeTotals)
-        -   [Plot](#fig-triptimeTotals)
-    -   [Grouped Frequency](#group_tripTime_freq)
-        -   [Table](#tbl-triptimeCompare)
-        -   [Plot](#fig-triptimeCompare)
 :::
 
 ::: divBox
@@ -2454,6 +2441,8 @@ summary(triptimeModel)
 
 ```{r}
 #| label: groupSummaries
+#| eval: false
+#| include: false
 
 stacks <- list(ctype_compareSummary, month_compareSummary, days_compareSummary)
 
@@ -2832,7 +2821,7 @@ mapViewer(slicerVector[[4]])
 
 # Conclusion
 
-There isn't much of a difference between annual subscriber and casual trip behavior other than trip frequency. Annual subs are people who ride more frequently. Looking into where the main activity is, you can see that they are near stores, schools, and such. If the goal is to get more people to ride bicycles instead of drive, the answer might lie outside the scope of this analysis.
+I'm almost to the conclusion, but not quite. I am not finished with this document, yet. I probably will be finished within a week from date of publication listed at the top of the document.
 
 ```{r}
 #| eval: false
