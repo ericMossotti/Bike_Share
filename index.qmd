@@ -38,7 +38,7 @@ knitr::opts_chunk$set(message = FALSE,
 
 ------------------------------------------------------------------------
 
-# Import and Project Design
+# Design and Purpose
 
 ::: {#offcanvas1 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -117,29 +117,50 @@ dbList
 :::
 :::
 
-Data source for this data analysis was obtained from Divvy Data. Thinking ahead with reproducibility in mind, should cover most use cases for tinkering and testing. I have found it helpful to reduce the need to re-download files and re-process all over again if all one needs to do is reconnect to the database that has already been written. [@divvyda]
+## Stakeholders
 
-As a counterpart to the if-else design decision at the top of the project, I've condensed the initial download, import and cleaning steps inside of an R-script. Choosing a persistent DuckDB filesystem (as opposed to in-memory) was intentional as I wouldn't lose the progress I've made when tinkering over multiple days. It seems just as fast as the in-memory database but also seems to reduce RAM needed in tinkering. [@whyduck]
+Starting off, the stakeholders can be identified as Divvy, Lyft, and the City of Chicago Department of Transportation. As such this analysis is meant to provide stakeholders with data-based guidance to better server the residents of Chicago and users of the Divvy bike sharing service. Improving air quality, promoting economic recovery, and reducing traffic congestion were among the rationale for Divvy's implementation. [@aboutdi]
 
-The starting observation count was 5,719,877 for dates spanning January to December in 2023. 1,388,170 incomplete observations were then removed by the initial processing script.
+## Source
+
+The raw 2023 dataset was directly sourced from Divvy Data. [@divvyda]
+
+## Design
+
+Another worthy goal of this analysis is to achieve reproducibility and efficiency. To help future analyst teams move this research forward, this project tried to provide adequate code documentation and best practices with regards to clean code and modularity.
+
+For example, it was helpful to incorporate certain design decisions to eliminate re-downloading and re-processing of data. For users conducting analysis over the course of days-months on this dataset, following initial download and processing, it is now possible to simply reconnect to the single database file which contains all of the original data including tables written throughout the course of the analysis.
+
+The underlying code incorporates an if-else decision, which includes a source code script that handles the initial processing and establishes the database filesystem. Choosing a persistent DuckDB filesystem (as opposed to purely in-memory) seemed optimal in terms of the simplicity and cost-effectiveness of SQL database queries while retaining progress made over extended periods. [@whyduck]
+
+# Cleaning
+
+
+The starting observation count was *5,719,877*. Then *1,388,170* incomplete observations were then removed by the initial processing script.
 
 More code processing steps are available via the code icon links scattered throughout the document, such as the one below. The code summaries are given to help supplement the reader with context to help understand how and why the data is processed throughout.
 
-::: {.d-flex .justify-content-center}
+:::{.d-flex .justify-content-center}
+::: {.callout-note title="Click this" style="width: 60%"}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
+Cleans up the database: 
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
 ```
 :::
 :::
+:::
 
-# Hidden Duplicates?
+## Duplicate Observations
 
-This section covers checking for duplicates and the rationale involved. It might not necessarily be the case that each observation (obs) is unique. It was noted that all of the Rider IDs were unique. Of the other columns, it seemed that the 'start_time', 'end_time', 'start_station', and 'end_station' combined could show if there are possibly hidden duplicated observations.
+Now the question arises: How does one check the data for duplicates? That is what this section covers, but also how to only remove what is needed. Care is needed because it might not necessarily be the case that each observation or *obs* is unique because one of the columns contains all unique values.
 
-It was assumed that having the same times/dates and stations for two different ride IDs was a mistake. Although, it is actually unknown how that error would happen. It could have been assumed that one person checked out multiple bikes at once. In that instance, each bike would be assigned a unique ride_id. That, however, has only happened 18 times over a year. Since it is only one copy every time, red flags are raised. No other correlations with 'station_id' or 'station_name', 'member_casual', or 'ride_type' variable columns for those particular duplicated data.
+All of the values in the *ride_id* column were found to be unique. However, not all of the observations, or rows, were found to be truly unique. Other columns such as *start_time*, *end_time***,** *start_station*, and *end_station* were used to verify if an observation was *truly unique.* These would have more granular information, down to the second, a given trip's starting and ending time and location. In this analysis, it was assumed that observations having the same starting and ending date-time and station despite having two different rider IDs was a mistake.
 
-In @tbl-duplicates, duplicate observations are listed and grouped by color. Contrast this with @tbl-unduplicated, which has removed the extra copy of the observation while preserving the observation itself.
+Although, it is actually unknown how that error would happen. It could have been assumed that one person checked out multiple bikes at once. In that instance, each bike would be assigned a unique *ride_id*. That, however, has only happened *18* times over a year. Since it is only one copy every time, red flags were raised. Perhaps trips could be grouped where one person pays for a other riders? If that were the case, then why is there always one duplicate?
+
+In @tbl-duplicates, duplicate observations were listed and grouped by color. Contrast this with @tbl-unduplicated, which has removed the extra copy of the observation while preserving the observation itself. Of the duplicates, each has one extra copy. It is noted that the number of rows in the duplicates table is *36*. Each duplicated observation has one duplicate, where *n* is always the value *2*. So the expected removed *obs* is *18*. A complication involved how to remove not all *obs* but just one extra duplicate observation from each.
+
 
 ::: {#offcanvas2 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -269,15 +290,12 @@ dplyr::tbl(dbconn,
 :::
 :::
 
-## Dealing with Duplicates
 
-::: {.m-1}
-By applying distinct() on dupeTable, we see the only distinct value, n, is 2. Of the duplicates, each has a minimum and maximum of one extra copy. The number of rows in the dupeTable is 36. Each duplicated observation has one duplicate, 'n' is always equal to '2', so the expected removed obs is 18. The issue is that we need to get rid of not all 36 rows, but just one extra duplicate observation from each. This will result in the expected 18 obs. The duplicates were removed, while still leaving. @tbl-unduplicated
-:::
 
-::: {.column-page}
+
+::: column-page
 ::: {.d-flex .justify-content-around .m-3}
-:::{.tableScroller .m-2}
+::: {.tableScroller .m-2}
 ```{r}
 #| label: tbl-duplicates
 #| tbl-cap: Duplicates Table
@@ -322,7 +340,8 @@ gtDupes <- dupeTable |>
 gtDupes
 ```
 :::
-:::{.p-2 .m-2 .tableScroller}
+
+::: {.p-2 .m-2 .tableScroller}
 ```{r}
 #| label: tbl-unduplicated
 #| tbl-cap: Un-duplicated Table
@@ -372,10 +391,11 @@ gt_undupes
 :::
 
 ::: {.column-page-right}
-::: {.d-flex .justify-content-around}
-:::{.mr-4 .mt-3 .align-self-center}
+::: {.d-flex .justify-content-center}
+::: {.align-self-center}
+:::{.m-2}
 The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect nobs was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed. We can now add the processed table to our database. @tbl-observationHistory
-
+:::
 ::: {.mt-3 .justify-content-center}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 ```{=html}
@@ -385,8 +405,7 @@ The count of distinct n-values for the un-duplicated table was indeed 18. So now
 :::
 :::
 
-
-:::{.m-1 .tableScroller}
+::: {.m-1 .tableScroller}
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
@@ -443,14 +462,13 @@ summaryProcessTable
 :::
 :::
 
+## Outliers
 
-# Outlier Filter
+Observations that were deemed erroneous or not useful for identifying trends in how the service is utilized by members and casual users were filtered out. It is good practice to keep note of these errors as they might explain some differences in how members and casual use the service.
 
-Removing outliers that do not serve a purpose might help to better see trends. Negative and low trip times are noted but might skew trends. The underlying reason for low trip times could be from people just wanting to try it out. It is uknown why there were observations with negative trip times. There were observations that did not make much sense, but most of the data was retained. [script](#filterScript)
+It was determined that trips with negative minutes were errors. Trips less than 1 minute but positive were noted, but removed as they might skew the statistics we derive from this data too much later on. The underlying reason for low trip times could be from people just wanting to try it out briefly before committing or quickly realized they did not like it. There were observations that did not make much sense, but most of the data was retained.
 
-As in the first part, an if-else code-chunk design was chosen because it makes testing easier. If re-using this code for testing and have filtered the database table, or if you still need to create it.
-
-A database filtering script was used to make the code chunk easier to follow. We then verify the table was created along with all other tables we previously created. So this should have removed outliers from the dataset which do not serve the scope of this analysis or is potentially erroneous data.
+As in the first part, an *if-else* decision was chosen because it makes testing easier. An external database filtering script was chosen to shorten the code needed inside the main Quarto document itself. The data from which the rest of the tables are based on are used for the rest of the analysis. [script](#0)
 
 ::: {.d-flex .justify-content-center max-width="auto"}
 ::: {.callout-note title="Filter the database" style="min-width: auto; max-width: auto"}
@@ -512,13 +530,15 @@ if (duckdb::dbExistsTable(dbconn,
 :::
 :::
 
-::: column-body
-# Frequency Tables and What They Tell Us
+# Exploratory Analysis
 
-The rationale for frequency tables is to gain insight into the data. It is taking a methodical approach that, while simple, provides an entry into the trends that could be useful.
+::: {.column-body .mb-2}
+## Writing Frequency Tables
+
+The rationale for frequency tables is to gain quick insights into the data. It is taking a methodical approach that, while simple, provides a crucial pathway towards understanding the bigger picture.
 :::
 
-::: {.d-flex .justify-content-center}
+::: {.d-flex .justify-content-center .mb-3}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
@@ -891,8 +911,8 @@ dplyr::tbl(dbconn,
 :::
 :::
 
-::: {.column-screen}
-::: {.d-flex .justify-content-center}
+::: column-screen
+::: {.d-flex .justify-content-around}
 ::: {.panel-tabset .shadow-sm}
 ## Membership
 
@@ -985,14 +1005,12 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 ::: section
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .align-self-center}
-         
-*  [Totals Summary](#total_types_freq)
-    +   [table](#tbl-ctypeTotals)
-    +   [plot](#fig-ctypeTotal)
-*   [Membership Summary](#group_types_freq)
-    +   [table](#tbl-ctypeCompare)
-    +   [plot](#fig-ctypeTotals)
-
+-   [Totals Summary](#total_types_freq)
+    -   [table](#tbl-ctypeTotals)
+    -   [plot](#fig-ctypeTotal)
+-   [Membership Summary](#group_types_freq)
+    -   [table](#tbl-ctypeCompare)
+    -   [plot](#fig-ctypeTotals)
 :::
 
 ::: divBox
@@ -1003,9 +1021,7 @@ In @tbl-ctypeTotals and @fig-ctypeTotals, the total trips taken on conventional 
 
 Moving to @tbl-ctypeCompare and @fig-ctypeCompare, the frequency of trips taken is split into groups of membership status. There is a large disparity not only between the scale of trips taken between annual subscribers and casual users, but also within the the group of subscribers themselves. While there is a small difference between trips taken by casual members on conventional compared to electric, that said difference is more pronounced in the annual subscriber group.
 
-
 With $p < 0.05$, there appears to be a strong association between members and casuals with regards to the type of bicycles people are likely to ride. @tbl-chiTypes
-
 :::
 :::
 :::
@@ -1015,7 +1031,7 @@ With $p < 0.05$, there appears to be a strong association between members and ca
 
 ------------------------------------------------------------------------
 
-#### Total Frequency {#total_types_freq}
+#### Totals Summary {#total_types_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: p-3
@@ -1083,7 +1099,7 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 
 ------------------------------------------------------------------------
 
-#### Group Frequency {#group_types_freq}
+#### Membership Summary {#group_types_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: p-3
@@ -1139,7 +1155,7 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 :::
 :::
 
-___
+------------------------------------------------------------------------
 
 #### Summary
 
@@ -1161,27 +1177,22 @@ rTypesChi <- chisq.test(rTypes4chiMatrix)
 
 rTypesChi
 ```
-
 :::
-
-
 
 ## Month
 
 ::: article
 ::: section
 ::: {.d-flex .align-content-stretch}
-
 ::: {.p-3 .align-self-center}
-
-*   [Totals Summary](#total_month_freq)
-    +   [table](#tbl-monthTotals)
-    +   [plot](#fig-monthTotals)
-*   [Membership Summary](#group_month_freq)
-    +   [table](#tbl-monthGroup)
-    +   [plot](#fig-monthGroup)
-
+-   [Totals Summary](#total_month_freq)
+    -   [table](#tbl-monthTotals)
+    -   [plot](#fig-monthTotals)
+-   [Membership Summary](#group_month_freq)
+    -   [table](#tbl-monthGroup)
+    -   [plot](#fig-monthGroup)
 :::
+
 ::: divBox
 :::
 
@@ -1190,8 +1201,7 @@ Looking at @tbl-monthTotals and @fig-monthTotals, the warmer months appear to co
 
 In @tbl-monthCompare and @fig-monthCompare, trip frequency in both groups are impacted by the seasons. Although, it would appear that trip frequency of subscribers fluctuates less than for casuals. The disparity in frequency change is more apparent in the comparison of winter to summer months between member groups.
 
-Given $p < 0.05$, it is likely that membership status is associated with a given member's or non-member's use of the service during a particular month or season. @tbl-chiMonths 
-
+Given $p < 0.05$, it is likely that membership status is associated with a given member's or non-member's use of the service during a particular month or season. @tbl-chiMonths
 :::
 :::
 :::
@@ -1201,9 +1211,9 @@ Given $p < 0.05$, it is likely that membership status is associated with a given
 
 ------------------------------------------------------------------------
 
-#### Total Frequency {#total_month_freq}
+#### Totals Summary {#total_month_freq}
 
-::: {.d-flex}
+::: d-flex
 ::: p-3
 ```{r}
 #| label: tbl-monthTotals
@@ -1260,9 +1270,9 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 
 ------------------------------------------------------------------------
 
-#### Group Frequency {#group_month_frequency}
+#### Membership Summary {#group_month_frequency}
 
-::: {.d-flex}
+::: d-flex
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-monthCompare
@@ -1304,7 +1314,7 @@ gtsummary::add_p()
 ```
 :::
 
-::: {.ml-5}
+::: ml-5
 ```{r}
 #| label: fig-monthCompare
 #| fig-cap: Month Group Frequency
@@ -1335,7 +1345,7 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 :::
 :::
 
-___
+------------------------------------------------------------------------
 
 #### Summary
 
@@ -1359,7 +1369,6 @@ monthChi <- chisq.test(months4chiMatrix)
 
 monthChi
 ```
-
 :::
 
 ## Day
@@ -1368,14 +1377,12 @@ monthChi
 ::: section
 ::: {.d-flex .align-content-stretch}
 ::: {.p-2 .align-self-center}
-
-*   [Totals Summary](#total_day_freq)
-    +   [table](#tbl-wkdayTotals)
-    +   [plot](#fig-wkdayTotals)
-*   [Membership Summary](#group_day_freq)
-    +   [table](#tbl-wkdayCompare)
-    +   [plot](#fig-wkdayCompare)
-
+-   [Totals Summary](#total_day_freq)
+    -   [table](#tbl-wkdayTotals)
+    -   [plot](#fig-wkdayTotals)
+-   [Membership Summary](#group_day_freq)
+    -   [table](#tbl-wkdayCompare)
+    -   [plot](#fig-wkdayCompare)
 :::
 
 ::: divBox
@@ -1396,9 +1403,9 @@ Given, $p < 0.05$, the likelihood of using the service on a particular day depen
 
 ------------------------------------------------------------------------
 
-#### Total Frequency {#total_day_freq}
+#### Totals Summary {#total_day_freq}
 
-::: {.d-flex}
+::: d-flex
 ::: p-3
 ```{r}
 #| label: tbl-wkdayTotals
@@ -1457,9 +1464,9 @@ weekdayPlot
 
 ------------------------------------------------------------------------
 
-#### Group Frequency {#group_day_freq}
+#### Membership Summary {#group_day_freq}
 
-::: {.d-flex}
+::: d-flex
 ::: p-3
 ```{r}
 #| label: tbl-wkdayCompare
@@ -1533,7 +1540,7 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 :::
 :::
 
-___
+------------------------------------------------------------------------
 
 #### Summary
 
@@ -1554,40 +1561,38 @@ daysChi <- chisq.test(wkdays4chiMatrix)
 
 daysChi
 ```
-
 :::
-
 
 ## Hour
 
-::::: {.article}
-:::: section
+::: article
+::: section
 ::: {.d-flex .align-content-stretch}
-:::{.p-3 .align-self-center}
-
-*   [Totals Summary](#total_hour_freq)
-    +   [table](#tbl-hourTotals)
-    +   [plot](#fig-hourTotals)
-*   [Membership Summary](#group_hour_freq)
-    +   [table](#tbl-hourGroup)
-    +   [plot](#fig-hourGroup)
-    
+::: {.p-3 .align-self-center}
+-   [Totals Summary](#total_hour_freq)
+    -   [table](#tbl-hourTotals)
+    -   [plot](#fig-hourTotals)
+-   [Membership Summary](#group_hour_freq)
+    -   [table](#tbl-hourGroup)
+    -   [plot](#fig-hourGroup)
 :::
+
 ::: divBox
 :::
 
-:::: {.p-3 .align-self-center}
-Words
-::::
+::: {.p-3 .align-self-center}
+The overall trend follows the typical work day cycle where one would expect to see with spikes in the mornings and evenings. @tbl-hourTotals @fig-hourTotals
 
-:::::
-::::::
-___
+There is a noted discrepency between member and casual use during peak commute hours. Members have more notable spike during morning commute hours than casuals, which appears more flat throughout the day. @tbl-hourCompare @fig-hourCompare
+:::
+:::
+:::
 
-#### Total Frequency {#total_hour_freq}
+------------------------------------------------------------------------
 
-:::: {.d-flex .justify-content-around}
+#### Totals Summary {#total_hour_freq}
 
+::: {.d-flex .justify-content-around}
 ```{r}
 #| label: simplifyHoursFormat
 #| echo: false
@@ -1665,14 +1670,14 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 )
 
 ```
-
 :::
-::::
-___
+:::
 
-### Group Frequency
+------------------------------------------------------------------------
 
-:::: {.d-flex .justify-content-around .align-content-stretch}
+### Membership Summary
+
+::: {.d-flex .justify-content-around .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-hourCompare
@@ -1752,13 +1757,14 @@ axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 
 axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
 axis.ticks.y = ggplot2::element_blank(),
 panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222")
+legend.background = ggplot2::element_rect(fill = "#222222"),
+panel.spacing = ggplot2::unit(4, "mm")
 )
 
 ```
 :::
-::::
-::::::
+:::
+:::
 
 ## Miles
 
@@ -1766,14 +1772,12 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 ::: section
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .align-self-center}
-
-*   [Totals Summary](#total_miles_freq)
-    +   [table](#tbl-milesTotals)
-    +   [plot](#fig-milesTotals)
-*   [Membership Summary](#group_miles_freq)
-    +   [table](#tbl-milesCompare)
-    +   [plot](#fig-milesCompare)
-
+-   [Totals Summary](#total_miles_freq)
+    -   [table](#tbl-milesTotals)
+    -   [plot](#fig-milesTotals)
+-   [Membership Summary](#group_miles_freq)
+    -   [table](#tbl-milesCompare)
+    -   [plot](#fig-milesCompare)
 :::
 
 ::: divBox
@@ -1785,8 +1789,6 @@ The distance of most observed trips in @tbl-milesTotals and @fig-milesTotals fal
 The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the same pattern. The casual and member differ mainly in overall scale of trips taken between the 0.3 and 3 mile trip distances.
 
 $\beta_1 < 0$, members are less likely to ride as distance traveled in a given trip increases. So, members tend to take shorter trips compared to casual users. @tbl-milesLog
-
-
 :::
 :::
 :::
@@ -1796,10 +1798,9 @@ $\beta_1 < 0$, members are less likely to ride as distance traveled in a given t
 
 ------------------------------------------------------------------------
 
-#### Total Frequency {#total_miles_freq}
+#### Totals Summary {#total_miles_freq}
 
 ::: {.d-flex .justify-content-around}
-
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-milesTotals
@@ -1861,7 +1862,7 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 
 ------------------------------------------------------------------------
 
-#### Group Frequency {#group_miles_freq}
+#### Membership Summary {#group_miles_freq}
 
 ::: {.d-flex .justify-content-around}
 ::: {.p-2 .tableScroller style="max-width: 17vw"}
@@ -1916,7 +1917,7 @@ miles_compareSummary
 ```
 :::
 
-::: {.p-2}
+::: p-2
 ```{r}
 #| label: fig-milesCompare
 #| fig-cap: Miles Group Frequency
@@ -1949,7 +1950,7 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 :::
 :::
 
-#### Summary 
+#### Summary
 
 ```{r}
 #| label: tbl-milesLog
@@ -2003,8 +2004,6 @@ table_body.vlines.color = "gray20",
 table_body.hlines.color = "gray20")
 
 ```
-
-
 :::
 
 ## Mph
@@ -2013,14 +2012,12 @@ table_body.hlines.color = "gray20")
 ::: section
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .align-self-center}
-
-*   [Totals Summary](#total_mph_freq)
-    +   [table](#tbl-mphTotals)
-    +   [plot](#fig-mphTotals)
-*   [Membership Summary](#group_mph_freq)
-    +   [table](#tbl-mphCompare)
-    +   [plot](#fig-mphCompare)
-
+-   [Totals Summary](#total_mph_freq)
+    -   [table](#tbl-mphTotals)
+    -   [plot](#fig-mphTotals)
+-   [Membership Summary](#group_mph_freq)
+    -   [table](#tbl-mphCompare)
+    -   [plot](#fig-mphCompare)
 :::
 
 ::: divBox
@@ -2032,7 +2029,6 @@ The majority of mph observations fall in between 2-12 mph, as seen in @tbl-mphTo
 Member mph observations skew towards a higher mph than casual riders, as seen in @tbl-mphCompare and @fig-mphCompare.
 
 Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for the duration of their trips compared to casuals. @tbl-mphLog
-
 :::
 :::
 :::
@@ -2042,7 +2038,7 @@ Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for 
 
 ------------------------------------------------------------------------
 
-#### Total Frequency {#total_mph_freq}
+#### Totals Summary {#total_mph_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
@@ -2102,7 +2098,7 @@ mphPlot
 
 ------------------------------------------------------------------------
 
-#### Group Frequency {#group_mph_freq}
+#### Membership Summary {#group_mph_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
@@ -2115,14 +2111,13 @@ dplyr::tbl(dbconn,
      gt::gt(groupname_col = "mph",
             row_group_as_column = TRUE) |>
         gt::tab_header(
-            title = "Mph to Membership Frequency",
-            subtitle = "Grouped by sub status") |>
-        gt::tab_options(
+            title = "Mph - Membership") |>
+gt::tab_options(
             table.background.color = 'transparent',
             table.font.color = "SeaShell",
             table_body.vlines.color = "gray20",
             table_body.hlines.color = "gray20",
-            column_labels.hidden = TRUE)
+            column_labels.hidden = FALSE)
 
 
 mph_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
@@ -2176,12 +2171,11 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 :::
 :::
 
-___
+------------------------------------------------------------------------
 
 #### Summary
 
 ```{r}
-#| tbl-mphLogAlt1
 
 mph_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
 dplyr::select(mph, member_casual) |>
@@ -2209,8 +2203,6 @@ summary(mphModel)
 #summary(mph_asNums)
 
 ```
-
-
 :::
 
 ## Trip-Times
@@ -2219,14 +2211,12 @@ summary(mphModel)
 ::: section
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .align-self-center}
-
-*   [Totals Summary](#total_tripTime_freq)
-    +   [table](#tbl-triptimeTotals)
-    +   [plot](#fig-triptimeTotals)
-*   [Membership Summary](#group_tripTime_freq)
-    +   [table](#tbl-triptimeCompare)
-    +   [plot](#fig-triptimeCompare)
-
+-   [Totals Summary](#total_tripTime_freq)
+    -   [table](#tbl-triptimeTotals)
+    -   [plot](#fig-triptimeTotals)
+-   [Membership Summary](#group_tripTime_freq)
+    -   [table](#tbl-triptimeCompare)
+    -   [plot](#fig-triptimeCompare)
 :::
 
 ::: divBox
@@ -2238,7 +2228,6 @@ The time riders are usually spending on these trips lies between 5 to 15 minutes
 The groups as seen in @tbl-triptimeCompare and @fig-triptimeCompare both follow the totals pattern, largely. At the 42 minute mark in the table and plot, the casual riders count becomes greater than for members. Though members ride more frequently, casual riders are more likely to take longer trips.
 
 Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of how many minutes they ride for on their trips than casuals. @tbl-triptimesLog
-
 :::
 :::
 :::
@@ -2248,7 +2237,7 @@ Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of 
 
 ------------------------------------------------------------------------
 
-#### Total Frequency {#total_tripTime_freq}
+#### Totals Summary {#total_tripTime_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
@@ -2256,21 +2245,29 @@ Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of 
 #| label: tbl-triptimeTotals
 #| tbl-cap: Trip-Time Totals
 
-dplyr::tbl(dbconn,
-           "db/freq_tripTime.db") |>
-    dplyr::collect() |>
-    dplyr::arrange(desc(n)) |>
-    head(n = 20) |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Trip Duration Frequency",
-        subtitle = "Tallies the duration of time people rent cycles for") |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE)
+dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
+dplyr::collect() |>
+dplyr::arrange(trip_time) |>
+head(n = 20) |>
+gt::gt() |>
+gt::tab_header(title = "Duration Totals") |>
+gt::fmt_number(decimals = 0) |>
+gt::cols_label(trip_time = "Minutes", n = "Trips") |>
+gt::cols_align(columns = "trip_time", align = "center") |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+table.width = gt::pct(25),
+column_labels.hidden = FALSE,
+row.striping.include_table_body = TRUE
+) |>
+gt::tab_footnote(
+"Total trips taken for the given duration.",
+locations =   gt::cells_column_labels(columns = "n")
+)
+
 ```
 :::
 
@@ -2279,36 +2276,28 @@ dplyr::tbl(dbconn,
 #| label: fig-triptimeTotals
 #| fig-cap: Trip-Time Totals
 
-tripTimeTable <- dplyr::tbl(dbconn,
-                            "db/freq_tripTime.db") |>
-    dplyr::collect()
+tripTimeTable <- dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
+dplyr::collect()
 
 tripTimePlot <- tripTimeTable |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time,
-                                           y = n,
-                                           fill = n)) +
-    ggplot2::geom_col(show.legend = FALSE) +
-    ggplot2::labs(title = "Trip Duration Frequency",
-                  subtitle = "Tallies the duration of time people rent cycles for") +
-    ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-    ggplot2::xlim(NA, 100) +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30")
-    )
+ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time, y = n, fill = n)) +
+ggplot2::geom_col(show.legend = FALSE) +
+ggplot2::labs(title = "Trip Duration Frequency", subtitle = "Tallies the duration of time people rent cycles for") +
+ggplot2::scale_fill_distiller(palette = "YlOrRd") +
+ggplot2::xlim(NA, 100) +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30")
+)
 
 tripTimePlot
 ```
@@ -2317,28 +2306,41 @@ tripTimePlot
 
 ------------------------------------------------------------------------
 
-#### Group Frequency {#group_tripTime_freq}
+#### Membership Summary {#group_tripTime_freq}
 
-::: {.d-flex .align-content-stretch}
+::: d-flex
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-triptimeCompare
 #| tbl-cap: Trip Time Comparison
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_tripTime.db") |>
-    dplyr::collect() |>
-    dplyr::arrange(desc(n)) |>
-    gt::gt(groupname_col = "trip_time",
-           row_group_as_column = TRUE) |>
-    gt::tab_header(title = "Trip-Time to Membership Frequency",
-                   subtitle = "Grouped by sub status") |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE)
+
+dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
+dplyr::collect() |>
+dplyr::arrange(trip_time) |>
+gt::gt(groupname_col = "trip_time", row_group_as_column = TRUE) |>
+gt::tab_header(title = "Durations by Membership", subtitle = "Measured in minutes.") |>
+gt::fmt_number(decimals = 0) |>
+gt::cols_label(member_casual = "Membership", n = "Trips") |>
+gt::tab_style(
+style = list(gt::cell_borders(
+sides = c("left"),
+weight = 1,
+color = "white")),
+locations = list(
+gt::cells_body(gt::everything()),
+gt::cells_column_labels(gt::everything())
+)) |>
+#gt::tab_stubhead(label = "mins.") |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+column_labels.hidden = FALSE,
+row.striping.include_table_body = TRUE
+) |>
+gt::tab_footnote(footnote = "Trip counts by membership status.",
+locations = gt::cells_column_labels("n"))
+
 
 
 tripTime_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
@@ -2350,6 +2352,7 @@ dplyr::mutate(
 trip_time = forcats::as_factor(trip_time),
 trip_time = forcats::fct_inorder(trip_time)
 )
+
 
 triptime_compareSummary <- tripTime_tbl |>
 dplyr::select(trip_time, member_casual) |>
@@ -2369,39 +2372,31 @@ table_body.hlines.color = "gray20")
 #| label: fig-triptimeCompare
 #| fig-cap: Trip-Time Group Frequency 
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_tripTime.db") |>
-    ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time,
-                                           y = n,
-                                           color = member_casual)) +
-    ggplot2::geom_line(show.legend = TRUE) +
-    ggplot2::xlim(NA, 100) +
-    ggplot2::scale_color_brewer(palette = "Paired",
-                               name = "Subscriber Status") +
-    ggplot2::labs( title = "Trip-Time to Membership Frequency",
-            subtitle = "Grouped by sub status") +
-    ggplot2::theme(
-        panel.background = ggplot2::element_rect(fill = "#222222",
-                                                 color = NA),
-        plot.background = ggplot2::element_rect(fill = "#222222",
-                                                color = NA),
-        text = ggplot2::element_text(color = "seashell"),
-        panel.grid = ggplot2::element_blank(),
-        axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-        axis.text.x = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(1, 1, 1, 1), "mm")),
-        axis.text.y = ggplot2::element_text(color = "Snow",
-                                            margin = grid::unit(c(2, 2, 2, 2), "mm")),
-        axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-        axis.ticks.y = ggplot2::element_blank(),
-        panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-        legend.background = ggplot2::element_rect(fill = "#222222"))
+dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
+ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time, y = n, color = member_casual)) +
+ggplot2::geom_line(show.legend = TRUE) +
+ggplot2::xlim(NA, 100) +
+ggplot2::scale_color_brewer(palette = "Paired", name = "Subscriber Status") +
+ggplot2::labs(title = "Trip-Time to Membership Frequency", subtitle = "Grouped by sub status") +
+ggplot2::theme(
+panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
+plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
+text = ggplot2::element_text(color = "seashell"),
+panel.grid = ggplot2::element_blank(),
+axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
+axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
+axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
+axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
+axis.ticks.y = ggplot2::element_blank(),
+panel.grid.major.y = ggplot2::element_line(color = "grey30"),
+legend.background = ggplot2::element_rect(fill = "#222222")
+)
 ```
 :::
 :::
 
-___
+------------------------------------------------------------------------
 
 #### Summary
 
@@ -2431,13 +2426,10 @@ triptimeModel <- stats::glm(member_casual ~ trip_time, data = triptime_asNums, f
 
 summary(triptimeModel)
 ```
-
 :::
 :::
 :::
 :::
-
-
 
 ```{r}
 #| label: groupSummaries
@@ -2461,11 +2453,12 @@ gtsummary::tbl_stack(stacks)
 #table_body.hlines.color = "gray20")
 ```
 
-
 # The Streets
 
-::: p-3
-For an interesting birds-eye view of trip behaviors, see @fig-epiflowNetwork. This epiflow diagram is interactive, so one can click the circles (nodes), the lines connecting the nodes or use the drop-down window to further explore the data. The top 34 most traveled stations were used for this analysis. The line thickness roughly corresponds with amount of trips taken, so thicker lines means more trips between nodes. [@moragab]
+::: {.p-3}
+For an interesting birds-eye-view of trip behaviors, see @fig-epiflowNetwork. This epiflow diagram is interactive, so circles (nodes) and the lines connecting the nodes can be clicked for more information.  There is also a  drop-down window to further explore the data. The top 34 most traveled stations were used for this visual network diagram. The line thickness roughly corresponds with amount of trips taken, so thicker lines means more trips between nodes. [@moragab]
+
+These are the most active stations. Luckily, there might be a way to further explore the typical high traffic station locations and why they are high traffic. @sec-mapview
 :::
 
 ::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -2497,8 +2490,6 @@ flowData <- dplyr::tbl(dbconn,
                   "to_station" = end_station_name) |>
     dplyr::collect() |>
     dplyr::slice_head(n = 50)
-
-flowData
 ```
 
 ```{r}
@@ -2621,9 +2612,10 @@ epiflows::vis_epiflows(ef_test)
 :::
 :::
 
-## Map-Views
-
-This section is meant to close the divide between abstraction and concrete reality. You can expand and collapse four maps found in the callout section below. The original dataset used for these maps has been split into four so that the burst buttons could fit into the viewing window. The maps are interactive, so the default views are zoomable and movable. The transparent burst buttons enable snappy zooming-in of the station groups.
+## Map-Views {#sec-mapview}
+:::{.p-3}
+This section was made possible thanks to the latitude and longitude coordinates data provided alongside the stations names. Coming from the epiflow diagram, this should help make the data less abstract. The accordion below expands and collapses four *OpenStreet* maps found in the callout section below. These maps were split for viewing logistics. They contain from the epiflow in the section above. These maps are interactive, so the default views are zoomable and movable. The transparent burst buttons enable snappy zooming-in of the station groups.
+:::
 
 ::: {#offcanvas20 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -2728,7 +2720,7 @@ source("mapViewer.R")
 :::
 :::
 
-::: {#accordionParent .accordion}
+::: {#accordionParent .accordion .mt-3 .mb-3}
 ::: accordion-item
 ::: {#headingOne .accordion-header}
 ::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne"}
@@ -2819,7 +2811,11 @@ mapViewer(slicerVector[[4]])
 :::
 :::
 
-# Conclusion
+:::{.p-2}
+For example, suppose *University Ave & 57th St* was selected in the epiflow. As it happens this is at the heart of the University of Chicago. So where does the traffic to and from this location usually flow to? Selecting one of the other nodes highlighted with flows directing away from the previous node, is *Kimbark Ave and 53rd St*. This location is seated adjacent to the *Vue 53 Apartments* complex in the map view. 
+:::
+
+# Where to Next?
 
 I'm almost to the conclusion, but not quite. I am not finished with this document, yet. I probably will be finished within a week from date of publication listed at the top of the document.
 
