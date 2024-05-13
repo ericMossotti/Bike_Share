@@ -8,17 +8,34 @@ $link-color: #FCCB1A !default;
 $btn-border-width: 0px !default;
 //$background-color: #212529 !default;
 //$color-bg: #212529 !default;
-$headings-color: #FC7307 !default;
+//$headings-color: #FC7307 !default;
 //$nav-tabs-link-active-bg: rgb(210, 45, 45) !default;
 //$nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
 
-.plotExpander{
-    min-width: 60vw !important;
+.h1, h1 {
+  color: #F0F7D4 !important;
 }
 
-.leaflet{
-   // filter: invert(100%) !important;
+.h2, h2 {
+  color: #B2D732 !important;
+}
+
+.h3, h3, h4, .h4 {
+  color: #347B98 !important;
+}
+
+
+a {
+  color: #FE2712 !important;
+}
+
+.quarto-title {
+ // color: #448D76 !important;
+}
+
+.plotExpander {
+    min-width: 60vw !important;
 }
 
 .tableScroller {
@@ -86,11 +103,11 @@ i {
 
 }
 
-.h2, h2 {
-    color: FloralWhite !important;
+.h* {
+    //color: FloralWhite !important;
     text-shadow: 4px 4px black !important;
     align-self: start !important;
-    max-width: 40vw !important;
+    //max-width: 40vw !important;
 }
 
 .offcanvas {
