@@ -21,6 +21,7 @@ code-link: true
 toc-expand: true
 toc: true
 #toc_float: true
+number-sections: true
 
 smooth-scroll: true
 fig-responsive: true
@@ -79,6 +80,7 @@ if(exists("dbconn") == FALSE &&
 tblPath <- "db/data.db"
 dupelessPath <- "db/dupeless.db"
 tblPath_fltrd <- "db/data_fltrd.db"
+
 ```
 
 ```{r}
@@ -133,12 +135,12 @@ For example, it was helpful to incorporate certain design decisions to eliminate
 
 The underlying code incorporates an if-else decision, which includes a source code script that handles the initial processing and establishes the database filesystem. Choosing a persistent DuckDB filesystem (as opposed to purely in-memory) seemed optimal in terms of the simplicity and cost-effectiveness of SQL database queries while retaining progress made over extended periods. [@whyduck]
 
-# Cleaning
-
+# Tidying
 
 The starting observation count was *5,719,877*. Then *1,388,170* incomplete observations were then removed by the initial processing script.
 
 More code processing steps are available via the code icon links scattered throughout the document, such as the one below. The code summaries are given to help supplement the reader with context to help understand how and why the data is processed throughout.
+
 
 :::{.d-flex .justify-content-center}
 ::: {.callout-note title="Click this" style="width: 60%"}
@@ -151,27 +153,16 @@ Cleans up the database:
 :::
 :::
 
-## Duplicate Observations
-
-Now the question arises: How does one check the data for duplicates? That is what this section covers, but also how to only remove what is needed. Care is needed because it might not necessarily be the case that each observation or *obs* is unique because one of the columns contains all unique values.
-
-All of the values in the *ride_id* column were found to be unique. However, not all of the observations, or rows, were found to be truly unique. Other columns such as *start_time*, *end_time***,** *start_station*, and *end_station* were used to verify if an observation was *truly unique.* These would have more granular information, down to the second, a given trip's starting and ending time and location. In this analysis, it was assumed that observations having the same starting and ending date-time and station despite having two different rider IDs was a mistake.
-
-Although, it is actually unknown how that error would happen. It could have been assumed that one person checked out multiple bikes at once. In that instance, each bike would be assigned a unique *ride_id*. That, however, has only happened *18* times over a year. Since it is only one copy every time, red flags were raised. Perhaps trips could be grouped where one person pays for a other riders? If that were the case, then why is there always one duplicate?
-
-In @tbl-duplicates, duplicate observations were listed and grouped by color. Contrast this with @tbl-unduplicated, which has removed the extra copy of the observation while preserving the observation itself. Of the duplicates, each has one extra copy. It is noted that the number of rows in the duplicates table is *36*. Each duplicated observation has one duplicate, where *n* is always the value *2*. So the expected removed *obs* is *18*. A complication involved how to remove not all *obs* but just one extra duplicate observation from each.
-
+## Duplicates
 
 ::: {#offcanvas2 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Code to Remove Duplicates
 :::
-
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
 :::
-
 ::: offcanvas-body
 ::: flex-code
 ```{r}
@@ -286,129 +277,94 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE,
                          check_from = FALSE)
 ```
-:::
-:::
-:::
 
-
-
-
-::: column-page
-::: {.d-flex .justify-content-around .m-3}
-::: {.tableScroller .m-2}
 ```{r}
-#| label: tbl-duplicates
-#| tbl-cap: Duplicates Table
 
 gtDupes <- dupeTable |>
-    dplyr::group_by(started_at) |>
-    gt::gt(rowname_col = "row",
-           groupname_col = "started_at",
-           row_group_as_column = TRUE) |>
-    gt::tab_style(
-    style = list(
-        gt::cell_text(weight = "bold",
-                      align = "center"),
-        gt::cell_borders(sides = c("bottom"))
-    ),
-    locations = gt::cells_column_labels(gt::everything())
-    ) |>
-    gt::tab_style(
-    style = list(
-        gt::cell_borders(sides = c("left", "right"),
-                         color = "transparent"),
-        gt::cell_text(align = "center",
-                      v_align = "middle")
-    ),
-    locations = gt::cells_body(gt::everything())
-    ) |>
-    gt::data_color(columns = start_station_name,
-                   target_columns = gt::everything(),
-                   method = "auto",
-                   palette = "basetheme::brutal") |>
-    gt::tab_header(title = "A view of duplicated observations",
-                   subtitle = "Grouping follows 'started_at'") |>
-    gt::tab_options(
-        heading.title.font.weight = "bolder",
-        heading.subtitle.font.weight = "lighter",
-        heading.align = "center",
-        table.background.color = "transparent",
-        table.font.color = "SeaShell",
-        table.font.size = gt::pct(75),
-        )
+dplyr::group_by(started_at) |>
+gt::gt(
+rowname_col = "row",
+groupname_col = "started_at",
+row_group_as_column = TRUE
+) |>
+gt::tab_style(
+style = list(
+gt::cell_text(weight = "bold", align = "center"),
+gt::cell_borders(sides = c("bottom"))
+),
+locations = gt::cells_column_labels(gt::everything())
+) |>
+gt::tab_style(
+style = list(
+gt::cell_borders(sides = c("left", "right"), color = "transparent"),
+gt::cell_text(align = "center", v_align = "middle")
+),
+locations = gt::cells_body(gt::everything())
+) |>
+gt::data_color(
+columns = start_station_name,
+target_columns = gt::everything(),
+method = "auto",
+palette = "basetheme::brutal"
+) |>
+gt::tab_header(title = "A view of duplicated observations", subtitle = "Grouping follows 'started_at'") |>
+gt::tab_options(
+heading.title.font.weight = "bolder",
+heading.subtitle.font.weight = "lighter",
+heading.align = "center",
+table.background.color = "transparent",
+table.font.color = "SeaShell",
+table.font.size = gt::pct(75),
+)
 
-gtDupes
 ```
-:::
 
-::: {.p-2 .m-2 .tableScroller}
 ```{r}
-#| label: tbl-unduplicated
-#| tbl-cap: Un-duplicated Table
 
 gt_undupes <- undupedTable |>
-    dplyr::collect() |>
-    dplyr::group_by(started_at) |>
-    gt::gt(rowname_col = "row",
-           groupname_col = "started_at",
-           row_group_as_column = TRUE) |>
-    gt::tab_style(
-    style = list(
-        gt::cell_text(weight = "bold",
-                      align = "center"),
-        gt::cell_borders(sides = c("bottom"))
-    ),
-    locations = gt::cells_column_labels(gt::everything())
-    ) |>
-    gt::tab_style(
-    style = list(
-        gt::cell_borders(sides = c("left", "right")),
-        gt::cell_text(align = "center",
-                      v_align = "middle")
-    ),
-    locations = gt::cells_body(gt::everything())
-    ) |>
-    gt::data_color(columns = start_station_name,
-                   target_columns = gt::everything(),
-                   method = "auto",
-                   palette = "basetheme::brutal") |>
-    #gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
-    gt::tab_header(title = "After duplicates were removed",
-                   subtitle = "Same grouping)") |>
-    gt::tab_options(
-        heading.title.font.weight = "bolder",
-        heading.subtitle.font.weight = "lighter",
-        heading.align = "center",
-        table.background.color = "transparent",
-        table.font.color = "SeaShell",
-        table.font.size = gt::pct(75)
-        )
+dplyr::collect() |>
+dplyr::group_by(started_at) |>
+gt::gt(
+rowname_col = "row",
+groupname_col = "started_at",
+row_group_as_column = TRUE
+) |>
+gt::fmt_number(decimals = 0) |>
 
-gt_undupes
+gt::tab_style(
+style = list(
+gt::cell_text(weight = "bold", align = "center"),
+gt::cell_borders(sides = c("bottom"))
+),
+locations = gt::cells_column_labels(gt::everything())
+) |>
+gt::tab_style(
+style = list(
+gt::cell_borders(sides = c("left", "right")),
+gt::cell_text(align = "center", v_align = "middle")
+),
+locations = gt::cells_body(gt::everything())
+) |>
+gt::data_color(
+columns = start_station_name,
+target_columns = gt::everything(),
+method = "auto",
+palette = "basetheme::brutal"
+) |>
+#gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
+gt::tab_header(title = "After duplicates were removed", subtitle = "Same grouping)") |>
+gt::tab_options(
+heading.title.font.weight = "bolder",
+heading.subtitle.font.weight = "lighter",
+heading.align = "center",
+table.background.color = "transparent",
+table.font.color = "SeaShell",
+table.font.size = gt::pct(75)
+)
+
 ```
-:::
-:::
-:::
 
-::: {.column-page-right}
-::: {.d-flex .justify-content-center}
-::: {.align-self-center}
-:::{.m-2}
-The count of distinct n-values for the un-duplicated table was indeed 18. So now, it is time to run a count of how rows/observations are in the dataset. There is a difference, though, concerning the correct amount. The incorrect nobs was 4,331,707. The correct nobs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed. We can now add the processed table to our database. @tbl-observationHistory
-:::
-::: {.mt-3 .justify-content-center}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
-```
-:::
-:::
-:::
-
-::: {.m-1 .tableScroller}
 ```{r}
-#| label: tbl-observationHistory
-#| tbl-cap: Observation Processing History
 
 # To see the history of obs in our dataset.
 summaryProcessTable <- tidyr::tribble(
@@ -456,11 +412,64 @@ summaryProcessTable <- tidyr::tribble(
                     row.striping.background_color = "gray10",
                     row.striping.include_table_body = TRUE)
 
-summaryProcessTable
 ```
 :::
 :::
 :::
+
+::::{.column-page-inset-right}
+:::{layout="[[1,1], [1,1]]"}
+:::{.p-3}
+Now the question arises: How does one check the data for duplicates? That is what this section covers, but also how to only remove what is needed. Care is needed because it might not necessarily be the case that each observation or *obs* is unique because one of the columns contains all unique values.
+
+All of the values in the *ride_id* column were found to be unique. However, not all of the observations, or rows, were found to be truly unique. Other columns such as *start_time*, *end_time***,** *start_station*, and *end_station* were used to verify if an observation was *truly unique.* These would have more granular information, down to the second, a given trip's starting and ending time and location. In this analysis, it was assumed that observations having the same starting and ending date-time and station despite having two different rider IDs was a mistake.
+:::
+::: {.tableScroller .p-3}
+```{r}
+#| label: tbl-duplicates
+#| tbl-cap: Duplicates Table
+#| echo: false
+
+gtDupes
+```
+:::
+:::{.p-3}
+Although, it is actually unknown how that error would happen. It could have been assumed that one person checked out multiple bikes at once. In that instance, each bike would be assigned a unique *ride_id*. That, however, has only happened *18* times over a year. Since it is only one copy every time, red flags were raised. Perhaps trips could be grouped where one person pays for a other riders? If that were the case, then why is there always one duplicate?
+
+In @tbl-duplicates, duplicate observations were listed and grouped by color. Contrast this with @tbl-unduplicated, which has removed the extra copy of the observation while preserving the observation itself. Of the duplicates, each has one extra copy. It is noted that the number of rows in the duplicates table is *36*. Each duplicated observation has one duplicate, where *n* is always the value *2*. So the expected removed *obs* is *18*. A complication involved how to remove not all *obs* but just one extra duplicate observation from each.
+:::
+::: {.p-3 .tableScroller}
+```{r}
+#| label: tbl-unduplicated
+#| tbl-cap: Un-duplicated Table
+#| echo: false
+
+gt_undupes
+```
+:::
+::::
+:::::
+
+The count of distinct n-values for the un-duplicated table was 18. Then a count of observations in the dataset were recorded. The incorrect number of obs was 4,331,707. The correct obs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed.  @tbl-observationHistory
+
+:::{aside}
+```{r}
+#| label: tbl-observationHistory
+#| tbl-cap: Observation Processing History
+#| echo: false
+
+summaryProcessTable
+```
+:::
+
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
+```
+:::
+
+
+
 
 ## Outliers
 
@@ -533,7 +542,7 @@ if (duckdb::dbExistsTable(dbconn,
 # Exploratory Analysis
 
 ::: {.column-body .mb-2}
-## Writing Frequency Tables
+## Generating Frequency Tables
 
 The rationale for frequency tables is to gain quick insights into the data. It is taking a methodical approach that, while simple, provides a crucial pathway towards understanding the bigger picture.
 :::
@@ -912,21 +921,22 @@ dplyr::tbl(dbconn,
 :::
 
 ::: column-screen
-::: {.d-flex .justify-content-around}
+::: {.d-flex .justify-content-center}
 ::: {.panel-tabset .shadow-sm}
+
 ## Membership
 
 ::: article
 ::: section
-::: {.d-flex .align-content-stretch}
+::: {.d-flex .justify-content-around .align-content-stretch}
 ::: {.p-3 .align-self-center}
-### Membership Groups Analysis
+* Membership Groups Analysis
 :::
 
 ::: divBox
 :::
 
-::: {.p-1 .align-self-center}
+::: {.p-3 .align-self-center}
 @tbl-memberTotals gives the total count of trips taken by members and casuals. The rest of the tabs in this section will give total counts along with group counts by membership status.
 :::
 :::
@@ -947,6 +957,7 @@ dplyr::tbl(dbconn,
 dplyr::tbl(dbconn, "db/freq_member.db") |>
 gt::gt() |>
 gt::tab_header(title = "Subscriber Frequency", subtitle = "Annual and casual rider trip counts") |>
+gt::fmt_number(decimals = 0) |>
 gt::tab_options(
 table.background.color = 'transparent',
 table.font.color = "SeaShell",
@@ -992,8 +1003,8 @@ axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 
 axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
 axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
 axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30")
-)
+panel.grid.major.y = ggplot2::element_line(color = "grey30"))
+
 ```
 :::
 :::
@@ -1039,31 +1050,18 @@ With $p < 0.05$, there appears to be a strong association between members and ca
 #| label: tbl-ctypeTotals
 #| tbl-cap: Cycle Type Total Frequency
 
-dplyr::tbl(dbconn,
-           "db/freq_rTypes.db") |>
-     gt::gt() |>
-        gt::tab_header(
-            title = "Bicycle Type Frequency",
-            subtitle = "Counts trips taken by cycle type"
-        ) |>
-        gt::tab_options(
-            table.background.color = 'transparent',
-            table.font.color = "SeaShell",
-            table_body.vlines.color = "gray20",
-            table_body.hlines.color = "gray20",
-            column_labels.hidden = TRUE)
-
-
-ctype_totalSumm <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(rideable_type) |>
-dplyr::collect() |>
-gtsummary::tbl_summary() |>
-gtsummary::as_gt() |>
+dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
+gt::gt() |>
+gt::tab_header(title = "Bicycle Type Frequency", subtitle = "Counts trips taken by cycle type") |>
+gt::fmt_number(decimals = 0) |>
 gt::tab_options(
 table.background.color = 'transparent',
 table.font.color = "SeaShell",
 table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
+table_body.hlines.color = "gray20",
+column_labels.hidden = TRUE
+)
+
 ```
 :::
 
@@ -1108,9 +1106,10 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 #| tbl-cap: Cycle Type Group Frequency
 
 
-dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+ctype_tbl <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
 gt::gt(groupname_col = "rideable_type", row_group_as_column = TRUE) |>
 gt::tab_header(title = "Bicycle Type to Membership Frequency", subtitle = "Grouped by sub. status") |>
+gt::fmt_number(decimals = 0) |>
 gt::tab_options(
 table.background.color = 'transparent',
 table.font.color = "SeaShell",
@@ -1118,11 +1117,9 @@ table_body.vlines.color = "gray20",
 table_body.hlines.color = "gray20",
 column_labels.hidden = TRUE)
 
-ctype_compareSummary <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(rideable_type, member_casual) |>
-dplyr::collect() |>
-gtsummary::tbl_summary(by = member_casual, label = list(rideable_type = "Bicycle Type", member_casual = "Membership")) |>
-gtsummary::add_p()
+
+ctype_tbl
+
 ```
 :::
 
@@ -1157,25 +1154,26 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 
 ------------------------------------------------------------------------
 
-#### Summary
+#### Testing the association between membership and bicycle type
 
 ```{r}
 #| label: tbl-chiTypes
 
-rTypes4chi <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
-dplyr::arrange(rideable_type, member_casual) |>
-dplyr::collect()
-
-uniqueTypes <- rTypes4chi$rideable_type |> as.character() |> unique()
-
-rTypes4chiMatrix <- matrix(c(rTypes4chi$n), nrow = 2)
-rownames(rTypes4chiMatrix) <- c("casual", "member")
-colnames(rTypes4chiMatrix) <- uniqueTypes
-
-rTypesChi <- chisq.test(rTypes4chiMatrix)
+ctype_compareSummary <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(rideable_type, member_casual) |>
+dplyr::collect() |>
+gtsummary::tbl_summary(by = member_casual, label = list(rideable_type = "Bicycle Type", member_casual = "Membership")) |>
+gtsummary::add_p()
 
 
-rTypesChi
+ctype_compareSummary |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
+
 ```
 :::
 
@@ -1219,19 +1217,17 @@ Given $p < 0.05$, it is likely that membership status is associated with a given
 #| label: tbl-monthTotals
 #| tbl-cap: Month Total Frequency
 
-dplyr::tbl(dbconn,
-           "db/freq_month.db") |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Monthly Trips Frequency",
-        subtitle = "Tallies trips taken by month") |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE
-    )
+dplyr::tbl(dbconn, "db/freq_month.db") |>
+gt::gt() |>
+gt::tab_header(title = "Monthly Trips Frequency", subtitle = "Tallies trips taken by month") |>
+gt::fmt_number(decimals = 0) |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+column_labels.hidden = TRUE
+)
 ```
 :::
 
@@ -1241,9 +1237,8 @@ dplyr::tbl(dbconn,
 #| fig-cap: Month Total Frequency
 
 
-monthlyTable <- dplyr::tbl(dbconn,
-           "db/freq_month.db") |>
-    dplyr::collect()
+monthlyTable <- dplyr::tbl(dbconn, "db/freq_month.db") |>
+dplyr::collect()
     
 monthlyTable |>
 ggplot2::ggplot(mapping = ggplot2::aes(x = months, y = n, fill = n)) +
@@ -1278,39 +1273,20 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 #| label: tbl-monthCompare
 #| tbl-cap: Month Group Frequency
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_month.db") |>
-     gt::gt(groupname_col = "months",
-            row_group_as_column = TRUE) |>
-        gt::tab_header(
-            title = "Month to Membership Frequency",
-            subtitle = "Grouped by sub status"
-        ) |>
-        gt::tab_options(
-            table.background.color = 'transparent',
-            table.font.color = "SeaShell",
-            table_body.vlines.color = "gray20",
-            table_body.hlines.color = "gray20",
-            column_labels.hidden = TRUE)
 
+dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
+gt::gt(groupname_col = "months", row_group_as_column = TRUE) |>
+gt::tab_header(title = "Month to Membership Frequency", subtitle = "Grouped by sub status") |>
+gt::fmt_number(decimals = 0) |>
+gt::cols_label(months = "Month", member_casual = "Membership") |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+column_labels.hidden = FALSE
+)
 
-month_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
-dplyr::select(member_casual, started_at) |>
-dplyr::mutate(months = lubridate::month(started_at, label = TRUE, abbr = TRUE)) |>
-dplyr::collect() |>
-dplyr::mutate(months = forcats::as_factor(months), months = forcats::fct_inorder(months))
-
-month_compareSummary <- month_tbl |>
-dplyr::select(months, member_casual) |>
-gtsummary::tbl_summary(by = member_casual, label = list(months = "Month", member_casual = "Membership")) |>
-gtsummary::add_p()
-
-#gtsummary::as_gt() |>
-#gt::tab_options(
-#table.background.color = 'transparent',
-#table.font.color = "SeaShell",
-#table_body.vlines.color = "gray20",
-#table_body.hlines.color = "gray20")
 ```
 :::
 
@@ -1347,27 +1323,29 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 
 ------------------------------------------------------------------------
 
-#### Summary
+#### Testing the association between membership and month
 
 ```{r}
 #| label: tbl-chiMonths
 
-# Make sure the members and casuals are ordered within each month for the matrix further below.
-months4chi <- dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
-dplyr::arrange(months, member_casual) |>
-dplyr::collect()
+month_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(member_casual, started_at) |>
+dplyr::mutate(months = lubridate::month(started_at, label = TRUE, abbr = TRUE)) |>
+dplyr::collect() |>
+dplyr::mutate(months = forcats::as_factor(months), months = forcats::fct_inorder(months))
 
-# Need a vector of months without duplicate month names
-uniqueMonths <- months4chi$months |> as.character() |> unique()
+# For finding chi-square p-value in a nicely formatted table
+month_tbl |>
+dplyr::select(months, member_casual) |>
+gtsummary::tbl_summary(by = member_casual, label = list(months = "Month", member_casual = "Membership")) |>
+gtsummary::add_p() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 
-# Probably more than one way to do this, but decided that creating a matrix was easy enough and effective. Now we can use the months vector. 
-months4chiMatrix <- matrix(c(months4chi$n), nrow = 2)
-rownames(months4chiMatrix) <- c("casual", "member")
-colnames(months4chiMatrix) <- uniqueMonths
-
-monthChi <- chisq.test(months4chiMatrix)
-
-monthChi
 ```
 :::
 
@@ -1412,19 +1390,18 @@ Given, $p < 0.05$, the likelihood of using the service on a particular day depen
 #| tbl-cap: Weekday Total Frequency
 
 
-dplyr::tbl(dbconn,
-           "db/freq_wkday.db") |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Weekday Trip Frequency",
-        subtitle = "Tallies trips taken by the day of the week") |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE
-        )
+
+dplyr::tbl(dbconn, "db/freq_wkday.db") |>
+gt::gt() |>
+gt::tab_header(title = "Weekday Trip Frequency", subtitle = "Tallies trips taken by the day of the week") |>
+gt::fmt_number(decimals = 0) |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+column_labels.hidden = TRUE
+)
 ```
 :::
 
@@ -1437,7 +1414,7 @@ weekdayTable <- dplyr::tbl(dbconn,
            "db/freq_wkday.db") |>
     dplyr::collect()
     
-weekdayPlot <- weekdayTable |>
+weekdayTable |>
 ggplot2::ggplot(mapping = ggplot2::aes(x = wkday, y = n, fill = n)) +
 ggplot2::coord_cartesian(ylim = c(4 * 10 ^ 5, NA)) +
 ggplot2::geom_col(show.legend = FALSE) +
@@ -1457,7 +1434,6 @@ axis.ticks.y = ggplot2::element_blank(),
 panel.grid.major.y = ggplot2::element_line(color = "grey30")
 )
 
-weekdayPlot
 ```
 :::
 :::
@@ -1472,46 +1448,22 @@ weekdayPlot
 #| label: tbl-wkdayCompare
 #| tbl-cap: Weekday Group Frequency
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_wkday.db") |>
-     gt::gt(groupname_col = "wkday",
-            row_group_as_column = TRUE) |>
-        gt::tab_header(
-            title = "Day to Membership Frequency",
-            subtitle = "Grouped by sub status"
-        ) |>
-        gt::tab_options(
-            table.background.color = 'transparent',
-            table.font.color = "SeaShell",
-            table_body.vlines.color = "gray20",
-            table_body.hlines.color = "gray20",
-            column_labels.hidden = TRUE)
-
-
-# For the week days  comparison
-day_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
-dplyr::select(member_casual, started_at) |>
-dplyr::mutate(wkday = lubridate::wday(started_at, label = TRUE, abbr = TRUE)) |>
-dplyr::collect() |>
-dplyr::mutate(wkday = forcats::as_factor(wkday),
-wkday = forcats::fct_inorder(wkday))
-
-days_compareSummary <- day_tbl |>
-dplyr::select(wkday, member_casual) |>
-gtsummary::tbl_summary(by = member_casual, label = list(wkday = "Day", member_casual = "Membership")) |>
-gtsummary::add_p()
-
-#gtsummary::as_gt() |>
-#gt::tab_options(
-#table.background.color = 'transparent',
-#table.font.color = "SeaShell",
-#table_body.vlines.color = "gray20",
-#table_body.hlines.color = "gray20")
+dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
+gt::gt(groupname_col = "wkday", row_group_as_column = TRUE) |>
+gt::tab_header(title = "Day to Membership Frequency") |>
+gt::cols_label(n = "Trips", member_casual = "Membership") |>
+gt::fmt_number(decimals = 0) |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+column_labels.hidden = FALSE)
 
 ```
 :::
 
-::: {.ml-5 .align-self-center}
+::: {.ml-2 .align-self-center}
 ```{r}
 #| label: fig-wkdayCompare
 #| fig-cap: Weekday Group Frequency
@@ -1520,7 +1472,8 @@ dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
 ggplot2::ggplot(mapping = ggplot2::aes(x = wkday, y = n, fill = n)) +
 ggplot2::geom_col(show.legend = TRUE) +
 ggplot2::facet_grid(rows = "member_casual") +
-ggplot2::scale_fill_distiller(palette = "YlGnBu", name = "Subscriber Status") +
+ggplot2::scale_fill_distiller(palette = "YlGnBu", 
+name = "Subscriber Status") +
 ggplot2::labs(title = "Weekday to Membership Frequency", subtitle = "Grouped by sub status", x = "Day", y = "Trips") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -1534,32 +1487,38 @@ axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 
 axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
 axis.ticks.y = ggplot2::element_blank(),
 panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222")
-)
+legend.background = ggplot2::element_rect(fill = "#222222"))
+
 ```
 :::
 :::
 
 ------------------------------------------------------------------------
 
-#### Summary
+#### Testing the association between day and membership
 
 ```{r}
 #| label: tbl-chiDays
 
-wkdays4chi <- dplyr::tbl(dbconn, "db/freqCompare_wkDay.db") |>
-dplyr::arrange(wkday, member_casual) |>
-dplyr::collect()
+# For the week days  comparison
+day_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(member_casual, started_at) |>
+dplyr::mutate(wkday = lubridate::wday(started_at, label = TRUE, abbr = TRUE)) |>
+dplyr::collect() |>
+dplyr::mutate(wkday = forcats::as_factor(wkday),
+wkday = forcats::fct_inorder(wkday))
 
-uniqueDays <- wkdays4chi$wkday |> as.character() |> unique()
+day_tbl |>
+dplyr::select(wkday, member_casual) |>
+gtsummary::tbl_summary(by = member_casual, label = list(wkday = "Day", member_casual = "Membership")) |>
+gtsummary::add_p() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 
-wkdays4chiMatrix <- matrix(c(wkdays4chi$n), nrow = 2)
-rownames(wkdays4chiMatrix) <- c("casual", "member")
-colnames(wkdays4chiMatrix) <- uniqueDays
-
-daysChi <- chisq.test(wkdays4chiMatrix)
-
-daysChi
 ```
 :::
 
@@ -1627,6 +1586,7 @@ gt::tab_header(
 title = "Hour Frequency", 
 subtitle = "Counts trips taken by the hour of day"
 ) |>
+gt::fmt_number(decimals = 0) |>
 gt::tab_options(
 table.background.color = 'transparent',
 table.font.color = "SeaShell",
@@ -1719,6 +1679,7 @@ gt::gt(
 groupname_col = "hour", 
 row_group_as_column = TRUE
 ) |>
+gt::fmt_number(decimals = 0) |>
 gt::tab_header(
 title = "Hour to Membership Frequency",
 subtitle = "Counts total trips by membership") |>
@@ -1764,6 +1725,56 @@ panel.spacing = ggplot2::unit(4, "mm")
 ```
 :::
 :::
+
+### Can the hour of the day predict membership? 
+
+```{r}
+#| label: tbl-hourChi
+#| tbl-cap: "Can the hour of the day correlate to a binary outcome, such as membership?"
+
+hour_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(started_at, member_casual) |>
+dplyr::mutate("hour" = lubridate::hour(started_at)) |>
+dplyr::arrange(hour) |>
+dplyr::collect() |>
+dplyr::mutate(
+hour = hms::hms(hours = hour),
+# Need the 12 hour clock times
+hour = format(strptime(hour, format = "%H"), "%r"),
+hour = forcats::as_factor(hour),
+hour = forcats::fct_inorder(hour)
+)
+
+x <-
+stringr::str_sub_all(hour_tbl[[3]], start = 1, end = 2) |>
+as.character() |>
+stringr::str_remove(pattern = "^0")
+
+
+y <- 
+stringr::str_sub(hour_tbl[[3]], start = -2, end = -1) |>
+stringr::str_to_lower()
+
+simpleTimes <- stringr::str_c(x, sep = " ", y)
+
+hour_tbl[[3]] <- simpleTimes
+
+
+hour_tbl |>
+dplyr::select(hour, member_casual) |>
+gtsummary::tbl_summary(by = member_casual, label = list(hour = "Hour", member_casual = "Membership")) |>
+gtsummary::add_p() |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
+
+```
+
+
+
 :::
 
 ## Miles
@@ -1806,21 +1817,24 @@ $\beta_1 < 0$, members are less likely to ride as distance traveled in a given t
 #| label: tbl-milesTotals
 #| tbl-cap: Miles Total Frequency
 
-dplyr::tbl(dbconn,
-           "db/freq_miles.db") |>
-    dplyr::arrange(desc(n)) |>
-    head(n = 10) |>
-    gt::gt() |>
-        gt::tab_header(
-            title = "Trip Distance Frequency",
-            subtitle = "Distance is measured in miles"
-        ) |>
-        gt::tab_options(
-            table.background.color = 'transparent',
-            table.font.color = "SeaShell",
-            table_body.vlines.color = "gray20",
-            table_body.hlines.color = "gray20"
-        )
+dplyr::tbl(dbconn, "db/freq_miles.db") |>
+dplyr::arrange(miles) |>
+dplyr::collect() |>
+dplyr::mutate(
+#n = n / 1000,
+miles = forcats::as_factor(miles),
+miles = forcats::fct_inorder(miles)
+) |>
+gt::gt() |>
+gt::cols_label(miles = "Miles", n = "Trips") |>
+gt::fmt_number(decimals = 0) |>
+gt::tab_header(title = "Distance Frequency", subtitle = "Distance is measured in miles") |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20"
+)
 ```
 :::
 
@@ -1870,20 +1884,19 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 #| label: tbl-milesCompare
 #| tbl-cap: Miles Group Frequency
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_miles.db") |>
-     gt::gt(groupname_col = "miles",
-            row_group_as_column = TRUE) |>
-        gt::tab_header(
-            title = "Miles to Membership Frequency",
-            subtitle = "Grouped by sub status"
-        ) |>
-        gt::tab_options(
-            table.background.color = 'transparent',
-            table.font.color = "SeaShell",
-            table_body.vlines.color = "gray20",
-            table_body.hlines.color = "gray20",
-            column_labels.hidden = TRUE)
+dplyr::tbl(dbconn, "db/freqCompare_miles.db") |>
+dplyr::arrange(miles) |>
+gt::gt(groupname_col = "miles", row_group_as_column = TRUE) |>
+gt::tab_header(title = "Distance by Membership", subtitle = "Measured in miles.") |>
+gt::fmt_number(decimals = 0, ) |>
+gt::cols_label(n = "Trips") |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+column_labels.hidden = FALSE
+)
 
 # For the miles group frequency membership comparison
 milesCompare_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
@@ -1906,14 +1919,7 @@ by = member_casual,
 label = list(member_casual = "Membership")
 )
 
-miles_compareSummary
-#gtsummary::add_p() |>
-#gtsummary::as_gt() |>
-#gt::tab_options(
-#table.background.color = 'transparent',
-#table.font.color = "SeaShell",
-#table_body.vlines.color = "gray20",
-#table_body.hlines.color = "gray20")
+# miles_compareSummary
 ```
 :::
 
@@ -1950,22 +1956,10 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 :::
 :::
 
-#### Summary
+#### Can distance predict a binary outcome?
 
 ```{r}
 #| label: tbl-milesLog
-
-
-ctype_compareTbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(member_casual, miles) |>
-dplyr::collect() |>
-gtsummary::tbl_summary(by = member_casual, label = list(rideable_type = "Bicycle Type", member_casual = "Membership")) |>
-gtsummary::as_gt() |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
 
 miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
 dplyr::select(member_casual, miles) |>
@@ -1995,6 +1989,7 @@ milesModel <- stats::glm(member_casual ~ miles, data = miles_asNums, family = bi
 mileStats_tbl <- milesModel |>
 gtsummary::tbl_regression(label = list(miles = "Miles", member_casual = "Membership"))
 
+
 mileStats_tbl |>
 gtsummary::as_gt() |>
 gt::tab_options(
@@ -2002,6 +1997,7 @@ table.background.color = 'transparent',
 table.font.color = "SeaShell",
 table_body.vlines.color = "gray20",
 table_body.hlines.color = "gray20")
+
 
 ```
 :::
@@ -2046,19 +2042,19 @@ Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for 
 #| label: tbl-mphTotals
 #| tbl-cap: Mph Total Frequency
 
-dplyr::tbl(dbconn,
-           "db/freq_mph.db") |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Mean Speed Frequency",
-        subtitle = "Calculated average speed over the duration of the trip") |>
-    gt::tab_options(
-        table.background.color = 'transparent',
-        table.font.color = "SeaShell",
-        table_body.vlines.color = "gray20",
-        table_body.hlines.color = "gray20",
-        column_labels.hidden = TRUE
-        )
+dplyr::tbl(dbconn, "db/freq_mph.db") |>
+dplyr::arrange(mph) |>
+gt::gt() |>
+gt::tab_header(title = "Mean Speed Frequency", subtitle = "Calculated average speed over the duration of the trip") |>
+gt::fmt_number(decimals = 0) |>
+gt::cols_label(mph = "Mph", n = "Trips") |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20",
+column_labels.hidden = FALSE
+)
 ```
 :::
 
@@ -2071,11 +2067,10 @@ dplyr::tbl(dbconn,
 mphTable <- dplyr::tbl(dbconn,
                        "db/freq_mph.db") |>
 dplyr::collect()
-
 mphPlot <- mphTable |>
 ggplot2::ggplot(mapping = ggplot2::aes(x = mph, y = n, color = n)) +
 ggplot2::geom_point(show.legend = FALSE) +
-ggplot2::labs(title = "Mean Speed Frequency", subtitle = "Calculated average speed over the duration of the trip") +
+ggplot2::labs(title = "Mean Speed Frequency", subtitle = "Calculated average speed over the duration of the trip", x = "Miles per Hour", y = "Trips") +
 ggplot2::scale_color_distiller(palette = "YlOrRd") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -2106,39 +2101,20 @@ mphPlot
 #| label: tbl-mphCompare
 #| tbl-cap: Mph Group Frequency
 
-dplyr::tbl(dbconn,
-           "db/freqCompare_mph.db") |>
-     gt::gt(groupname_col = "mph",
-            row_group_as_column = TRUE) |>
-        gt::tab_header(
-            title = "Mph - Membership") |>
-gt::tab_options(
-            table.background.color = 'transparent',
-            table.font.color = "SeaShell",
-            table_body.vlines.color = "gray20",
-            table_body.hlines.color = "gray20",
-            column_labels.hidden = FALSE)
-
-
-mph_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
-dplyr::select(mph, member_casual) |>
-dplyr::mutate(mph = round(mph, digits = 0)) |>
+dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
+dplyr::arrange(mph, member_casual) |>
 dplyr::collect() |>
-dplyr::arrange(mph) |>
-dplyr::mutate(mph = forcats::as_factor(mph),
-mph = forcats::fct_inorder(mph)
-)
-
-mph_compareSummary <- mph_tbl |>
-dplyr::select(mph, member_casual) |>
-gtsummary::tbl_summary(by = member_casual, label = list(mph = "Mph", member_casual = "Membership")) |>
-#gtsummary::add_p() |>
-gtsummary::as_gt() |>
+gt::gt(groupname_col = "mph", row_group_as_column = TRUE) |>
+gt::tab_header(title = "Mph - Membership") |>
+gt::fmt_number(decimals = 0) |>
+gt::cols_label(mph = "Mph", member_casual = "Membership", n = "Trips") |>
 gt::tab_options(
 table.background.color = 'transparent',
 table.font.color = "SeaShell",
 table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
+table_body.hlines.color = "gray20",
+column_labels.hidden = FALSE)
+
 ```
 :::
 
@@ -2153,7 +2129,7 @@ dplyr::collect() |>
 ggplot2::ggplot(mapping = ggplot2::aes(x = mph, y = n, color = member_casual)) +
 ggplot2::geom_line() +
 ggplot2::scale_color_brewer(palette = "Paired", name = "Subscriber Status") +
-ggplot2::labs(title = "Mph to Membership Frequency", subtitle = "Grouped by sub status") +
+ggplot2::labs(title = "Mph to Membership Frequency", subtitle = "Grouped by sub status", x = "Miles per Hour", y = "Trips") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
 plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -2173,7 +2149,7 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 
 ------------------------------------------------------------------------
 
-#### Summary
+#### Can travel speed predict a binary outcome
 
 ```{r}
 
@@ -2198,9 +2174,16 @@ labels = c("casual", "member")
 
 mphModel <- stats::glm(member_casual ~ mph, data = mph_asNums, family = binomial)
 
-summary(mphModel)
+mphStats_tbl <- mphModel |>
+gtsummary::tbl_regression(label = list(mph = "Mph", member_casual = "Membership"))
 
-#summary(mph_asNums)
+mphStats_tbl |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
 
 ```
 :::
@@ -2239,7 +2222,7 @@ Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of 
 
 #### Totals Summary {#total_tripTime_freq}
 
-::: {.d-flex .align-content-stretch}
+::: {.d-flex}
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-triptimeTotals
@@ -2248,12 +2231,22 @@ Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of 
 dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
 dplyr::collect() |>
 dplyr::arrange(trip_time) |>
-head(n = 20) |>
+#head(n = 20) |>
 gt::gt() |>
 gt::tab_header(title = "Duration Totals") |>
 gt::fmt_number(decimals = 0) |>
 gt::cols_label(trip_time = "Minutes", n = "Trips") |>
 gt::cols_align(columns = "trip_time", align = "center") |>
+gt::fmt_number(decimals = 0) |>
+gt::tab_style(
+style = list(gt::cell_borders(
+sides = c("left"),
+weight = 1,
+color = "white")),
+locations = list(
+gt::cells_body(gt::everything()),
+gt::cells_column_labels(gt::everything())
+)) |>
 gt::tab_options(
 table.background.color = 'transparent',
 table.font.color = "SeaShell",
@@ -2317,7 +2310,7 @@ tripTimePlot
 
 dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
 dplyr::collect() |>
-dplyr::arrange(trip_time) |>
+dplyr::arrange(trip_time, member_casual) |>
 gt::gt(groupname_col = "trip_time", row_group_as_column = TRUE) |>
 gt::tab_header(title = "Durations by Membership", subtitle = "Measured in minutes.") |>
 gt::fmt_number(decimals = 0) |>
@@ -2398,7 +2391,7 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 
 ------------------------------------------------------------------------
 
-#### Summary
+#### Can trip duration predict a binary outcome?
 
 ```{r}
 #| label: tbl-triptimesLog
@@ -2424,7 +2417,18 @@ labels = c("casual", "member")
 
 triptimeModel <- stats::glm(member_casual ~ trip_time, data = triptime_asNums, family = binomial)
 
-summary(triptimeModel)
+
+triptimeStats_tbl <- triptimeModel |>
+gtsummary::tbl_regression(label = list(trip_time = "Duration", member_casual = "Membership"))
+
+triptimeStats_tbl |>
+gtsummary::as_gt() |>
+gt::tab_options(
+table.background.color = 'transparent',
+table.font.color = "SeaShell",
+table_body.vlines.color = "gray20",
+table_body.hlines.color = "gray20")
+
 ```
 :::
 :::
@@ -2453,10 +2457,10 @@ gtsummary::tbl_stack(stacks)
 #table_body.hlines.color = "gray20")
 ```
 
-# The Streets
+## Traffic Flow {#sec-epiflow}
 
 ::: {.p-3}
-For an interesting birds-eye-view of trip behaviors, see @fig-epiflowNetwork. This epiflow diagram is interactive, so circles (nodes) and the lines connecting the nodes can be clicked for more information.  There is also a  drop-down window to further explore the data. The top 34 most traveled stations were used for this visual network diagram. The line thickness roughly corresponds with amount of trips taken, so thicker lines means more trips between nodes. [@moragab]
+For an interesting birds-eye-view of trip behaviors, see @fig-epiflowNetwork. This is called an epiflow diagram. It is interactive, so circles (nodes) and the lines connecting the nodes can be clicked for more information.  There is also a  drop-down window to further explore the data. The top 34 most traveled stations were used for this visual network diagram. The line thickness roughly corresponds with amount of trips taken, so thicker lines means more trips between nodes. [@moragab]
 
 These are the most active stations. Luckily, there might be a way to further explore the typical high traffic station locations and why they are high traffic. @sec-mapview
 :::
@@ -2612,7 +2616,7 @@ epiflows::vis_epiflows(ef_test)
 :::
 :::
 
-## Map-Views {#sec-mapview}
+## Checking the Map {#sec-mapview}
 :::{.p-3}
 This section was made possible thanks to the latitude and longitude coordinates data provided alongside the stations names. Coming from the epiflow diagram, this should help make the data less abstract. The accordion below expands and collapses four *OpenStreet* maps found in the callout section below. These maps were split for viewing logistics. They contain from the epiflow in the section above. These maps are interactive, so the default views are zoomable and movable. The transparent burst buttons enable snappy zooming-in of the station groups.
 :::
@@ -2723,7 +2727,7 @@ source("mapViewer.R")
 ::: {#accordionParent .accordion .mt-3 .mb-3}
 ::: accordion-item
 ::: {#headingOne .accordion-header}
-::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne"}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne" style="background-color: #bbab9b"}
 Benson Ave & Church St ... Ellis Ave & 60th St
 :::
 :::
@@ -2745,7 +2749,7 @@ mapViewer(slicerVector[[1]])
 
 ::: accordion-item
 ::: {#headingTwo .accordion-header}
-::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo"}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo" style="background-color: #8b6f47"}
 Greenview Ave & Fullteron Ave ... Loomis Ave & Lexington St
 :::
 :::
@@ -2768,7 +2772,7 @@ mapViewer(slicerVector[[2]])
 
 ::: accordion-item
 ::: {#headingThree .accordion-header}
-::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree"}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree" style="background-color: #587e76"}
 Michigan Ave & Oak St ... State St & 33rd St
 :::
 :::
@@ -2791,7 +2795,7 @@ mapViewer(slicerVector[[3]])
 
 ::: accordion-item
 ::: {#headingFour .accordion-header}
-::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour"}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour" style="background-color: #4f3222"}
 Street Dr & Grand Ave ... Woodlawn Ave & 55th St
 :::
 :::
