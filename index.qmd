@@ -34,7 +34,6 @@ echo: true
 
 knitr::opts_chunk$set(message = FALSE, 
                       warning = FALSE)
-
 ```
 
 ------------------------------------------------------------------------
@@ -137,15 +136,15 @@ The underlying code incorporates an if-else decision, which includes a source co
 
 # Tidying
 
-The starting observation count was *5,719,877*. Then *1,388,170* incomplete observations were then removed by the initial processing script.
+The starting observation count was 5,719,877. Then 1,388,170 incomplete observations were then removed by the initial processing script.
 
-More code processing steps are available via the code icon links scattered throughout the document, such as the one below. The code summaries are given to help supplement the reader with context to help understand how and why the data is processed throughout.
+
 
 
 :::{.d-flex .justify-content-center}
-::: {.callout-note title="Click this" style="width: 60%"}
+::: {.callout-note title="Click the icons such as these for code related to the sections they are found" style="width: 60%"}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
-Cleans up the database: 
+More code processing steps are available via the code icon links scattered throughout the document, such as the one below. The code summaries are given to help supplement the reader with context to help understand how and why the data is processed throughout: 
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
 ```
@@ -206,27 +205,22 @@ duplicateObs <- length(dupeTable[[1]])
 #| label: undupedTable
 #| code-summary: Create a table of the now unduplicated observations we saw before.
 
-# The issue is, we need to get rid of not all of these rows,
-#  but just the extra duplicate observations. 
-
-# If there were 2 rows of duplicates, 
-#  we would want to end up with 1 row after 
-#   removing the extras.
-undupedTable <- dupeTable |>
-    dplyr::distinct(started_at,
-                     start_station_name,
-                     ended_at,
-                     end_station_name,
-                     #.keep_all = TRUE
-)
+# The issue is, we need to get rid of not all of these rows, but just the extra duplicate observations.
+# 
+# If there were 2 rows of duplicates, one would want to end up with 1 row after removing the extras.
+undupedTable <- 
+dupeTable |>
+dplyr::distinct(started_at, 
+start_station_name, 
+ended_at, 
+end_station_name)
 ```
 
 ```{r}
 #| label: incorrect distinct obs count
 #| code-summary: Record a count of the incorrect observations.
 
-# Run an incorrect count on how many rows or observations 
-#  there are in the dataset.
+# Run an incorrect count on how many rows or observations there are in the dataset.
 count_incorrectDists <- dplyr::tbl(dbconn,
                                    tblPath,
                                    check_from = FALSE) |>
@@ -257,7 +251,7 @@ count_correctDists <- dplyr::tbl(dbconn,
 
 ```{r}
 #| label: 'overwrite file with correct obs'
-#| code-summary: Lastly, write the unduplicated data to the database.
+#| code-summary: Write the unduplicated data to the database.
 
 dupelessPath <- "db/dupeless.db"
  
@@ -279,6 +273,8 @@ dplyr::tbl(dbconn,
 ```
 
 ```{r}
+#| label: make_dupeTable
+#| code-summary: Make the duplicates table. 
 
 gtDupes <- dupeTable |>
 dplyr::group_by(started_at) |>
@@ -307,7 +303,7 @@ target_columns = gt::everything(),
 method = "auto",
 palette = "basetheme::brutal"
 ) |>
-gt::tab_header(title = "A view of duplicated observations", subtitle = "Grouping follows 'started_at'") |>
+gt::tab_header(title = "A view of duplicated observations", subtitle = "Grouping follows the starting date-time value") |>
 gt::tab_options(
 heading.title.font.weight = "bolder",
 heading.subtitle.font.weight = "lighter",
@@ -320,6 +316,8 @@ table.font.size = gt::pct(75),
 ```
 
 ```{r}
+#| label: make_undupedTable
+#| code-summary: Make the unduped table. 
 
 gt_undupes <- undupedTable |>
 dplyr::collect() |>
@@ -351,8 +349,7 @@ target_columns = gt::everything(),
 method = "auto",
 palette = "basetheme::brutal"
 ) |>
-#gt::tab_source_note(gt::md("**Source**: Divvy Data")) |>
-gt::tab_header(title = "After duplicates were removed", subtitle = "Same grouping)") |>
+gt::tab_header(title = "After duplicates were removed", subtitle = "Same grouping") |>
 gt::tab_options(
 heading.title.font.weight = "bolder",
 heading.subtitle.font.weight = "lighter",
@@ -365,66 +362,72 @@ table.font.size = gt::pct(75)
 ```
 
 ```{r}
+#| label: make_summaryProcessTable
+#| code-summary: Create an observation history table that summarizes the cleaning so far.
 
 # To see the history of obs in our dataset.
 summaryProcessTable <- tidyr::tribble(
-    ~ "Observations",
-    ~ "Counts",
-    "Original   ",
-    original_nobs,
-    "Processed   ",
-    count_incorrectDists,
-    "Duplicates   ",
-    (count_incorrectDists - count_correctDists),
-    "Total Corrected   ",
-    count_correctDists ) |>
-    gt::gt(rownames_to_stub = FALSE) |>
-    gt::tab_header(title = "Tallying Observations") |>
-    gt::tab_footnote(
-        footnote = gt::md("Row counts throughout the cleaning steps."),
-        locations = gt::cells_column_labels(columns = Counts)
-    ) |>
-    gt::tab_style(
-        style = list(
-            gt::cell_borders(sides = "bottom"),
-            gt::cell_text(
-                align = "left",
-                stretch = "semi-expanded",
-                whitespace = "break-spaces"
-            )
-        ),
-        locations = gt::cells_body(gt::everything())
-    ) |>
-    gt::tab_style(
-        gt::cell_text(
-            align = "center",
-            stretch = "semi-expanded",
-            whitespace = "break-spaces"),
-        locations = list(
-            gt::cells_title(groups = c("title", "subtitle")),
-            gt::cells_column_labels(gt::everything())
-            )
-        ) |>
-    gt::tab_options(quarto.use_bootstrap = TRUE,
-                    column_labels.font.weight = "bold",
-                    table.background.color = "transparent",
-                    table.font.color = "SeaShell",
-                    row.striping.background_color = "gray10",
-                    row.striping.include_table_body = TRUE)
+~ "Observations",
+~ "Counts",
+"Original   ",
+original_nobs,
+"Processed   ",
+count_incorrectDists,
+"Duplicates   ",
+(count_incorrectDists - count_correctDists),
+"Total Corrected   ",
+count_correctDists
+) |>
+gt::gt(rownames_to_stub = FALSE) |>
+gt::tab_header(title = "Tallying Observations") |>
+gt::tab_footnote(
+footnote = gt::md("Row counts throughout the cleaning steps."),
+locations = gt::cells_column_labels(columns = Counts)
+) |>
+gt::tab_style(
+style = list(
+gt::cell_borders(sides = "bottom"),
+gt::cell_text(
+align = "left",
+stretch = "semi-expanded",
+whitespace = "break-spaces"
+)
+),
+locations = gt::cells_body(gt::everything())
+) |>
+gt::tab_style(
+gt::cell_text(
+align = "center",
+stretch = "semi-expanded",
+whitespace = "break-spaces"
+),
+locations = list(
+gt::cells_title(groups = c("title", "subtitle")),
+gt::cells_column_labels(gt::everything())
+)
+) |>
+gt::fmt_number(decimals = 0) |>
+gt::tab_options(
+quarto.use_bootstrap = TRUE,
+column_labels.font.weight = "bold",
+table.background.color = "transparent",
+table.font.color = "SeaShell",
+row.striping.background_color = "gray10",
+row.striping.include_table_body = TRUE
+)
 
 ```
 :::
 :::
 :::
 
-::::{.column-page-inset-right}
-:::{layout="[[1,1], [1,1]]"}
-:::{.p-3}
-Now the question arises: How does one check the data for duplicates? That is what this section covers, but also how to only remove what is needed. Care is needed because it might not necessarily be the case that each observation or *obs* is unique because one of the columns contains all unique values.
+::: {.p-3 }
+Now the question arises: How does one check the data for duplicates? That is what this section covers, alongside how to only remove what is needed. Care is needed because it might not necessarily be the case that each observation, or *obs* for short, is unique because a column contains all unique values.
 
-All of the values in the *ride_id* column were found to be unique. However, not all of the observations, or rows, were found to be truly unique. Other columns such as *start_time*, *end_time***,** *start_station*, and *end_station* were used to verify if an observation was *truly unique.* These would have more granular information, down to the second, a given trip's starting and ending time and location. In this analysis, it was assumed that observations having the same starting and ending date-time and station despite having two different rider IDs was a mistake.
+All of the values in the **ride_id** column were found to be unique. However, not all of the obs, or rows, were found to be truly unique. Other columns such as **start_time**, **end_time**, **start_station**, and **end_station** were used to verify if an obs was distinct. These would have more granular information, down to the second, a given trip's starting and ending time and location. In this analysis, it was assumed that obs having the same starting and ending date-time and station despite having two different rider IDs was a mistake.
 :::
-::: {.tableScroller .p-3}
+
+::: {.tableScroller .p-3 .auto-fit}
 ```{r}
 #| label: tbl-duplicates
 #| tbl-cap: Duplicates Table
@@ -433,12 +436,14 @@ All of the values in the *ride_id* column were found to be unique. However, not 
 gtDupes
 ```
 :::
-:::{.p-3}
-Although, it is actually unknown how that error would happen. It could have been assumed that one person checked out multiple bikes at once. In that instance, each bike would be assigned a unique *ride_id*. That, however, has only happened *18* times over a year. Since it is only one copy every time, red flags were raised. Perhaps trips could be grouped where one person pays for a other riders? If that were the case, then why is there always one duplicate?
 
-In @tbl-duplicates, duplicate observations were listed and grouped by color. Contrast this with @tbl-unduplicated, which has removed the extra copy of the observation while preserving the observation itself. Of the duplicates, each has one extra copy. It is noted that the number of rows in the duplicates table is *36*. Each duplicated observation has one duplicate, where *n* is always the value *2*. So the expected removed *obs* is *18*. A complication involved how to remove not all *obs* but just one extra duplicate observation from each.
+:::{.p-3}
+Although, it is actually unknown how that error would happen. It could have been assumed that one person checked out multiple bikes at once. In that instance, each bike would be assigned a unique **ride_id**. That, however, has only happened **18** times over a year. Since it is only one copy every time, red flags were raised. Perhaps trips could be grouped where one person pays for a other riders? If that were the case, then why is there always one duplicate?
+
+In @tbl-duplicates, duplicate observations were listed and grouped by color. Contrast this with @tbl-unduplicated, which has removed the extra copy of the observation while preserving the observation itself. Of the duplicates, each had one extra copy. It was noted that the number of rows in the duplicates table is 36. Each duplicated observation has one duplicate, where **n** is always the value 2. So the expected removed obs was 18. A complication involved how to remove not all obs but just one extra duplicate observation from each.
 :::
-::: {.p-3 .tableScroller}
+
+::: {.p-3 .tableScroller .auto-fit}
 ```{r}
 #| label: tbl-unduplicated
 #| tbl-cap: Un-duplicated Table
@@ -447,12 +452,11 @@ In @tbl-duplicates, duplicate observations were listed and grouped by color. Con
 gt_undupes
 ```
 :::
-::::
-:::::
 
+:::{.p-3}
 The count of distinct n-values for the un-duplicated table was 18. Then a count of observations in the dataset were recorded. The incorrect number of obs was 4,331,707. The correct obs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed.  @tbl-observationHistory
-
-:::{aside}
+:::
+:::{.p-3}
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
@@ -462,22 +466,21 @@ summaryProcessTable
 ```
 :::
 
+:::{.d-flex .justify-content-center}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 ```{=html}
 <i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
 ```
 :::
-
-
-
+:::
 
 ## Outliers
 
 Observations that were deemed erroneous or not useful for identifying trends in how the service is utilized by members and casual users were filtered out. It is good practice to keep note of these errors as they might explain some differences in how members and casual use the service.
 
-It was determined that trips with negative minutes were errors. Trips less than 1 minute but positive were noted, but removed as they might skew the statistics we derive from this data too much later on. The underlying reason for low trip times could be from people just wanting to try it out briefly before committing or quickly realized they did not like it. There were observations that did not make much sense, but most of the data was retained.
+It was determined that trips with negative minutes were errors. Trips less than 1 minute but greater than 0 were noted, but removed, as they might skew the statistics we derive from this data too much later on. The underlying reason for low trip times could be from people just wanting to try it out briefly before committing or quickly realized they did not like it. There were observations that did not make much sense, but most of the data was retained.
 
-As in the first part, an *if-else* decision was chosen because it makes testing easier. An external database filtering script was chosen to shorten the code needed inside the main Quarto document itself. The data from which the rest of the tables are based on are used for the rest of the analysis. [script](#0)
+As in the first part, an **if-else** decision was chosen because it makes testing easier. An external database filtering script was chosen to shorten the code needed inside the main Quarto document itself. The data from which the rest of the tables are based on are used for the rest of the analysis.
 
 ::: {.d-flex .justify-content-center max-width="auto"}
 ::: {.callout-note title="Filter the database" style="min-width: auto; max-width: auto"}
@@ -542,9 +545,9 @@ if (duckdb::dbExistsTable(dbconn,
 # Exploratory Analysis
 
 ::: {.column-body .mb-2}
-## Generating Frequency Tables
+## Generating Frequency Tables {#sec-writeFreqs}
 
-The rationale for frequency tables is to gain quick insights into the data. It is taking a methodical approach that, while simple, provides a crucial pathway towards understanding the bigger picture.
+The rationale for frequency tables is to gain quick insights into the data. It is taking a methodical approach that, while simple, can create a crucial pathway towards understanding the bigger picture. Many of these tables are used in the tabset section, @sec-freqAnalysis.
 :::
 
 ::: {.d-flex .justify-content-center .mb-3}
@@ -920,8 +923,11 @@ dplyr::tbl(dbconn,
 :::
 :::
 
+## Table Analysis {#sec-freqAnalysis}
+
 ::: column-screen
 ::: {.d-flex .justify-content-center}
+
 ::: {.panel-tabset .shadow-sm}
 
 ## Membership
@@ -929,8 +935,8 @@ dplyr::tbl(dbconn,
 ::: article
 ::: section
 ::: {.d-flex .justify-content-around .align-content-stretch}
-::: {.p-3 .align-self-center}
-* Membership Groups Analysis
+::: {.p-3 .align-self-center .align-content-stretch .auto-fit}
+### Overall Member to Casual Count 
 :::
 
 ::: divBox
@@ -940,9 +946,6 @@ dplyr::tbl(dbconn,
 @tbl-memberTotals gives the total count of trips taken by members and casuals. The rest of the tabs in this section will give total counts along with group counts by membership status.
 :::
 :::
-:::
-
-::: br
 :::
 
 ------------------------------------------------------------------------
@@ -1022,6 +1025,8 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30"))
 -   [Membership Summary](#group_types_freq)
     -   [table](#tbl-ctypeCompare)
     -   [plot](#fig-ctypeTotals)
+-   [Test Association](#sec-chiTypes)
+    -   [table](#tbl-chiTypes)
 :::
 
 ::: divBox
@@ -1037,12 +1042,9 @@ With $p < 0.05$, there appears to be a strong association between members and ca
 :::
 :::
 
-::: br
-:::
-
 ------------------------------------------------------------------------
 
-#### Totals Summary {#total_types_freq}
+### Totals Summary {#total_types_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: p-3
@@ -1097,7 +1099,7 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 
 ------------------------------------------------------------------------
 
-#### Membership Summary {#group_types_freq}
+### Membership Summary {#group_types_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: p-3
@@ -1154,7 +1156,7 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 
 ------------------------------------------------------------------------
 
-#### Testing the association between membership and bicycle type
+### Testing the association between membership and bicycle type {#sec-chiTypes}
 
 ```{r}
 #| label: tbl-chiTypes
@@ -1189,6 +1191,8 @@ table_body.hlines.color = "gray20")
 -   [Membership Summary](#group_month_freq)
     -   [table](#tbl-monthGroup)
     -   [plot](#fig-monthGroup)
+-   [Test Association](#sec-monthChi)
+    -   [table](#tbl-chiMonths)
 :::
 
 ::: divBox
@@ -1204,12 +1208,9 @@ Given $p < 0.05$, it is likely that membership status is associated with a given
 :::
 :::
 
-::: br
-:::
-
 ------------------------------------------------------------------------
 
-#### Totals Summary {#total_month_freq}
+### Totals Summary {#total_month_freq}
 
 ::: d-flex
 ::: p-3
@@ -1265,7 +1266,7 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 
 ------------------------------------------------------------------------
 
-#### Membership Summary {#group_month_frequency}
+### Membership Summary {#group_month_frequency}
 
 ::: d-flex
 ::: {.p-3 .tableScroller}
@@ -1323,7 +1324,7 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 
 ------------------------------------------------------------------------
 
-#### Testing the association between membership and month
+### Testing the association between membership and month {#sec-monthChi}
 
 ```{r}
 #| label: tbl-chiMonths
@@ -1361,6 +1362,8 @@ table_body.hlines.color = "gray20")
 -   [Membership Summary](#group_day_freq)
     -   [table](#tbl-wkdayCompare)
     -   [plot](#fig-wkdayCompare)
+-   [Test Association](#sec-chiDays)
+    -   [table](#tbl-chiDays)
 :::
 
 ::: divBox
@@ -1376,12 +1379,9 @@ Given, $p < 0.05$, the likelihood of using the service on a particular day depen
 :::
 :::
 
-::: br
-:::
-
 ------------------------------------------------------------------------
 
-#### Totals Summary {#total_day_freq}
+### Totals Summary {#total_day_freq}
 
 ::: d-flex
 ::: p-3
@@ -1440,7 +1440,7 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 
 ------------------------------------------------------------------------
 
-#### Membership Summary {#group_day_freq}
+### Membership Summary {#group_day_freq}
 
 ::: d-flex
 ::: p-3
@@ -1495,7 +1495,7 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 
 ------------------------------------------------------------------------
 
-#### Testing the association between day and membership
+### Testing the association between day and membership {#sec-chiDays}
 
 ```{r}
 #| label: tbl-chiDays
@@ -1534,6 +1534,8 @@ table_body.hlines.color = "gray20")
 -   [Membership Summary](#group_hour_freq)
     -   [table](#tbl-hourGroup)
     -   [plot](#fig-hourGroup)
+-   [Test Association](#sec-chiHours)
+    -   [table](#tbl-chiHours)
 :::
 
 ::: divBox
@@ -1549,7 +1551,7 @@ There is a noted discrepency between member and casual use during peak commute h
 
 ------------------------------------------------------------------------
 
-#### Totals Summary {#total_hour_freq}
+### Totals Summary {#total_hour_freq}
 
 ::: {.d-flex .justify-content-around}
 ```{r}
@@ -1703,7 +1705,7 @@ hour_tbl |>
 ggplot2::ggplot(ggplot2::aes(x = hour, y = Total_Riders, fill = Total_Riders)) +
 ggplot2::geom_col(show.legend = TRUE) +
 ggplot2::facet_grid(rows = "member_casual") +
-ggplot2::scale_fill_distiller(palette = "YlGnBu", name = "Membership") +
+ggplot2::scale_fill_distiller(palette = "YlGnBu", name = NULL) +
 ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
 ggplot2::labs(title = "Hour to Membership Count", x = "Hour", y = "Trips") +
 ggplot2::theme(
@@ -1726,10 +1728,10 @@ panel.spacing = ggplot2::unit(4, "mm")
 :::
 :::
 
-### Can the hour of the day predict membership? 
+### Can the hour of the day predict membership? {#sec-chiHours}
 
 ```{r}
-#| label: tbl-hourChi
+#| label: tbl-chiHours
 #| tbl-cap: "Can the hour of the day correlate to a binary outcome, such as membership?"
 
 hour_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
@@ -1789,6 +1791,8 @@ table_body.hlines.color = "gray20")
 -   [Membership Summary](#group_miles_freq)
     -   [table](#tbl-milesCompare)
     -   [plot](#fig-milesCompare)
+-   [Test Association](#sec-logMiles)
+    -   [table](#tbl-logMiles)
 :::
 
 ::: divBox
@@ -1809,7 +1813,7 @@ $\beta_1 < 0$, members are less likely to ride as distance traveled in a given t
 
 ------------------------------------------------------------------------
 
-#### Totals Summary {#total_miles_freq}
+### Totals Summary {#total_miles_freq}
 
 ::: {.d-flex .justify-content-around}
 ::: {.p-3 .tableScroller}
@@ -1876,7 +1880,7 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 
 ------------------------------------------------------------------------
 
-#### Membership Summary {#group_miles_freq}
+### Membership Summary {#group_miles_freq}
 
 ::: {.d-flex .justify-content-around}
 ::: {.p-2 .tableScroller style="max-width: 17vw"}
@@ -1956,10 +1960,11 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 :::
 :::
 
-#### Can distance predict a binary outcome?
+### Can distance predict a binary outcome? {#sec-logMiles}
 
 ```{r}
-#| label: tbl-milesLog
+#| label: tbl-logMiles
+
 
 miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
 dplyr::select(member_casual, miles) |>
@@ -2014,6 +2019,8 @@ table_body.hlines.color = "gray20")
 -   [Membership Summary](#group_mph_freq)
     -   [table](#tbl-mphCompare)
     -   [plot](#fig-mphCompare)
+-   [Test Association](#sec-logMph)
+    -   [table](#tbl-logMph)
 :::
 
 ::: divBox
@@ -2029,12 +2036,10 @@ Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for 
 :::
 :::
 
-::: br
-:::
 
 ------------------------------------------------------------------------
 
-#### Totals Summary {#total_mph_freq}
+### Totals Summary {#total_mph_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
@@ -2093,7 +2098,7 @@ mphPlot
 
 ------------------------------------------------------------------------
 
-#### Membership Summary {#group_mph_freq}
+### Membership Summary {#group_mph_freq}
 
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
@@ -2128,7 +2133,7 @@ dplyr::arrange(mph, member_casual) |>
 dplyr::collect() |>
 ggplot2::ggplot(mapping = ggplot2::aes(x = mph, y = n, color = member_casual)) +
 ggplot2::geom_line() +
-ggplot2::scale_color_brewer(palette = "Paired", name = "Subscriber Status") +
+ggplot2::scale_color_brewer(palette = "Paired", name = NULL) +
 ggplot2::labs(title = "Mph to Membership Frequency", subtitle = "Grouped by sub status", x = "Miles per Hour", y = "Trips") +
 ggplot2::theme(
 panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
@@ -2149,9 +2154,10 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 
 ------------------------------------------------------------------------
 
-#### Can travel speed predict a binary outcome
+### Can travel speed predict a binary outcome {#sec-logMph}
 
 ```{r}
+#| label: tbl-logMph
 
 mph_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
 dplyr::select(mph, member_casual) |>
@@ -2200,6 +2206,8 @@ table_body.hlines.color = "gray20")
 -   [Membership Summary](#group_tripTime_freq)
     -   [table](#tbl-triptimeCompare)
     -   [plot](#fig-triptimeCompare)
+-   [Test Association](#sec-logTimes)
+    -   [table](#tbl-logTimes)
 :::
 
 ::: divBox
@@ -2220,7 +2228,7 @@ Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of 
 
 ------------------------------------------------------------------------
 
-#### Totals Summary {#total_tripTime_freq}
+### Totals Summary {#total_tripTime_freq}
 
 ::: {.d-flex}
 ::: {.p-3 .tableScroller}
@@ -2238,15 +2246,6 @@ gt::fmt_number(decimals = 0) |>
 gt::cols_label(trip_time = "Minutes", n = "Trips") |>
 gt::cols_align(columns = "trip_time", align = "center") |>
 gt::fmt_number(decimals = 0) |>
-gt::tab_style(
-style = list(gt::cell_borders(
-sides = c("left"),
-weight = 1,
-color = "white")),
-locations = list(
-gt::cells_body(gt::everything()),
-gt::cells_column_labels(gt::everything())
-)) |>
 gt::tab_options(
 table.background.color = 'transparent',
 table.font.color = "SeaShell",
@@ -2299,7 +2298,7 @@ tripTimePlot
 
 ------------------------------------------------------------------------
 
-#### Membership Summary {#group_tripTime_freq}
+### Membership Summary {#group_tripTime_freq}
 
 ::: d-flex
 ::: {.p-3 .tableScroller}
@@ -2315,16 +2314,6 @@ gt::gt(groupname_col = "trip_time", row_group_as_column = TRUE) |>
 gt::tab_header(title = "Durations by Membership", subtitle = "Measured in minutes.") |>
 gt::fmt_number(decimals = 0) |>
 gt::cols_label(member_casual = "Membership", n = "Trips") |>
-gt::tab_style(
-style = list(gt::cell_borders(
-sides = c("left"),
-weight = 1,
-color = "white")),
-locations = list(
-gt::cells_body(gt::everything()),
-gt::cells_column_labels(gt::everything())
-)) |>
-#gt::tab_stubhead(label = "mins.") |>
 gt::tab_options(
 table.background.color = 'transparent',
 table.font.color = "SeaShell",
@@ -2391,10 +2380,10 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 
 ------------------------------------------------------------------------
 
-#### Can trip duration predict a binary outcome?
+### Can trip duration predict a binary outcome? {#sec-logTimes}
 
 ```{r}
-#| label: tbl-triptimesLog
+#| label: tbl-logTimes
 
 # For the trip times comparison
 triptime_asNums <- dplyr::tbl(dbconn, tblPath_fltrd) |>
@@ -2435,27 +2424,6 @@ table_body.hlines.color = "gray20")
 :::
 :::
 
-```{r}
-#| label: groupSummaries
-#| eval: false
-#| include: false
-
-stacks <- list(ctype_compareSummary, month_compareSummary, days_compareSummary)
-
-gtsummary::tbl_stack(stacks)
-
-#allGroups_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-#dplyr::select(member_casual, rideable_type, months, ) |>
-#dplyr::collect() |>
-#gtsummary::tbl_summary(by = member_casual, label = list(rideable_type ~ "Bicycle #Type", member_casual ~ "Membership")) |>
-#gtsummary::add_p() |>
-#gtsummary::as_gt() |>
-#gt::tab_options(
-#table.background.color = 'transparent',
-#table.font.color = "SeaShell",
-#table_body.vlines.color = "gray20",
-#table_body.hlines.color = "gray20")
-```
 
 ## Traffic Flow {#sec-epiflow}
 
@@ -2516,7 +2484,6 @@ locationData <- dplyr::tbl(dbconn,
         "trip_count" = dplyr::n(),
         "first_date" = min(started_at),
         "last_date" = max(ended_at),
-        #"avg_trip_time" = mean(trip_time)
     ) |>
     dplyr::ungroup() |>
     dplyr::rename("from_station" = start_station_name,
@@ -2536,10 +2503,7 @@ locationData_pivoted <- locationData |>
     dplyr::summarize("trips_toAndfrom" = sum(trip_count),
                      first_date = min(first_date),
                      last_date = max(last_date),
-                    # avg_trip_time = mean(avg_trip_time)
                      ) |>
-    #dplyr::mutate(avg_trip_time = round(avg_trip_time,
-    #                                  digits = 0)) |>
     dplyr::arrange(trips_toAndfrom)
 
 ```
@@ -2551,7 +2515,6 @@ locationData_pivoted <- locationData |>
 # for all the pairs
 ef_test <- epiflows::make_epiflows(flows = flowData,
                                    locations = locationData_pivoted,
-                                   #duration_stay = "avg_trip_time",
                                    num_cases = "trips_toAndfrom")
 ```
 :::
@@ -2699,7 +2662,7 @@ sampled_stations <- stations_groupMap |>
 # All of the r-colors
 allPalette <- colors()
 
-# The grays are vast so we don't want that.
+# The grays are vast so we don't want those watering down the samples.
 colorfulPal <- purrr::discard(allPalette, stringr::str_detect(allPalette, "gr(a|e)y"))
 
 # When we sample the colors, 10 should be slightly more than needed.
