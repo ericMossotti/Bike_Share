@@ -946,7 +946,12 @@ source("Scripts/tabler.R")
 totalMembers <- dplyr::tbl(dbconn, "db/freq_member.db") |>
 dplyr::collect()
 
-tabler(totalMembers, title = "Membership", subtitle = "2023", source_note = gt::md("Taken from: `db/freq_member.db`")) |>
+tabler (
+totalMembers, 
+title = "Membership", 
+subtitle = "2023", 
+source_note = gt::md("Taken from: `db/freq_member.db`")
+) |>
 gt::cols_label(n = "Trips", member_casual = "Membership") |>
 gt::tab_footnote(
 "Total trips taken in 2023 by membership.",
@@ -964,24 +969,14 @@ locations =   gt::cells_column_labels(columns = "member_casual")
 #| label: fig-totalmemberFrequency
 #| fig-cap: Total Member Frequency
 
-dplyr::tbl(dbconn, "db/freq_member.db") |>
-dplyr::collect() |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = member_casual, y = n, fill = n)) +
-ggplot2::geom_col(show.legend = FALSE) +
-ggplot2::labs(title = "Membership Frequency", x = "Membership", y = "Trips") +
-ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"))
+source("Scripts/plotter.R")
+
+memberFrame <- dplyr::tbl(dbconn, "db/freq_member.db") |>
+dplyr::collect()
+
+outPlot <- plotter(data = memberFrame, x_col = member_casual, y_col = n, geomType = "column", title = "Membership Types", x_label = "Rider Types", y_label = "Trips")
+
+outPlot
 
 ```
 :::
@@ -2245,7 +2240,10 @@ locations = gt::cells_column_labels("n"))
 #| label: fig-triptimeCompare
 #| fig-cap: Trip-Time Group Frequency 
 
-dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
+timeCompare <- dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
+dplyr::collect()
+
+timeCompare |>
 ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time, y = n, color = member_casual)) +
 ggplot2::geom_line(show.legend = TRUE) +
 ggplot2::xlim(NA, 100) +
