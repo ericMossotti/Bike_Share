@@ -69,7 +69,7 @@ if(exists("dbconn") == FALSE &&
         read_only = FALSE)
 }
 
-# Paths one might need if script doesn't execute.
+# Paths one might still need if script doesn't need to execute.
 tblPath <- "db/data.db"
 dupelessPath <- "db/dupeless.db"
 tblPath_fltrd <- "db/data_fltrd.db"
@@ -101,11 +101,12 @@ dbList <- duckdb::dbListTables(dbconn) |>
     gt::tab_options(
         table.background.color = "transparent",
         table.font.color = "SeaShell",
-        column_labels.hidden = TRUE,
-        row.striping.background_color = "gray10",
+        column_labels.hidden = FALSE,
+      #  row.striping.background_color = "gray10",
         row.striping.include_table_body = TRUE,
         table.font.size = gt::px(13)
     )
+
 
 dbList
 ```
@@ -940,19 +941,21 @@ dplyr::tbl(dbconn,
 #| label: tbl-memberTotals
 #| tbl-cap: Total Member Frequency
 
+source("Scripts/tabler.R")
 
-dplyr::tbl(dbconn, "db/freq_member.db") |>
-gt::gt() |>
-gt::tab_header(title = "Subscriber Frequency") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(member_casual = "Membership", n = "Trips") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE)
+totalMembers <- dplyr::tbl(dbconn, "db/freq_member.db") |>
+dplyr::collect()
 
+tabler(totalMembers, title = "Membership", subtitle = "2023", source_note = gt::md("Taken from: `db/freq_member.db`")) |>
+gt::cols_label(n = "Trips", member_casual = "Membership") |>
+gt::tab_footnote(
+"Total trips taken in 2023 by membership.",
+locations = gt::cells_column_labels(columns = "n")
+) |>
+gt::tab_footnote(
+"Membership groups where casuals are those that pay as they go and members pay an annual subscription.",
+locations =   gt::cells_column_labels(columns = "member_casual")
+)
 ```
 :::
 
@@ -1019,17 +1022,20 @@ With $p < 0.05$, there appears to be a strong association between members and ca
 #| label: tbl-ctypeTotals
 #| tbl-cap: Cycle Type Total Frequency
 
-dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
-gt::gt() |>
-gt::tab_header(title = "Bicycle Type") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(n = "Trips", rideable_type = "Bicycle Type") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE)
+source("Scripts/tabler.R")
+
+totalTypes <- dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
+dplyr::collect()
+
+tabler(totalTypes, title = "Bicycles", subtitle = "2023") |>
+gt::cols_label(n = "Trips", rideable_type = "Type") |>
+gt::tab_footnote(
+"Total trips taken in 2023 according to bicycle type.",
+locations =   gt::cells_column_labels(columns = "n")
+) |>
+gt::tab_footnote(
+"Bicycle types, where classic is manually powered and electric can be both manual and electrically powered.",
+locations =   gt::cells_column_labels(columns = "rideable_type"))
 
 ```
 :::
@@ -1071,20 +1077,17 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30"))
 #| label: tbl-ctypeCompare
 #| tbl-cap: Cycle Type Group Frequency
 
+source("Scripts/tabler.R")
 
-dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
-gt::gt(groupname_col = "rideable_type", row_group_as_column = TRUE) |>
-gt::tab_header(title = "Bicycle Type to Membership") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(n = "Trips", member_casual = "Membersip") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE)
+compareTypes <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+dplyr::collect()
 
-
+tabler(
+compareTypes, 
+title = "Bicycle Type to Membership", 
+groupName = "rideable_type", 
+source_note = gt::md("Taken from: `db/freqCompare_rType`")
+)
 ```
 :::
 
@@ -2665,20 +2668,21 @@ mapViewer(slicerVector[[4]])
 :::
 
 :::{.p-2}
-For example, suppose *University Ave & 57th St* was selected in the epiflow. As it happens this is at the heart of the University of Chicago. So where does the traffic to and from this location usually flow to? Selecting one of the other nodes highlighted with flows directing away from the previous node, is *Kimbark Ave and 53rd St*. This location is seated adjacent to the *Vue 53 Apartments* complex in the map view. 
+For example, suppose the user selects *University Ave & 57th St* in the epiflow visualization. This intersection happens to be at the heart of the University of Chicago campus. The natural next question is: where does the traffic to and from this location typically flow? By selecting one of the other nodes highlighted with flows directing away from the previous node, the user can identify *Kimbark Ave and 53rd St*. As seen in the map view, this location is situated adjacent to the *Vue 53 Apartments* complex. By analyzing such connections between nodes, the user can gain insights into common routes and destinations originating from a particular point of interest, potentially revealing patterns related to student housing, campus facilities, or other points of interest in the vicinity.
 :::
 
 # Where to Next?
 
-Having explored the possible associations between behaviors of annual members and casuals, several correlations with potential predictive power were found. To test the correlation between two categorical variables, such as membership to bicycle type, month, day, and hour, a chi-squared test was used. For correlations between a dependent binary categorical variable and a quantitative or continuous variable, such as membership to miles, minutes, and mph, binary logistic regression was performed. With these insights in hand, stakeholders could make more sound decisions to increase use of the service. It might, for example, be desired to increase annual membership rates. Increasing overall use across all types of users could be another desired outcome.
 
-It lends itself to suggestion that individual members are using the service multiple times a week. In that light, it is likely not the case, or at best unclear, whether there is a discernably larger volume of unique invidual members making use of the service. Further statistical analysis would likely be one of the next steps to verify the association of certain locations being more or less likely to be traveled than others. A look into the real-life maps of the top traveled locations and traffic flows suggests that universities, shopping centers, big companies, and apartment complexes near said locations tend to have the highest volumes.
+After exploring the associations between the behaviors of annual members and casual riders, several correlations with predictive potential were identified. Chi-squared tests analyzed relationships between categorical variables like membership type, bicycle type, month, day, and hour. Binary logistic regression models examined correlations between the binary dependent variable (membership type) and continuous variables such as distance, duration, and speed. These insights empower stakeholders to make informed decisions to increase service utilization.
 
-Those using the service as annual members, in comparison to casual users, tend to use the service more consistently throughout the year; use the manual, or *classic*, bicycles; take more trips during the work week as opposed to the weekend; are more likely to take shorter trips, and travel at a faster pace. To paint a picture of an annual subscriber, or member: A member is someone with somewhere to be. They use a bicycle as someone would use a car. Also, they use the service for probably more than one reason, much like *"killing two birds with one stone."* For instance, members might be saving money, time stuck in traffic, *'going green'*, and getting some exercise while they are at it.   
+The data suggests individual members utilize the service multiple times weekly. However, further analysis is needed to determine if a significantly larger volume of unique individuals are annual members. Verifying associations between specific locations and higher or lower traffic could be a next step. Preliminary observations indicate universities, shopping centers, major companies, and nearby apartment complexes tend to have the highest ridership volumes.
 
-In contrast, the picture of a casual user would be something along the lines of: Someone who needs something to do. A casual is someone who might be visiting Chicago on vacation. This user takes longer, slower rides. Maybe the occasional weekend ride around the city and or park. Instead of renting a car, they decide to use a bicycle to spend their time. Casuals seem more like fair-weather riders, so they stick to the warmer months. The casual user may or may not be on the fence of becoming an annual subscriber.
+Annual members exhibit distinct usage patterns compared to casual riders. They use the service more consistently year-round, preferring manual "classic" bicycles. Annual members take more weekday trips, favoring shorter distances but traveling at faster speeds. These individuals likely have specific destinations in mind, using bicycles as a practical transportation mode akin to cars. Multiple factors likely motivate their choice, including cost savings, avoiding traffic congestion, environmental sustainability, and incorporating exercise. The picture of an annual member is someone with somewhere to be.
 
-With these images in mind, here are some suggestions to improve membership. To put it simply, one should target what is keeping people from being members. Factros such as a lack of stations within short walking distance to their residence, or lack of stations at their destination. For electric bicycles, perhaps the charge does not last, or not enough charging stations are around. That could explain the lower use of electric compared to classic bikes. People could be trying it out as a trial for a few days to weeks but find that the service is unreliable for them.
+In contrast, casual riders tend to be more leisure-oriented, taking longer, slower rides predominantly during warmer months. These fair-weather riders may be visiting Chicago on vacation, opting for bicycles over rental cars as a sightseeing or recreational activity. Some casual users may be prospective annual members, weighing the service's value. The picture of a casual rider is someone who needs something to do.
+
+To improve membership, addressing factors deterring individuals from becoming annual members could be key. These may include a lack of stations within walking distance of residences or destinations, or concerns over electric bicycle battery life and charging station availability, potentially explaining their lower utilization compared to classic bikes. Offering trial periods could allow casual users to experience the service's reliability and convenience, encouraging conversion to annual memberships.
 
 
 ```{r}
