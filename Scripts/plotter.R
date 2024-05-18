@@ -1,7 +1,5 @@
 # Plotter ----
-library(ggplot2)
 
-dir.create("Plots")
 # To help reduce duplicate code
 plotter <- function(data,
                     x_col,
@@ -27,17 +25,17 @@ plotter <- function(data,
     if (geomType == "line") {
         if (is_lineGroup == TRUE) {
             plot <- data |> ggplot2::ggplot(mapping = ggplot2::aes(
-                x = x_col,
-                y = y_col,
-                color = color_col
+                x = {{ x_col }},
+                y = {{ y_col }},
+                color = {{ color_col }}
             )) +
                 ggplot2::geom_line(show.legend = TRUE) +
                 ggplot2::scale_color_brewer(palette = lineGroup_palette, name = "")
         } else {
             plot <- data |> ggplot2::ggplot(mapping = ggplot2::aes(
-                x = x_col,
-                y = y_col,
-                color = y_col
+                x = {{ x_col }},
+                y = {{ y_col }},
+                color = {{ y_col }}
             )) +
                 ggplot2::geom_line(show.legend = TRUE) +
                 ggplot2::scale_color_brewer(palette = line_palette, name = "")
@@ -61,7 +59,7 @@ plotter <- function(data,
         
     }
     
-    # For the rest of the otherwise duplicated plot settings ----
+    # For the rest of the otherwise likely duplicated plot settings ----
     plot <- plot +
        # ggplot2::xlim(x_lim[1], x_lim[2]) +
         ggplot2::labs(title = title, x = x_label, y = y_label) +
