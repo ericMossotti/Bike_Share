@@ -950,17 +950,14 @@ tabler (
 totalMembers, 
 title = "Membership", 
 subtitle = "2023", 
-source_note = gt::md("Taken from: `db/freq_member.db`")
-) |>
+source_note = gt::md("Taken from: `db/freq_member.db`")) |>
 gt::cols_label(n = "Trips", member_casual = "Membership") |>
 gt::tab_footnote(
 "Total trips taken in 2023 by membership.",
-locations = gt::cells_column_labels(columns = "n")
-) |>
+locations = gt::cells_column_labels(columns = "n")) |>
 gt::tab_footnote(
 "Membership groups where casuals are those that pay as they go and members pay an annual subscription.",
-locations =   gt::cells_column_labels(columns = "member_casual")
-)
+locations =   gt::cells_column_labels(columns = "member_casual"))
 ```
 :::
 
@@ -971,13 +968,15 @@ locations =   gt::cells_column_labels(columns = "member_casual")
 
 source("Scripts/plotter.R")
 
-memberFrame <- dplyr::tbl(dbconn, "db/freq_member.db") |>
-dplyr::collect()
+gplot <- dplyr::tbl(dbconn, "db/freq_member.db") |>
+plotter(x_col = member_casual, 
+y_col = n, 
+geomType = "column", 
+title = "Membership Types", 
+x_label = "Rider Types", 
+y_label = "Trips")
 
-outPlot <- plotter(data = memberFrame, x_col = member_casual, y_col = n, geomType = "column", title = "Membership Types", x_label = "Rider Types", y_label = "Trips")
-
-outPlot
-
+gplot
 ```
 :::
 :::
@@ -1019,19 +1018,12 @@ With $p < 0.05$, there appears to be a strong association between members and ca
 
 source("Scripts/tabler.R")
 
-totalTypes <- dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
-dplyr::collect()
-
-tabler(totalTypes, title = "Bicycles", subtitle = "2023") |>
-gt::cols_label(n = "Trips", rideable_type = "Type") |>
-gt::tab_footnote(
-"Total trips taken in 2023 according to bicycle type.",
-locations =   gt::cells_column_labels(columns = "n")
-) |>
-gt::tab_footnote(
-"Bicycle types, where classic is manually powered and electric can be both manual and electrically powered.",
-locations =   gt::cells_column_labels(columns = "rideable_type"))
-
+dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
+tabler( 
+title = "Bicycles", 
+subtitle = "2023",
+footnote = gt::md("Total trips taken in 2023 <br> according to bicycle type."),
+location = n)
 ```
 :::
 
@@ -1040,24 +1032,15 @@ locations =   gt::cells_column_labels(columns = "rideable_type"))
 #| label: fig-ctypeTotals
 #| fig-cap: Cycle Type Total Frequency 
 
-dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
-dplyr::collect() |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type, y = n, fill = n)) +
-ggplot2::geom_col(show.legend = FALSE) +
-ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-ggplot2::labs(title = "Cycle Type Frequency", x = "Bicycle Type", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"))
+gplot <- dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
+plotter(x_col = rideable_type, 
+y_col = n, 
+geomType = "column", 
+title = "Bicycle Type", 
+x_label = "Type", 
+y_label = "Trips")
+
+gplot
 ```
 :::
 :::
@@ -1074,15 +1057,17 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30"))
 
 source("Scripts/tabler.R")
 
-compareTypes <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
-dplyr::collect()
-
+dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+dplyr::collect() |>
 tabler(
-compareTypes, 
 title = "Bicycle Type to Membership", 
 groupName = "rideable_type", 
-source_note = gt::md("Taken from: `db/freqCompare_rType`")
-)
+footnote = "The total trips recorded.", 
+location = n,
+source_note = gt::md("Taken from: `db/freqCompare_rType`"),
+label_n = "N",
+label_member = " "
+) 
 ```
 :::
 
@@ -1121,17 +1106,20 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 ```{r}
 #| label: tbl-chiTypes
 
+source("Scripts/tabler.R")
+
 dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(rideable_type, member_casual) |>
 dplyr::collect() |>
-gtsummary::tbl_summary(by = member_casual, label = list(rideable_type = "Bicycle Type", member_casual = "Membership")) |>
-gtsummary::add_p() |>
-gtsummary::as_gt() |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
+tabler(
+title = "Chi-Square: Bicycles & Rider Type",
+source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+label = list(
+rideable_type = "Bicycle Type", 
+member_casual = "Membership"),
+by = member_casual,
+isSummary = TRUE
+)
 
 ```
 :::
@@ -1170,17 +1158,15 @@ Given $p < 0.05$, it is likely that membership status is associated with a given
 #| label: tbl-monthTotals
 #| tbl-cap: Month Total Frequency
 
+source("Scripts/tabler.R")
+
 dplyr::tbl(dbconn, "db/freq_month.db") |>
-gt::gt() |>
-gt::tab_header(title = "Month") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(months = "Month", n = "Trips") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE)
+tabler(
+title = "Months",
+subtitle = "2023",
+source_note = gt::md("**Source:** `db/freq_month.db`"),
+footnote = "Total recorded observations",
+location = n)
 ```
 :::
 
@@ -1223,18 +1209,18 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30"))
 #| label: tbl-monthCompare
 #| tbl-cap: Month Group Frequency
 
+source("Scripts/tabler.R")
 
 dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
-gt::gt(groupname_col = "months", row_group_as_column = TRUE) |>
-gt::tab_header(title = "Month to Membership") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(months = "Month", member_casual = "Membership", n = "Trips") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE
+dplyr::collect() |>
+tabler(
+title = "Months",
+source_note = gt::md("**Source:** `db/freqCompare_month.db`"),
+footnote = "Total recorded observations",
+location = n,
+groupName = "months",
+label_n = "N",
+label_member = " "
 )
 
 ```
@@ -1279,23 +1265,25 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 #| label: tbl-chiMonths
 
 # For finding chi-square p-value in a nicely formatted table
-dplyr::tbl(dbconn, tblPath_fltrd) |>
+
+month_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(member_casual, started_at) |>
 dplyr::mutate(months = lubridate::month(started_at, label = TRUE, abbr = TRUE)) |>
 dplyr::collect() |>
 dplyr::mutate(
 months = forcats::as_factor(months), 
-months = forcats::fct_inorder(months)) |>
-gtsummary::tbl_summary(
-by = member_casual, 
-label = list(months = "Month", member_casual = "Membership")) |>
-gtsummary::add_p() |>
-gtsummary::as_gt() |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
+months = forcats::fct_inorder(months))
+
+month_tbl |>
+dplyr::select(member_casual, months) |>
+tabler(
+title = "Chi-Square: Month & Rider Type",
+source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+label = list(
+months = "Month"),
+by = member_casual,
+isSummary = TRUE
+)
 
 ```
 :::
@@ -1335,17 +1323,12 @@ Given, $p < 0.05$, the likelihood of using the service on a particular day, to s
 #| tbl-cap: Weekday Total Frequency
 
 dplyr::tbl(dbconn, "db/freq_wkday.db") |>
-gt::gt() |>
-gt::tab_header(title = "Weekday") |>
-gt::cols_label(n = "Trips") |>
-gt::fmt_number(decimals = 0) |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE
-)
+tabler( 
+title = "Days", 
+subtitle = "2023",
+footnote = gt::md("Total trips taken in 2023  according <br> to bicycle day of the week"),
+location = n)
+
 ```
 :::
 
@@ -1393,17 +1376,19 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 #| label: tbl-wkdayCompare
 #| tbl-cap: Weekday Group Frequency
 
+
 dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
-gt::gt(groupname_col = "wkday", row_group_as_column = TRUE) |>
-gt::tab_header(title = "Weekday to Membership") |>
-gt::cols_label(n = "Trips", member_casual = "Membership") |>
-gt::fmt_number(decimals = 0) |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE)
+dplyr::collect() |>
+tabler(
+title = "Weekday Compare",
+source_note = gt::md("**Source:** `db/freqCompare_wkday.db`"),
+footnote = "The total recorded observations.",
+location = n,
+groupName = "wkday",
+label_n = "N",
+label_member = " "
+)
+
 
 ```
 :::
@@ -1447,22 +1432,26 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 #| label: tbl-chiDays
 
 # For the week days  comparison
-dplyr::tbl(dbconn, tblPath_fltrd) |>
+
+wkdayTbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(member_casual, started_at) |>
-dplyr::mutate(wkday = lubridate::wday(started_at, label = TRUE, abbr = TRUE)) |>
+dplyr::mutate(wkday = lubridate::wday(started_at, label = TRUE, abbr = TRUE)
+) |>
 dplyr::collect() |>
-dplyr::mutate(wkday = forcats::as_factor(wkday),
-wkday = forcats::fct_inorder(wkday)) |>
-gtsummary::tbl_summary(
-by = member_casual, 
-label = list(wkday = "Day", member_casual = "Membership")) |>
-gtsummary::add_p() |>
-gtsummary::as_gt() |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
+dplyr::mutate(
+wkday = forcats::as_factor(wkday),
+wkday = forcats::fct_inorder(wkday)
+)
+
+wkdayTbl |>
+dplyr::select(member_casual, wkday) |>
+tabler(
+title = "Chi-Square: Day & Rider Type",
+source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+label = list(wkday = "Day"),
+by = member_casual,
+isSummary = TRUE
+)
 
 ```
 :::
@@ -1538,6 +1527,17 @@ table.font.color = "SeaShell",
 table_body.vlines.color = "gray20",
 table_body.hlines.color = "gray20",
 column_labels.hidden = FALSE)
+
+hours_of_Riders |>
+dplyr::select(hour, Total_Riders) |>
+dplyr::rename("n" = Total_Riders) |>
+tabler( 
+title = "Hours", 
+subtitle = "2023",
+footnote = gt::md("Total trips recorded."),
+location = n)
+
+
 ```
 :::
 
@@ -1592,7 +1592,9 @@ dplyr::collect() |>
 dplyr::mutate(
 hour = forcats::as_factor(hour), 
 hour = forcats::fct_inorder(hour),
-Total_Riders = as.integer(Total_Riders))
+Total_Riders = as.integer(Total_Riders)
+) |>
+dplyr::rename("n" = Total_Riders)
 
 x <-
 stringr::str_sub_all(hour_tbl[[2]], start = 1, end = 2) |>
@@ -1614,20 +1616,15 @@ hour = forcats::as_factor(hour),
 hour = forcats::fct_inorder(hour))
 
 hour_tbl |>
-dplyr::select(member_casual:Total_Riders) |>
-gt::gt(
-groupname_col = "hour", 
-row_group_as_column = TRUE) |>
-gt::fmt_number(decimals = 0) |>
-gt::tab_header(
-title = "Hour to Membership") |>
-gt::cols_label(Total_Riders = "Trips", member_casual = "Membership") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE)
+tabler(
+title = "Hour Groups",
+source_note = gt::md("**Source:** `db/freqCompare_hours.db`"),
+footnote = "Total recorded observations",
+location = n,
+groupName = "hour",
+label_n = "N",
+label_member = " "
+)
 
 ```
 :::
@@ -1638,7 +1635,7 @@ column_labels.hidden = FALSE)
 #| fig-cap: Grouped hour frequency
 
 hour_tbl |>
-ggplot2::ggplot(ggplot2::aes(x = hour, y = Total_Riders, fill = Total_Riders)) +
+ggplot2::ggplot(ggplot2::aes(x = hour, y = n, fill = n)) +
 ggplot2::geom_col(show.legend = TRUE) +
 ggplot2::facet_grid(rows = "member_casual") +
 ggplot2::scale_fill_distiller(
@@ -1704,23 +1701,24 @@ simpleTimes <- stringr::str_c(x, sep = " ", y)
 hour_tbl[[3]] <- simpleTimes
 
 # Need to reapply forcats functions to retain time order
-hour_tbl |>
+hour_tbl <- hour_tbl |>
 dplyr::select(hour, member_casual) |>
 dplyr::mutate(
 hour = forcats::as_factor(hour),
 hour = forcats::fct_inorder(hour)
-) |>
-gtsummary::tbl_summary(by = member_casual, label = list(hour = "Hour", member_casual = "Membership")) |>
-gtsummary::add_p() |>
-gtsummary::as_gt() |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
+)
+
+hour_tbl |>
+dplyr::select(member_casual, hour) |>
+tabler(
+title = "Chi-Square: Hour & Rider Type",
+source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+label = list(hour = "Hour"),
+by = member_casual,
+isSummary = TRUE
+)
 
 ```
-
 
 
 :::
@@ -1766,16 +1764,13 @@ dplyr::mutate(
 miles = forcats::as_factor(miles),
 miles = forcats::fct_inorder(miles)
 ) |>
-gt::gt() |>
-gt::cols_label(miles = "Miles", n = "Trips") |>
-gt::fmt_number(decimals = 0) |>
-gt::tab_header(title = "Distance") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20"
+tabler( 
+title = "Distance", 
+subtitle = "2023",
+footnote = gt::md("Total trips taken"),
+location = n
 )
+
 ```
 :::
 
@@ -1825,17 +1820,15 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 #| tbl-cap: Miles Group Frequency
 
 dplyr::tbl(dbconn, "db/freqCompare_miles.db") |>
-dplyr::arrange(miles) |>
-gt::gt(groupname_col = "miles", row_group_as_column = TRUE) |>
-gt::tab_header(title = "Distance by Membership") |>
-gt::fmt_number(decimals = 0, ) |>
-gt::cols_label(n = "Trips") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE
+dplyr::collect() |>
+tabler(
+title = "Mile Groups",
+source_note = gt::md("**Source:** `db/freqCompare_miles.db`"),
+footnote = "The total recorded observations.",
+location = n,
+groupName = "miles",
+label_n = "n",
+label_member = " "
 )
 
 # For the miles group frequency membership comparison
@@ -1892,7 +1885,6 @@ legend.background = ggplot2::element_rect(fill = "#222222")
 ```{r}
 #| label: tbl-logMiles
 
-
 miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
 dplyr::select(member_casual, miles) |>
 dplyr::collect() |>
@@ -1917,20 +1909,15 @@ labels = c("casual", "member")
 
 milesModel <- stats::glm(member_casual ~ miles, data = miles_asNums, family = binomial)
 
-# summary(milesModel)$coefficients
-
 mileStats_tbl <- milesModel |>
-gtsummary::tbl_regression(label = list(miles = "Miles", member_casual = "Membership"))
-
+gtsummary::tbl_regression(label = list(miles = "Distance"))
 
 mileStats_tbl |>
-gtsummary::as_gt() |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
-
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Miles & Rider Type"),
+source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+isBinary = TRUE
+)
 
 ```
 :::
@@ -1983,6 +1970,18 @@ table_body.vlines.color = "gray20",
 table_body.hlines.color = "gray20",
 column_labels.hidden = FALSE
 )
+
+
+dplyr::tbl(dbconn, "db/freq_mph.db") |>
+dplyr::arrange(mph) |>
+tabler( 
+title = "Speed", 
+subtitle = "2023",
+footnote = gt::md("Total trips taken <br> by mile per hour."),
+location = n
+)
+
+
 ```
 :::
 
@@ -2030,18 +2029,16 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30"))
 #| tbl-cap: Mph Group Frequency
 
 dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
-dplyr::arrange(mph, member_casual) |>
 dplyr::collect() |>
-gt::gt(groupname_col = "mph", row_group_as_column = TRUE) |>
-gt::tab_header(title = "MPH to Membership") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(mph = "Mph", member_casual = "Membership", n = "Trips") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE)
+tabler(
+title = "Mph Groups",
+source_note = gt::md("**Source:** `db/freqCompare_mph.db`"),
+footnote = "The total recorded observations.",
+location = n,
+groupName = "mph",
+label_n = "N",
+label_member = " "
+)
 
 ```
 :::
@@ -2082,12 +2079,11 @@ legend.background = ggplot2::element_rect(fill = "#222222"))
 ```{r}
 #| label: tbl-logMph
 
-mph_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+mph_asNums <- dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(mph, member_casual) |>
 dplyr::mutate(mph = round(mph, digits = 0)) |>
 dplyr::arrange(mph) |>
 dplyr::collect()
-
 
 mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "casual", "0")
 
@@ -2103,15 +2099,16 @@ labels = c("casual", "member"))
 mphModel <- stats::glm(member_casual ~ mph, data = mph_asNums, family = binomial)
 
 mphStats_tbl <- mphModel |>
-gtsummary::tbl_regression(label = list(mph = "Mph", member_casual = "Membership"))
+gtsummary::tbl_regression(label = list(mph = "Mph"))
+
+source("Scripts/tabler.R")
 
 mphStats_tbl |>
-gtsummary::as_gt() |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Speed & Rider Type"),
+source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+isBinary = TRUE
+)
 
 ```
 :::
@@ -2150,27 +2147,16 @@ Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of 
 #| label: tbl-triptimeTotals
 #| tbl-cap: Trip-Time Totals
 
+
 dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
-dplyr::collect() |>
 dplyr::arrange(trip_time) |>
-#head(n = 20) |>
-gt::gt() |>
-gt::tab_header(title = "Duration Totals") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(trip_time = "Minutes", n = "Trips") |>
-gt::cols_align(columns = "trip_time", align = "center") |>
-gt::fmt_number(decimals = 0) |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-table.width = gt::pct(25),
-column_labels.hidden = FALSE,
-row.striping.include_table_body = TRUE) |>
-gt::tab_footnote(
-"Total trips taken for the given duration.",
-locations =   gt::cells_column_labels(columns = "n"))
+tabler( 
+title = "Duration", 
+subtitle = "2023",
+footnote = gt::md("Total trips taken <br> by duration."),
+location = n
+) |>
+gt::cols_align(columns = "trip_time", align = "center")
 
 ```
 :::
@@ -2214,23 +2200,18 @@ panel.grid.major.y = ggplot2::element_line(color = "grey30")
 #| label: tbl-triptimeCompare
 #| tbl-cap: Trip Time Comparison
 
-
 dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
 dplyr::collect() |>
 dplyr::arrange(trip_time, member_casual) |>
-gt::gt(groupname_col = "trip_time", row_group_as_column = TRUE) |>
-gt::tab_header(title = "Durations by Membership", subtitle = "Measured in minutes.") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(member_casual = "Membership", n = "Trips") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE,
-) |>
-gt::tab_footnote(footnote = "Trip counts by membership status.",
-locations = gt::cells_column_labels("n"))
+tabler(
+title = "Duration Compare",
+source_note = gt::md("**Source:** `db/freqCompare_tripTime.db`"),
+footnote = "The total recorded observations.",
+location = n,
+groupName = "trip_time",
+label_n = "N",
+label_member = " "
+)
 
 ```
 :::
@@ -2295,15 +2276,14 @@ labels = c("casual", "member")
 triptimeModel <- stats::glm(member_casual ~ trip_time, data = triptime_asNums, family = binomial)
 
 triptimeStats_tbl <- triptimeModel |>
-gtsummary::tbl_regression(label = list(trip_time = "Duration", member_casual = "Membership"))
+gtsummary::tbl_regression(label = list(trip_time = "Duration"))
 
 triptimeStats_tbl |>
-gtsummary::as_gt() |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20")
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Duration & Rider Type"),
+source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+isBinary = TRUE
+)
 
 ```
 :::
