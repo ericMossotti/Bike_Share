@@ -969,7 +969,8 @@ locations =   gt::cells_column_labels(columns = "member_casual"))
 source("Scripts/plotter.R")
 
 gplot <- dplyr::tbl(dbconn, "db/freq_member.db") |>
-plotter(x_col = member_casual, 
+plotter(
+x_col = member_casual, 
 y_col = n, 
 geomType = "column", 
 title = "Membership Types", 
@@ -1033,7 +1034,8 @@ location = n)
 #| fig-cap: Cycle Type Total Frequency 
 
 gplot <- dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
-plotter(x_col = rideable_type, 
+plotter(
+x_col = rideable_type, 
 y_col = n, 
 geomType = "column", 
 title = "Bicycle Type", 
@@ -1076,24 +1078,22 @@ label_member = " "
 #| label: fig-ctypeCompare
 #| fig-cap: Cycle Type Group Frequency
 
-dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = rideable_type, y = n, fill = member_casual)) +
-ggplot2::geom_col(show.legend = TRUE, position = "dodge") +
-ggplot2::scale_fill_brewer(palette = "Paired", name = "Subscriber Status") +
-ggplot2::labs(title = "Cycle Type to Membership Frequency", x = "Type", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222"))
+source("Scripts/plotter.R")
+
+gplot <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+plotter(
+title = "Bicycle Groups",
+x_label = "Type",
+y_label = "Trips",
+x_col = rideable_type, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column", 
+is_colGroup = TRUE
+)
+
+gplot
+
 
 ```
 :::
@@ -1175,25 +1175,16 @@ location = n)
 #| label: fig-monthTotals
 #| fig-cap: Month Total Frequency
 
+gplot <- dplyr::tbl(dbconn, "db/freq_month.db") |>
+plotter(
+x_col = months, 
+y_col = n, 
+geomType = "column", 
+title = "Months", 
+x_label = "Months", 
+y_label = "Trips")
 
-dplyr::tbl(dbconn, "db/freq_month.db") |>
-dplyr::collect() |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = months, y = n, fill = n)) +
-ggplot2::geom_col(show.legend = FALSE) +
-ggplot2::labs(title = "Month", x = "Month", y = "Trips") +
-ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"))
+gplot
 
 ```
 :::
@@ -1231,27 +1222,19 @@ label_member = " "
 #| label: fig-monthCompare
 #| fig-cap: Month Group Frequency
 
-dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
-dplyr::collect() |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = months, y = n, fill = n)) +
-ggplot2::geom_col(show.legend = TRUE) +
-ggplot2::facet_grid(rows = "member_casual") +
-ggplot2::scale_fill_distiller(palette = "YlGnBu") +
-ggplot2::labs(title = "Month to Membership", x = "Month", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222")
+gplot <- dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
+plotter(
+title = "Month Groups",
+x_label = "Months",
+y_label = "Trips",
+x_col = months, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column", 
+isFaceted = TRUE
 )
+
+gplot
 
 ```
 :::
@@ -1337,30 +1320,18 @@ location = n)
 #| label: fig-wkdayTotals
 #| fig-cap: Weekday Totals Frequency
 
-dplyr::tbl(dbconn, "db/freq_wkday.db") |>
-dplyr::collect() |> 
-ggplot2::ggplot(mapping = ggplot2::aes(x = wkday, y = n, fill = n)) +
+gplot <- dplyr::tbl(dbconn, "db/freq_wkday.db") |>
+plotter(
+x_col = wkday, 
+y_col = n, 
+geomType = "column", 
+title = "Days", 
+x_label = "Day of the Week", 
+y_label = "Trips") +
 # To zoom the data a bit
-ggplot2::coord_cartesian(ylim = c(4 * 10 ^ 5, NA)) +
-ggplot2::geom_col(show.legend = FALSE) +
-ggplot2::labs(
-title = "Weekday Trip Frequency", 
-x = "Day of Week", 
-y = "Trips") +
-ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30")
-)
+ggplot2::coord_cartesian(ylim = c(4.5 * 10 ^ 5, NA))
+
+gplot
 
 ```
 :::
@@ -1398,27 +1369,20 @@ label_member = " "
 #| label: fig-wkdayCompare
 #| fig-cap: Weekday Group Frequency
 
-dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = wkday, y = n, fill = n)) +
-ggplot2::geom_col(show.legend = TRUE) +
-ggplot2::facet_grid(rows = "member_casual") +
-ggplot2::scale_fill_distiller(
-palette = "YlGnBu", 
-name = "Subscriber Status") +
-ggplot2::labs(title = "Weekday to Membership", x = "Day", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222"))
+
+gplot <- dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
+plotter(
+title = "Day Groups",
+x_label = "Days",
+y_label = "Trips",
+x_col = wkday, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column", 
+isFaceted = TRUE
+)
+
+gplot
 
 ```
 :::
@@ -1513,20 +1477,6 @@ hours_of_Riders[[1]] <- simpleTimes
 #| label: tbl-hourTotals
 #| tbl-cap: Total freqeuncy by the hour of day
 
-hours_of_Riders |>
-dplyr::select(hour, Total_Riders) |>
-gt::gt() |>
-gt::tab_header(
-title = "Hour"
-) |>
-gt::cols_label(hour = "Hour", Total_Riders = "Trips") |>
-gt::fmt_number(decimals = 0) |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE)
 
 hours_of_Riders |>
 dplyr::select(hour, Total_Riders) |>
@@ -1546,30 +1496,25 @@ location = n)
 #| label: 'fig-hourTotals'
 #| fig-cap: "Total frequency by hour of day."
 
-hours_of_Riders |>
-ggplot2::ggplot(
-mapping = ggplot2::aes(
-x = reorder(hour, .data$index),
-y = Total_Riders,
-fill = Total_Riders)) +
-ggplot2::geom_col(show.legend = FALSE) +
-#ggplot2::coord_radial(start = 2 * pi, inner.radius = .2) +
-ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
-ggplot2::labs(title = "Hour of Day", x = "Hour", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30")
+hours_tbl <- hours_of_Riders |>
+dplyr::select(hour, Total_Riders) |>
+dplyr::rename("n" = Total_Riders) |>
+dplyr::mutate(
+hour = forcats::as_factor(hour),
+hour = forcats::fct_inorder(hour)
 )
+
+gplot <- hours_tbl |>
+plotter(
+x_col = hour, 
+y_col = n,
+geomType = "column", 
+title = "Hour of Day", 
+x_label = "Hour", 
+y_label = "Trips") +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+
+gplot
 
 ```
 :::
@@ -1634,33 +1579,20 @@ label_member = " "
 #| label: fig-hourCompare
 #| fig-cap: Grouped hour frequency
 
-hour_tbl |>
-ggplot2::ggplot(ggplot2::aes(x = hour, y = n, fill = n)) +
-ggplot2::geom_col(show.legend = TRUE) +
-ggplot2::facet_grid(rows = "member_casual") +
-ggplot2::scale_fill_distiller(
-palette = "YlGnBu", 
-name = ""
+gplot <- hour_tbl |>
+plotter(
+title = "Hour Groups",
+x_label = "Hour of Day",
+y_label = "Trips",
+x_col = hour, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column", 
+isFaceted = TRUE
 ) +
-ggplot2::scale_x_discrete(
-guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)
-) +
-ggplot2::labs(title = "Hour to Membership", x = "Hour", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222"),
-panel.spacing = ggplot2::unit(4, "mm")
-)
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+
+gplot
 
 ```
 :::
@@ -1779,31 +1711,26 @@ location = n
 #| label: fig-milesTotals
 #| fig-cap: Miles Total Frequency
 
-dplyr::tbl(dbconn, "db/freq_miles.db") |>
+miles_tbl <- dplyr::tbl(dbconn, "db/freq_miles.db") |>
 dplyr::collect() |>
 dplyr::mutate(
 miles = forcats::as_factor(miles),
 miles = forcats::fct_inorder(miles)
-) |>
-dplyr::rename("Trips" = n, "Miles" = miles) |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = Miles, y = Trips, fill = Trips)) +
-ggplot2::geom_col(show.legend = FALSE) +
-ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-ggplot2::labs(title = "Distance") +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30")
 )
+
+source("Scripts/plotter.R")
+
+gplot <- miles_tbl |>
+plotter(
+x_col = miles, 
+y_col = n,
+geomType = "column", 
+title = "Distance", 
+x_label = "Miles", 
+y_label = "Trips") +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+
+gplot
 
 ```
 :::
@@ -1831,8 +1758,18 @@ label_n = "n",
 label_member = " "
 )
 
+
+```
+:::
+
+::: p-2
+```{r}
+#| label: fig-milesCompare
+#| fig-cap: Miles Group Frequency
+
+
 # For the miles group frequency membership comparison
-milesCompare_tbl <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+milesCompare_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(member_casual, miles) |>
 dplyr::collect() |>
 dplyr::mutate(miles = dplyr::case_when(
@@ -1844,38 +1781,25 @@ dplyr::mutate(
 miles = forcats::as_factor(miles),
 miles = forcats::fct_inorder(miles)
 )
-```
-:::
 
-::: p-2
-```{r}
-#| label: fig-milesCompare
-#| fig-cap: Miles Group Frequency
-
-milesCompare_tbl |>
+gplot <- milesCompare_tbl |>
 dplyr::group_by(miles, member_casual) |>
 dplyr::summarize(n = dplyr::n()) |>
 dplyr::ungroup() |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = miles, y = n, fill = n)) +
-ggplot2::geom_col(show.legend = FALSE) +
-ggplot2::facet_grid(rows = ggplot2::vars(member_casual)) +
-ggplot2::scale_fill_distiller(palette = "YlGnBu", name = "") +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
-ggplot2::labs(title = "Distance to Membership", x = "Miles", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222")
-)
+plotter(
+title = "Distance Groups",
+x_label = "Miles",
+y_label = "Trips",
+x_col = miles, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column", 
+isFaceted = TRUE
+) +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+
+gplot
+
 ```
 :::
 :::
@@ -1982,6 +1906,7 @@ location = n
 )
 
 
+
 ```
 :::
 
@@ -1990,29 +1915,19 @@ location = n
 #| label: fig-mphTotals
 #| fig-cap: Mph Total Frequency
 
+source("Scripts/plotter.R")
 
-dplyr::tbl(dbconn, "db/freq_mph.db") |>
-dplyr::collect() |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = mph, y = n, color = n)) +
-ggplot2::geom_point(show.legend = FALSE) +
-ggplot2::labs(
-title = "MPH",
-x = "Miles per Hour",
-y = "Trips"
-) +
-ggplot2::scale_color_distiller(palette = "YlOrRd") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"))
+gplot <- dplyr::tbl(dbconn, "db/freq_mph.db") |>
+plotter(
+x_col = mph, 
+y_col = n,
+geomType = "line", 
+title = "Speed", 
+x_label = "Miles per Hour", 
+y_label = "Trips")
+#ggplot2::scale_x_continuous(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+
+gplot
 
 ```
 :::
@@ -2048,26 +1963,24 @@ label_member = " "
 #| label: fig-mphCompare
 #| fig-cap: Mph Group Frequency
 
-dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
+source("Scripts/plotter.R")
+
+gplot <- dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
 dplyr::arrange(mph, member_casual) |>
 dplyr::collect() |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = mph, y = n, color = member_casual)) +
-ggplot2::geom_line() +
-ggplot2::scale_color_brewer(palette = "Paired", name = NULL) +
-ggplot2::labs(title = "MPH to Membership", x = "Miles per Hour", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222"))
+plotter(
+title = "Speed Groups",
+x_label = "Miles per Hour",
+y_label = "Trips",
+x_col = mph, 
+y_col = n, 
+color_col = member_casual,
+geomType = "line",
+is_lineGroup = TRUE
+)
+
+gplot
+
 ```
 :::
 :::
@@ -2158,6 +2071,7 @@ location = n
 ) |>
 gt::cols_align(columns = "trip_time", align = "center")
 
+
 ```
 :::
 
@@ -2166,26 +2080,21 @@ gt::cols_align(columns = "trip_time", align = "center")
 #| label: fig-triptimeTotals
 #| fig-cap: Trip-Time Totals
 
-dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
-dplyr::collect() |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time, y = n, fill = n)) +
-ggplot2::geom_col(show.legend = FALSE) +
-ggplot2::labs(title = "Trip Duration Frequency", x = "Duration (minutes)", "Trips") +
-ggplot2::scale_fill_distiller(palette = "YlOrRd") +
-ggplot2::xlim(NA, 100) +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30")
-)
+source("Scripts/plotter.R")
+
+gplot <- dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
+plotter(
+x_col = trip_time, 
+y_col = n,
+geomType = "line", 
+title = "Duration", 
+x_label = "Minutes", 
+y_label = "Trips"
+) +
+ggplot2::xlim(NA, 100)
+
+gplot
+
 ```
 :::
 :::
@@ -2221,28 +2130,23 @@ label_member = " "
 #| label: fig-triptimeCompare
 #| fig-cap: Trip-Time Group Frequency 
 
-timeCompare <- dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
-dplyr::collect()
+source("Scripts/plotter.R")
 
-timeCompare |>
-ggplot2::ggplot(mapping = ggplot2::aes(x = trip_time, y = n, color = member_casual)) +
-ggplot2::geom_line(show.legend = TRUE) +
-ggplot2::xlim(NA, 100) +
-ggplot2::scale_color_brewer(palette = "Paired", name = "") +
-ggplot2::labs(title = "Duration by Membership", x = "Duration (in minutes)", y = "Trips") +
-ggplot2::theme(
-panel.background = ggplot2::element_rect(fill = "#222222", color = NA),
-plot.background = ggplot2::element_rect(fill = "#222222", color = NA),
-text = ggplot2::element_text(color = "seashell"),
-panel.grid = ggplot2::element_blank(),
-axis.title.x = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.title.y = ggplot2::element_text(margin = grid::unit(c(5, 5, 5, 5), "mm")),
-axis.text.x = ggplot2::element_text(color = "Snow", margin = grid::unit(c(1, 1, 1, 1), "mm")),
-axis.text.y = ggplot2::element_text(color = "Snow", margin = grid::unit(c(2, 2, 2, 2), "mm")),
-axis.ticks = ggplot2::element_line(color = "LavenderBlush"),
-axis.ticks.y = ggplot2::element_blank(),
-panel.grid.major.y = ggplot2::element_line(color = "grey30"),
-legend.background = ggplot2::element_rect(fill = "#222222"))
+gplot <- dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
+plotter(
+title = "Duration Groups",
+x_label = "Minutes",
+y_label = "Trips",
+x_col = trip_time, 
+y_col = n, 
+color_col = member_casual,
+geomType = "line",
+is_lineGroup = TRUE
+) +
+ggplot2::xlim(NA, 100)
+
+gplot
+
 ```
 :::
 :::
