@@ -7,12 +7,10 @@ tabler <- function(tbl_name,
                    groupName = NULL,
                    by = NULL,
                    label = NULL,
-                   label_n = "N",
+                   label_n = "n",
                    label_member = "member_casual",
-                   colVar = as.character(colVar),
-                   colValue,
-                   location = location,
-                   footnote = footnote,
+                   location = NULL,
+                   footnote = NULL,
                    value_columns = gt::everything(),
                    decimals = 0,
                    font_color = "SeaShell",
@@ -21,7 +19,9 @@ tabler <- function(tbl_name,
                    hline_color = "gray20",
                    hide_column_labels = FALSE,
                    isSummary = FALSE,
-                   isBinary = FALSE) {
+                   isBinary = FALSE,
+                   note_list = NULL,
+                   location_list = NULL) {
     
     # Need to account for grouped tables and non-grouped tables
     
@@ -38,11 +38,11 @@ tabler <- function(tbl_name,
                 table_body.vlines.color = vline_color,
                 table_body.hlines.color = hline_color,
                 column_labels.hidden = hide_column_labels,
+                row.striping.include_table_body = TRUE,
+                column_labels.font.weight = "bold"
             ) |>
             gt::cols_label(n = label_n, 
                            member_casual = label_member) |>
-            gt::tab_footnote(footnote = {{ footnote }},
-                             location = gt::cells_column_labels(columns = {{ location }})) |>
             gt::tab_source_note(source_note = {{ source_note }})
     } 
     
@@ -52,14 +52,16 @@ tabler <- function(tbl_name,
             gtsummary::tbl_summary(by = {{ by }}, label = label) |>
             gtsummary::add_p() |>
             gtsummary::as_gt() |>
+            gt::tab_header(title = title, subtitle = subtitle) |>
             gt::tab_options(
                 table.background.color = bg_color,
                 table.font.color = font_color,
                 table_body.vlines.color = vline_color,
                 table_body.hlines.color = hline_color,
-                column_labels.hidden = hide_column_labels
+                column_labels.hidden = hide_column_labels,
+                row.striping.include_table_body = TRUE,
+                column_labels.font.weight = "bold"
             ) |>
-            gt::tab_header(title = title) |>
             gt::tab_source_note(source_note = source_note)
         
     } 
@@ -68,14 +70,16 @@ tabler <- function(tbl_name,
     else if (isBinary == TRUE) {
         tbl <- tbl_name |>
         gtsummary::as_gt() |>
+        gt::tab_header(title = title, subtitle = subtitle) |>
         gt::tab_options(
             table.background.color = bg_color,
             table.font.color = font_color,
             table_body.vlines.color = vline_color,
             table_body.hlines.color = hline_color,
-            column_labels.hidden = hide_column_labels
+            column_labels.hidden = hide_column_labels,
+            row.striping.include_table_body = TRUE,
+            column_labels.font.weight = "bold"
         ) |>
-            gt::tab_header(title = title) |>
             gt::tab_source_note(source_note = source_note)
         
     } else {
@@ -83,20 +87,42 @@ tabler <- function(tbl_name,
         # Ungrouped ----
          tbl <- tbl_name |>
             gt::gt() |>
-            gt::tab_header(title = title) |>
-            gt::fmt_number(decimals = decimals, columns = value_columns) |>
+             gt::tab_header(title = title, subtitle = subtitle) |>
+             gt::fmt_number(decimals = decimals, columns = value_columns) |>
             gt::tab_options(
                 table.background.color = bg_color,
                 table.font.color = font_color,
                 table_body.vlines.color = vline_color,
                 table_body.hlines.color = hline_color,
-                column_labels.hidden = hide_column_labels
+                column_labels.hidden = hide_column_labels,
+                row.striping.include_table_body = TRUE,
+                column_labels.font.weight = "bold"
                 
             ) |>
-             gt::tab_source_note(source_note = source_note) |>
-             gt::tab_footnote(footnote = {{ footnote }},
-                              location = gt::cells_column_labels(columns = {{ location }}))
+             gt::tab_source_note(source_note = source_note)
          }
+    
+    if (!is.null(note_list) && !is.null(location_list)) {
+        tbl <- tbl |>
+            add_multiple_footnotes(note_list, location_list)
+    }
+    
+    return(tbl)
+}
+
+
+add_multiple_footnotes <- function(tbl, note_list, location_list) {
+    if (length(note_list) != length(location_list)) {
+        stop("The lengths of note_list and location_list must be equal.")
+    }
+    
+    for (i in seq_along(note_list)) {
+        tbl <- tbl |>
+            gt::tab_footnote(
+                footnote = note_list[[i]],
+                location = gt::cells_column_labels(columns = location_list[[i]])
+            )
+    }
     
     return(tbl)
 }
