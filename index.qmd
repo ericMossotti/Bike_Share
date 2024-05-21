@@ -1,13 +1,13 @@
 ---
 title: "Bike-Sharing in the Streets of Chicago"
 author: "Eric Mossotti"
-date: "05-12-2024"
+date: "05-19-2024"
 bibliography: references.bib
 repo: https://github.com/ericMossotti/Bike_Share
 source: index.qmd
 abstract-title: "Objective"
-abstract: "Communicate data-driven insights to stakeholders."
-description-meta: "Communicate data-driven insights to stakeholders."
+abstract: "Communicate reproducible, data-driven insights."
+description-meta: "Communicate reproducible, data-driven insights."
 
 code-links:
     - text: "Project Repo"
@@ -27,6 +27,9 @@ smooth-scroll: true
 fig-responsive: true
 echo: true
 
+citation-location: margin
+citations-hover: true
+
 #font: merriweather, futura
 ---
 
@@ -38,7 +41,7 @@ knitr::opts_chunk$set(message = FALSE,
 
 ------------------------------------------------------------------------
 
-# Design and Purpose
+# Intro
 
 ::: {#offcanvas1 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -75,6 +78,9 @@ dupelessPath <- "db/dupeless.db"
 tblPath_fltrd <- "db/data_fltrd.db"
 rawPath <- "db/rawData.db"
 
+source("Scripts/tabler.R")
+source("Scripts/plotter.R")
+
 ```
 
 ```{r}
@@ -84,29 +90,30 @@ rawPath <- "db/rawData.db"
 #| eval: false 
 ```
 
+
 ```{r}
 #| label: tbl-dbList
 #| code-summary: It would now be helpful to verify the tables written so far.
 #| tbl-cap: Database Table List
 
-dbList <- duckdb::dbListTables(dbconn) |>
-    data.frame() |>
-    gt::gt() |>
-    gt::tab_header(
-        title = "Database Tables",
-        subtitle = "List of table paths in data.db") |>
-    gt::cols_label(
-        "duckdb..dbListTables.dbconn." = "Table Paths"
-    ) |>
-    gt::tab_options(
-        table.background.color = "transparent",
-        table.font.color = "SeaShell",
-        column_labels.hidden = FALSE,
-      #  row.striping.background_color = "gray10",
-        row.striping.include_table_body = TRUE,
-        table.font.size = gt::px(13)
-    )
 
+dbList <- duckdb::dbListTables(dbconn) |>
+as.data.frame() |>
+tabler(
+title = "Database Tables",
+note_list = list(gt::md("The tables contained <br>in data.db, currently.")),
+location_list = list("duckdb::dbListTables(dbconn)")
+) |>
+gt::cols_label("duckdb::dbListTables(dbconn)" = "Table Paths") |>
+gt::tab_style(
+gt::cell_text(
+align = "center",
+stretch = "semi-expanded"
+), 
+locations = list(
+gt::cells_body(columns = gt::everything()),
+gt::cells_column_labels(columns = gt::everything()))
+)
 
 dbList
 ```
@@ -116,30 +123,139 @@ dbList
 
 ## Stakeholders
 
-Starting off, the stakeholders can be identified as Divvy, Lyft, and the City of Chicago Department of Transportation. As such this analysis is meant to provide stakeholders with data-based guidance to better server the residents of Chicago and users of the Divvy bike sharing service. Improving air quality, promoting economic recovery, and reducing traffic congestion were among the rationale for Divvy's implementation. [@aboutdi]
+:::{.p-3}
+The primary stakeholders in this analysis are Divvy, Lyft (the parent company of Divvy), and the City of Chicago Department of Transportation. The analysis aims to provide these stakeholders with data-driven insights to enhance the Divvy bike-sharing service, better serving the residents of Chicago and its users. The initial rationale behind Divvy's implementation included improving air quality, promoting economic recovery, and reducing traffic congestion within the city. [@aboutdi]
+:::
 
 ## Source
 
-The raw 2023 dataset was directly sourced from Divvy Data. [@divvyda]
+:::{.p-3}
+The raw 2023 dataset was imported from Divvy Data. [@divvyda]
+:::
+
+
+:::{.column-screen-inset}
+```{r}
+#| label: tbl-raw
+#| tbl-cap: Raw data
+#| cap-location: top
+
+source("Scripts/tabler.R")
+
+location_list <- dplyr::tbl(dbconn, rawPath) |>
+dplyr::collect() |>
+colnames() |>
+as.list()
+
+note_list <- list(
+"Anonymized trip identifier.", 
+"The bicycle type.", 
+"Starting date-time (to the second).",
+"Ending date-time (to the second).",
+"Station name of where the trip started.",
+"Station ID of where the trip started.",
+"Station name of where the trip ended.",
+"Station ID of where the trip ended.",
+"Latitude associated with the starting location.",
+"Longitude associated with the starting location.",
+"Latitude associated with the ending location.",
+"Longitude associated with the ending location.",
+"If someone is an annual subscriber or not."
+)
+
+dplyr::tbl(dbconn, rawPath) |>
+dplyr::collect() |>
+dplyr::slice_head(n = 10) |>
+tabler(
+title = "A Glimpse of the Raw Data",
+source_note = gt::md("**Source:** Divvy Data (ref:source)"),
+note_list = note_list,
+location_list = location_list,
+value_columns = NULL
+) |>
+gt::tab_options(
+table.font.size = gt::pct(75),
+footnotes.multiline = FALSE
+)
+
+```
+:::
+
+
+::: {#offcanvas100 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {#offcanvasLabel .h5 .offcanvas-title}
+Glimpse
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
+```{r}
+#| label: glimpseRaw
+#| code-summary: A quick overview of the raw data.
+
+dplyr::tbl(dbconn, rawPath) |>
+dplyr::collect() |>
+tibble::glimpse() 
+```
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas100" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-table" style="color: #F4511E;"></i>
+```
+:::
+:::
 
 ## Design
 
-Another worthy goal of this analysis is to achieve reproducibility and efficiency. To help future analyst teams move this research forward, this project tried to provide adequate code documentation and best practices with regards to clean code and modularity.
+:::{.p-3}
+Another worthy objective of this analysis is to achieve reproducibility and efficiency. To facilitate future research and enable subsequent analyst teams to build upon this work, the project aimed to provide adequate code documentation and adhere to best practices regarding clean code and modularity.
 
-For example, it was helpful to incorporate certain design decisions to eliminate re-downloading and re-processing of data. For users conducting analysis over the course of days-months on this dataset, following initial download and processing, it is now possible to simply reconnect to the single database file which contains all of the original data including tables written throughout the course of the analysis.
+For instance, certain design decisions were incorporated to eliminate the need for re-downloading and re-processing data. For analysts conducting analysis over an extended period, such as days or months, on this dataset, it is now possible to simply reconnect to the single database file containing all the original data, including tables generated throughout the analysis process, following the initial download and subsequent processing.
 
-The underlying code incorporates an if-else decision, which includes a source code script that handles the initial processing and establishes the database filesystem. Choosing a persistent DuckDB filesystem (as opposed to purely in-memory) seemed optimal in terms of the simplicity and cost-effectiveness of SQL database queries while retaining progress made over extended periods. [@whyduck]
+The underlying code incorporates an if-else decision, which includes a source code script responsible for handling the initial data processing and establishing the database filesystem. Opting for a persistent DuckDB filesystem (as opposed to a purely in-memory solution) appeared optimal in terms of simplicity, cost-effectiveness of SQL database queries, and retaining progress made over extended periods. [@whyduck]
+
+To streamline the process, reduce code duplication, and maintain consistent formatting throughout the project, reusable functions were developed for generating most of the tables and figures. These functions are located in the "Scripts" folder within the working directory. Their modular design not only simplifies the implementation of formatting changes but also facilitates the integration of additional code snippets when necessary. For instance, certain plots might require limiting the range of the axes, which can be achieved by combining these functions with appropriate code addendums. By leveraging these functions, the project benefits from reduced redundancy, improved efficiency, and cohesive formatting across all visualizations and data representations.
+:::
+
+:::{.d-flex}
+:::{.callout-warning title="Table and plot scripts" }
+::: flex-code
+```{r}
+#| label: tablerScript
+#| code-summary: This code was used for generating tables. See the later code dropdowns alongside tables for clues as to how it is implented in this main document.
+#| file: "Scripts/tabler.R"
+#| eval: false 
+```
+:::
+::: flex-code
+```{r}
+#| label: plotterScript
+#| code-summary: This code was used for generating plots. See the later code dropdowns alongside tables for clues as to how it is implented in this main document.
+#| file: "Scripts/plotter.R"
+#| eval: false 
+```
+:::
+:::
+:::
 
 # Tidying
 
+:::p-3
 The starting observation count was 5,719,877. Then 1,388,170 incomplete observations were then removed by the initial processing script.
+:::
 
 :::{.d-flex .justify-content-center}
-::: {.callout-note title="Click the icons such as these for code related to the sections they are found" style="width: 60%"}
+::: {.callout-note title="Click the icon below for coding steps related to the sections they are found" style="width: 60%"}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
-More code processing steps are available via the code icon links scattered throughout the document, such as the one below. The code summaries are given to help supplement the reader with context to help understand how and why the data is processed throughout: 
+Code processing steps are accessible through embedded code icon links, like the one below. Drop-down code summaries provide context on data processing rationale and methodology at various analysis stages, enhancing reader understanding.
 ```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
+<i class="bi bi-code-slash" style="font-size: 1.5rem; color: #64FFDA;"></i>
 ```
 :::
 :::
@@ -281,9 +397,9 @@ dplyr::tbl(dbconn,
 :::
 
 ::: {.p-3}
-A question arises: How does one check the data for duplicates? That is what this section covers, alongside how to only remove what is needed. Care is needed because it might not necessarily be the case that each observation, or *obs* for short, is unique because a column contains all unique values.
+A crucial question arises: How can one identify and handle duplicate data? This section covers the process of checking for duplicates and selectively removing them while exercising caution. It is essential to recognize that the presence of unique values in a single column does not necessarily guarantee the uniqueness of each observation or row.
 
-All of the values in the **ride_id** column were found to be unique. However, not all of the obs, or rows, were found to be truly unique. Other columns such as **start_time**, **end_time**, **start_station**, and **end_station** were used to verify if an obs was distinct. These would have more granular information, down to the second, a given starting time, ending time, and location. It was assumed that obs having the same starting and ending date-time and station despite having two different rider IDs was a mistake.
+While all values in the **ride_id** column were found to be unique, not all observations were truly distinct. To verify the uniqueness of each observation, additional columns such as **start_time**, **end_time**, **start_station**, and **end_station** were utilized. These columns provide more granular information, including the precise starting and ending times down to the second, as well as the starting and ending locations. It was assumed that observations with identical starting and ending date-times and stations, despite having different rider IDs, were potentially erroneous duplicates.
 :::
 
 ::: {.tableScroller .p-3}
@@ -335,9 +451,9 @@ gtDupes
 :::
 
 :::{.p-3}
-Although, it is actually unknown how that error would happen. It could have been assumed that one person checked out multiple bikes at once. In that instance, each bike would be assigned a unique **ride_id**. That, however, has only happened **18** times over a year. Since it is only one copy every time, red flags were raised. Perhaps trips could be grouped where one person pays for a other riders? If that were the case, then why is there always one duplicate?
+Although the cause of such duplication errors is unknown, it could be assumed that one person checked out multiple bikes simultaneously. In that scenario, each bike would be assigned a unique **ride_id**. However, this occurrence was relatively rare, happening only **18** times over the course of a year. Since there is only one duplicate for each instance, it raises concerns and warrants further investigation. It is possible that trips could be grouped where one person pays for another rider's fare. However, if that were the case, it raises the question of why there is always precisely one duplicate.
 
-In @tbl-duplicates, duplicate observations were listed and grouped by color. Contrast this with @tbl-unduplicated, which has removed the extra copy of the observation while preserving the observation itself. Of the duplicates, each had one extra copy. It was noted that the number of rows in the duplicates table is 36. Each duplicated observation has one duplicate, where **n** is always the value 2. So the expected removed obs was 18. A complication involved how to remove not all obs but just one extra duplicate observation from each.
+In @tbl-duplicates, duplicate observations are listed and grouped by color for visual clarity. In contrast, @tbl-unduplicated presents the data after removing the extra copy of each duplicate observation while preserving the unique observations. Of the duplicates identified, each had one extra copy. It was noted that the number of rows in the duplicates table is 36. Each duplicated observation has one duplicate, where **n** (the count) is always 2. Therefore, the expected number of observations to be removed was 18. A complication arose in determining how to remove not all observations but only the extra duplicate observation from each group.
 :::
 
 ::: {.p-3 .tableScroller}
@@ -391,104 +507,21 @@ gt_undupes
 :::
 
 :::{.p-3}
-The count of distinct n-values for the un-duplicated table was 18. Then a count of observations in the dataset were recorded. The incorrect number of obs was 4,331,707. The correct obs after removing duplicated obs was 4,331,689. In short, 18 additional obs were removed.  @tbl-observationHistory
-:::
-:::{.p-3}
-```{r}
-#| label: tbl-observationHistory
-#| tbl-cap: Observation Processing History
+To ensure the accurate removal of duplicates, the count of distinct `n` values (representing the number of occurrences) for the unduplicated table was computed, confirming the expected 18 unique instances. Subsequently, the total number of observations in the dataset was recorded, initially standing at 4,331,707. After removing the identified duplicate observations, the correct count of observations was 4,331,689. In summary, 18 additional observations were successfully removed, aligning with the expected number of duplicates identified earlier. These steps are documented in @tbl-observationHistory for reference.
 
-# To see the history of obs in our dataset.
-summaryProcessTable <- tidyr::tribble(
-~ "Observations",
-~ "Counts",
-"Original   ",
-original_nobs,
-"Processed   ",
-count_incorrectDists,
-"Duplicates   ",
-(count_incorrectDists - count_correctDists),
-"Total Corrected   ",
-count_correctDists
-) |>
-gt::gt(rownames_to_stub = FALSE) |>
-gt::tab_header(title = "Tallying Observations") |>
-gt::tab_footnote(
-footnote = gt::md("Row counts throughout the cleaning steps."),
-locations = gt::cells_column_labels(columns = Counts)
-) |>
-gt::tab_style(
-style = list(
-gt::cell_borders(sides = "bottom"),
-gt::cell_text(
-align = "left",
-stretch = "semi-expanded",
-whitespace = "break-spaces"
-)
-),
-locations = gt::cells_body(gt::everything())
-) |>
-gt::tab_style(
-gt::cell_text(
-align = "center",
-stretch = "semi-expanded",
-whitespace = "break-spaces"
-),
-locations = list(
-gt::cells_title(groups = c("title", "subtitle")),
-gt::cells_column_labels(gt::everything())
-)
-) |>
-gt::fmt_number(decimals = 0) |>
-gt::tab_options(
-quarto.use_bootstrap = TRUE,
-column_labels.font.weight = "bold",
-table.background.color = "transparent",
-table.font.color = "SeaShell",
-row.striping.background_color = "gray10",
-row.striping.include_table_body = TRUE
-)
-
-summaryProcessTable
-```
+By carefully analyzing the count of distinct `n` values and the total observation count before and after deduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
 :::
+
 
 :::{.d-flex .justify-content-center}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5rem; color: cornflowerblue"></i>
+<i class="bi bi-code-slash" style="font-size: 1.5rem; color: #64FFDA;"></i>
 ```
 :::
 :::
 
 ## Outliers
-
-Observations that were deemed erroneous or not useful for identifying trends in how the service is utilized by members and casual users were filtered out. It is good practice to keep note of these errors as they might explain some differences in how members and casual use the service.
-
-It was determined that trips with negative minutes were errors. Trips less than 1 minute but greater than 0 were noted, but removed, as they might skew the statistics we derive from this data too much later on. The underlying reason for low trip times could be from people just wanting to try it out briefly before committing or quickly realized they did not like it. There were observations that did not make much sense, but most of the data was retained.
-
-As in the first part, an **if-else** decision was chosen because it makes testing easier. An external database filtering script was chosen to shorten the code needed inside the main Quarto document itself. The data from which the rest of the tables are based on are used for the rest of the analysis.
-
-::: {.d-flex .justify-content-center max-width="auto"}
-::: {.callout-note title="Filter the database" style="min-width: auto; max-width: auto"}
-::: {#filterScript .codeDisplayer}
-```{r}
-#| label: filterScript
-#| code-summary: This would execute if the if-else conditions were met to filter the db/data.db database table
-#| file: "Scripts/filterDatabase.R"
-#| eval: false
-```
-:::
-:::
-:::
-
-::: {.d-flex .justify-content-center}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
-```
-:::
-:::
 
 ::: {#offcanvas33 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -527,18 +560,122 @@ if (duckdb::dbExistsTable(dbconn,
 :::
 :::
 
+Observations deemed erroneous or irrelevant for identifying usage trends among members and casual users were filtered out. Keeping track of these errors is a good practice, as they might provide insights into the differences in how members and casuals utilize the service.
+
+Trips with negative durations were flagged as errors and removed. Additionally, trips lasting less than a minute but greater than zero were noted and removed, as they could potentially skew the derived statistics. These extremely short trips might be attributed to users briefly trying out the service before committing or quickly realizing their dissatisfaction with it. While some observations seemed nonsensical, most of the data was retained.
+
+Consistent with the previous approach, an **if-else** decision was employed to facilitate testing. An external database filtering script was utilized to streamline the code within the main Quarto document. The resulting filtered data served as the foundation for subsequent analysis and table generation.
+
+
+```{r}
+#| label: countFiltered
+#| code-summary: "To get a count of the new total observations after filtering."
+
+count_filtered <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(ride_id) |>
+dplyr::distinct() |>
+dplyr::count() |>
+dplyr::collect() |>
+as.integer()
+
+```
+
+
+:::{.p-3}
+```{r}
+#| label: tbl-observationHistory
+#| tbl-cap: Observation Processing History
+
+# To see the history of obs in our dataset.
+summaryProcessTable <- tidyr::tribble(
+~ "Observations",
+~ "Counts",
+"Original   ",
+original_nobs,
+"Processed   ",
+count_incorrectDists,
+"Duplicates   ",
+(count_incorrectDists - count_correctDists),
+"Filtered     ",
+(count_correctDists - count_filtered),
+"Total Corrected   ",
+count_filtered
+) |>
+gt::gt(rownames_to_stub = FALSE) |>
+gt::tab_header(title = "Tallying Observations") |>
+gt::tab_footnote(
+footnote = gt::md("Row counts throughout the cleaning steps."),
+locations = gt::cells_column_labels(columns = Counts)
+) |>
+gt::tab_style(
+style = list(
+gt::cell_borders(sides = "bottom"),
+gt::cell_text(
+align = "left",
+stretch = "semi-expanded",
+whitespace = "break-spaces"
+)
+),
+locations = gt::cells_body(gt::everything())
+) |>
+gt::tab_style(
+gt::cell_text(
+align = "center",
+stretch = "semi-expanded",
+whitespace = "break-spaces"
+),
+locations = list(
+gt::cells_title(groups = c("title", "subtitle")),
+gt::cells_column_labels(gt::everything())
+)
+) |>
+gt::fmt_number(decimals = 0) |>
+gt::tab_options(
+column_labels.font.weight = "bold",
+table.background.color = "transparent",
+table.font.color = "SeaShell",
+row.striping.background_color = "gray10",
+row.striping.include_table_body = TRUE
+)
+
+summaryProcessTable
+```
+:::
+
+::: {.d-flex .justify-content-center max-width="auto"}
+::: {.callout-note title="Filter the database" style="min-width: auto; max-width: auto"}
+::: {#filterScript .codeDisplayer}
+```{r}
+#| label: filterScript
+#| code-summary: This would execute if the if-else conditions were met to filter the db/data.db database table
+#| file: "Scripts/filterDatabase.R"
+#| eval: false
+```
+:::
+:::
+:::
+
+::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="font-size: 1.5em; color: #64FFDA;"></i>
+```
+:::
+:::
+
+
 # Exploratory Analysis
 
-::: {.column-body .mb-2}
 ## Contingency Tables {#sec-writeFreqs}
 
-The rationale for contingency tables here is to gain quick insights into the data. It is taking a methodical approach that, while simple, can create a crucial pathway towards understanding the bigger picture. Many of these tables are used in the tabset section, @sec-freqAnalysis. Some of the tables in the following section had to be further customized.
+:::{.p-3}
+Contingency tables were created to gain quick insights into the data through a methodical, albeit simple, approach that facilitates understanding the bigger picture. Many of these tables are utilized in the tabset section (@sec-freqAnalysis), while some required further customization in the following section.
 :::
 
 ::: {.d-flex .justify-content-center .mb-3}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="font-size: .75em; color: cornflowerblue;"></i>
+<i class="bi bi-code-slash" style="font-size: .75em; color: #64FFDA;"></i>
 ```
 :::
 :::
@@ -928,7 +1065,7 @@ dplyr::tbl(dbconn,
 :::
 
 ::: {.p-3 .align-self-center}
-@tbl-memberTotals gives the total count of trips taken by members and casuals. The rest of the tabs in this section will give total counts along with group counts by membership status.
+@tbl-memberTotals displays the total trip count for annual members and casual riders. The remaining tabs in this section provide total counts as well as group-wise counts based on membership status.
 :::
 :::
 :::
@@ -943,21 +1080,14 @@ dplyr::tbl(dbconn,
 
 source("Scripts/tabler.R")
 
-totalMembers <- dplyr::tbl(dbconn, "db/freq_member.db") |>
-dplyr::collect()
-
+dplyr::tbl(dbconn, "db/freq_member.db") |>
 tabler (
-totalMembers, 
 title = "Membership", 
-subtitle = "2023", 
-source_note = gt::md("Taken from: `db/freq_member.db`")) |>
-gt::cols_label(n = "Trips", member_casual = "Membership") |>
-gt::tab_footnote(
-"Total trips taken in 2023 by membership.",
-locations = gt::cells_column_labels(columns = "n")) |>
-gt::tab_footnote(
-"Membership groups where casuals are those that pay as they go and members pay an annual subscription.",
-locations =   gt::cells_column_labels(columns = "member_casual"))
+source_note = gt::md("Taken from: `db/freq_member.db`"),
+footnote = gt::md("Total trips recorded."),
+location = n
+) |>
+gt::cols_label(n = "Trips", member_casual = " ")
 ```
 :::
 
@@ -997,12 +1127,12 @@ gplot
 ::: divBox
 :::
 
-::: {.p-1 .align-self-center}
-In @tbl-ctypeTotals and @fig-ctypeTotals, the total trips taken on conventional bicycles and electric bicycles are compared. Clearly, electric bicycles are not used as much as conventional.
+::: {.p-2 .align-self-center}
+@tbl-ctypeTotals and @fig-ctypeTotals compare the total trips taken on conventional and electric bicycles, clearly showing that electric bikes are not utilized as much as conventional ones.
 
-Moving to @tbl-ctypeCompare and @fig-ctypeCompare, the frequency of trips taken is split into groups of membership status. There is a large disparity not only between the scale of trips taken between annual subscribers and casual users, but also within the the group of subscribers themselves. While there is a small difference between trips taken by casual members on conventional compared to electric, that said difference is more pronounced in the annual subscriber group.
+@tbl-ctypeCompare and @fig-ctypeCompare further break down the trip frequency by membership status, revealing a substantial disparity not only in the overall trip count between annual members and casual riders but also within the annual member group itself. While casual riders exhibit a small difference in trip counts between conventional and electric bikes, this difference is more pronounced among annual members.
 
-With $p < 0.05$, there appears to be a strong association between members and casuals with regards to the type of bicycles people are likely to ride. @tbl-chiTypes
+With $p < 0.05$ in @tbl-chiTypes, there appears to be a strong association between membership status (annual member or casual rider) and the type of bicycle preferred, suggesting that these factors are not independent.
 :::
 :::
 :::
@@ -1022,9 +1152,10 @@ source("Scripts/tabler.R")
 dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
 tabler( 
 title = "Bicycles", 
-subtitle = "2023",
 footnote = gt::md("Total trips taken in 2023 <br> according to bicycle type."),
-location = n)
+location = n
+)
+
 ```
 :::
 
@@ -1163,10 +1294,11 @@ source("Scripts/tabler.R")
 dplyr::tbl(dbconn, "db/freq_month.db") |>
 tabler(
 title = "Months",
-subtitle = "2023",
 source_note = gt::md("**Source:** `db/freq_month.db`"),
 footnote = "Total recorded observations",
-location = n)
+location = n
+)
+
 ```
 :::
 
@@ -1286,11 +1418,11 @@ isSummary = TRUE
 :::
 
 ::: {.p-1 .align-self-center}
-In @tbl-wkdayTotals and @fig-wkdayTotals, there appears to be more trips taken in total between Tuesday through Saturday than Sunday through Monday.
+@tbl-wkdayTotals and @fig-wkdayTotals indicate a higher total number of trips taken between Tuesday and Saturday compared to Sunday and Monday.
 
-The trend is more complicated in the weekday comparison groups seen in @tbl-wkdayCompare and @fig-wkdayCompare. Trips taken by the casual group rises towards the weekend and dips on days corresponding to days when members are taking more trips. When members are less active, casual riders are more active.
+The trend becomes more intricate in @tbl-wkdayCompare and @fig-wkdayCompare, which compare trip frequencies across weekdays for annual members and casual riders separately. Casual riders exhibit an increase in trips towards the weekend, with a dip on weekdays when annual members are more active. Conversely, when annual members are less active, casual riders tend to be more active.
 
-Given, $p < 0.05$, the likelihood of using the service on a particular day, to some extent, seems to depend on membership status. @tbl-chiDays
+As $p < 0.05$ in @tbl-chiDays, there appears to be a significant association between membership status and the likelihood of using the service on a particular day of the week, suggesting that these factors are not independent.
 :::
 :::
 :::
@@ -1308,9 +1440,9 @@ Given, $p < 0.05$, the likelihood of using the service on a particular day, to s
 dplyr::tbl(dbconn, "db/freq_wkday.db") |>
 tabler( 
 title = "Days", 
-subtitle = "2023",
 footnote = gt::md("Total trips taken in 2023  according <br> to bicycle day of the week"),
-location = n)
+location = n
+)
 
 ```
 :::
@@ -1359,7 +1491,6 @@ groupName = "wkday",
 label_n = "N",
 label_member = " "
 )
-
 
 ```
 :::
@@ -1483,10 +1614,9 @@ dplyr::select(hour, Total_Riders) |>
 dplyr::rename("n" = Total_Riders) |>
 tabler( 
 title = "Hours", 
-subtitle = "2023",
 footnote = gt::md("Total trips recorded."),
-location = n)
-
+location = n
+)
 
 ```
 :::
@@ -1567,9 +1697,10 @@ source_note = gt::md("**Source:** `db/freqCompare_hours.db`"),
 footnote = "Total recorded observations",
 location = n,
 groupName = "hour",
-label_n = "N",
+label_n = "n",
 label_member = " "
 )
+
 
 ```
 :::
@@ -1698,7 +1829,6 @@ miles = forcats::fct_inorder(miles)
 ) |>
 tabler( 
 title = "Distance", 
-subtitle = "2023",
 footnote = gt::md("Total trips taken"),
 location = n
 )
@@ -1741,7 +1871,7 @@ gplot
 ### Membership Summary {#group_miles_freq}
 
 ::: {.d-flex .justify-content-around}
-::: {.p-2 .tableScroller style="max-width: 17vw"}
+::: {.p-3 .tableScroller style="max-width: 17vw"}
 ```{r}
 #| label: tbl-milesCompare
 #| tbl-cap: Miles Group Frequency
@@ -1749,9 +1879,9 @@ gplot
 dplyr::tbl(dbconn, "db/freqCompare_miles.db") |>
 dplyr::collect() |>
 tabler(
-title = "Mile Groups",
+title = "Duration Groups",
 source_note = gt::md("**Source:** `db/freqCompare_miles.db`"),
-footnote = "The total recorded observations.",
+footnote = "Recorded observations.",
 location = n,
 groupName = "miles",
 label_n = "n",
@@ -1762,7 +1892,7 @@ label_member = " "
 ```
 :::
 
-::: p-2
+::: p-3
 ```{r}
 #| label: fig-milesCompare
 #| fig-cap: Miles Group Frequency
@@ -1860,7 +1990,7 @@ isBinary = TRUE
 ::: divBox
 :::
 
-::: {.p-1 .align-self-center}
+::: {.p-3 .align-self-center}
 The majority of mph observations fall in between 2-12 mph, as seen in @tbl-mphTotals and @fig-mphTotals.
 
 Member mph observations skew towards a higher mph than casual riders, as seen in @tbl-mphCompare and @fig-mphCompare.
@@ -1883,28 +2013,12 @@ Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for 
 
 dplyr::tbl(dbconn, "db/freq_mph.db") |>
 dplyr::arrange(mph) |>
-gt::gt() |>
-gt::tab_header(title = "MPH") |>
-gt::fmt_number(decimals = 0) |>
-gt::cols_label(mph = "Mph", n = "Trips") |>
-gt::tab_options(
-table.background.color = 'transparent',
-table.font.color = "SeaShell",
-table_body.vlines.color = "gray20",
-table_body.hlines.color = "gray20",
-column_labels.hidden = FALSE
-)
-
-
-dplyr::tbl(dbconn, "db/freq_mph.db") |>
-dplyr::arrange(mph) |>
-tabler( 
-title = "Speed", 
-subtitle = "2023",
-footnote = gt::md("Total trips taken <br> by mile per hour."),
-location = n
-)
-
+tabler(
+title = "Speed",
+note_list = list("miles per hour"),
+location_list = list("mph")
+) |>
+gt::cols_label(mph = "Mph")
 
 
 ```
@@ -1925,7 +2039,6 @@ geomType = "line",
 title = "Speed", 
 x_label = "Miles per Hour", 
 y_label = "Trips")
-#ggplot2::scale_x_continuous(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 gplot
 
@@ -2040,7 +2153,7 @@ isBinary = TRUE
 ::: divBox
 :::
 
-::: {.p-1 .align-self-center}
+::: {.p-3 .align-self-center}
 The time riders are usually spending on these trips lies between 5 to 15 minutes, as seen in @tbl-triptimeTotals and @fig-triptimeTotals.
 
 The groups as seen in @tbl-triptimeCompare and @fig-triptimeCompare both follow the totals pattern, largely. At the 42 minute mark in the table and plot, the casual riders count becomes greater than for members. Though members ride more frequently, casual riders are more likely to take longer trips.
@@ -2065,7 +2178,6 @@ dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
 dplyr::arrange(trip_time) |>
 tabler( 
 title = "Duration", 
-subtitle = "2023",
 footnote = gt::md("Total trips taken <br> by duration."),
 location = n
 ) |>
@@ -2198,10 +2310,14 @@ isBinary = TRUE
 
 ## Traffic Flow {#sec-epiflow}
 
-::: {.p-3}
-For an interesting birds-eye-view of trip behaviors, see @fig-epiflowNetwork. This is called an epiflow diagram. It is interactive, so circles (nodes) and the lines connecting the nodes can be clicked for more information.  There is also a  drop-down window to further explore the data. The top 34 most traveled stations were used for this visual network diagram. The line thickness roughly corresponds with amount of trips taken, so thicker lines means more trips between nodes. [@moragab]
+:::{.p-3}
+@fig-epiflowNetwork presents an intriguing bird's-eye view of trip behaviors through an interactive epiflow diagram. This visualization employs a network of nodes (circles) connected by lines, where the thickness of the lines roughly corresponds to the volume of trips between the nodes, with thicker lines indicating a higher number of trips. The top 34 most frequently traveled stations are depicted in this visual network diagram.
 
-These are the most active stations. Luckily, there might be a way to further explore the typical high traffic station locations and why they are high traffic. @sec-mapview
+The interactive nature of the epiflow diagram allows users to click on individual nodes and lines to access more detailed information. Additionally, a drop-down window provides further exploration capabilities, enabling users to delve deeper into the data.
+
+These stations represent the most active locations within the system. Fortunately, @sec-mapview explores a potential approach to gain insights into the typical high-traffic station locations and the underlying reasons behind their elevated activity levels.
+
+[@moragab]
 :::
 
 ::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -2338,13 +2454,13 @@ epiflows::vis_epiflows(ef_test)
 ::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas13" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="color: cornflowerblue"></i>
+<i class="bi bi-code-slash" style="color: #64FFDA"></i>
 ```
 :::
 
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas14" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-table" style="color: red;"></i>
+<i class="bi bi-table" style="color: #F4511E;"></i>
 ```
 :::
 :::
@@ -2549,13 +2665,13 @@ mapViewer(slicerVector[[4]])
 :::
 :::
 
-:::{.p-2}
+:::{.p-3}
 For example, suppose the user selects *University Ave & 57th St* in the epiflow visualization. This intersection happens to be at the heart of the University of Chicago campus. The natural next question is: where does the traffic to and from this location typically flow? By selecting one of the other nodes highlighted with flows directing away from the previous node, the user can identify *Kimbark Ave and 53rd St*. As seen in the map view, this location is situated adjacent to the *Vue 53 Apartments* complex. By analyzing such connections between nodes, the user can gain insights into common routes and destinations originating from a particular point of interest, potentially revealing patterns related to student housing, campus facilities, or other points of interest in the vicinity.
 :::
 
 # Where to Next?
 
-
+:::{.p-3}
 After exploring the associations between the behaviors of annual members and casual riders, several correlations with predictive potential were identified. Chi-squared tests analyzed relationships between categorical variables like membership type, bicycle type, month, day, and hour. Binary logistic regression models examined correlations between the binary dependent variable (membership type) and continuous variables such as distance, duration, and speed. These insights empower stakeholders to make informed decisions to increase service utilization.
 
 The data suggests individual members utilize the service multiple times weekly. However, further analysis is needed to determine if a significantly larger volume of unique individuals are annual members. Verifying associations between specific locations and higher or lower traffic could be a next step. Preliminary observations indicate universities, shopping centers, major companies, and nearby apartment complexes tend to have the highest ridership volumes.
@@ -2565,7 +2681,7 @@ Annual members exhibit distinct usage patterns compared to casual riders. They u
 In contrast, casual riders tend to be more leisure-oriented, taking longer, slower rides predominantly during warmer months. These fair-weather riders may be visiting Chicago on vacation, opting for bicycles over rental cars as a sightseeing or recreational activity. Some casual users may be prospective annual members, weighing the service's value. The picture of a casual rider is someone who needs something to do.
 
 To improve membership, addressing factors deterring individuals from becoming annual members could be key. These may include a lack of stations within walking distance of residences or destinations, or concerns over electric bicycle battery life and charging station availability, potentially explaining their lower utilization compared to classic bikes. Offering trial periods could allow casual users to experience the service's reliability and convenience, encouraging conversion to annual memberships.
-
+:::
 
 ```{r}
 #| eval: false
