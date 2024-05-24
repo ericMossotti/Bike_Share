@@ -1,7 +1,7 @@
 ---
 title: "Bike-Sharing in the Streets of Chicago"
 author: "Eric Mossotti"
-date: "05-19-2024"
+date: "05-23-2024"
 bibliography: references.bib
 repo: https://github.com/ericMossotti/Bike_Share
 source: index.qmd
@@ -11,7 +11,7 @@ description-meta: "Communicate reproducible, data-driven insights."
 
 code-links:
     - text: "Project Repo"
-      href: repo
+      href: https://github.com/ericMossotti/Bike_Share
 code-fold: true
 code-copy: hover
 code-overflow: wrap
@@ -20,8 +20,8 @@ code-link: true
 
 toc-expand: true
 toc: true
-#toc_float: true
 number-sections: true
+
 
 smooth-scroll: true
 fig-responsive: true
@@ -29,6 +29,8 @@ echo: true
 
 citation-location: margin
 citations-hover: true
+
+callout-appearance: simple
 
 #font: merriweather, futura
 ---
@@ -90,7 +92,6 @@ source("Scripts/plotter.R")
 #| eval: false 
 ```
 
-
 ```{r}
 #| label: tbl-dbList
 #| code-summary: It would now be helpful to verify the tables written so far.
@@ -123,24 +124,21 @@ dbList
 
 ## Stakeholders
 
-:::{.p-3}
+::: p-1
 The primary stakeholders in this analysis are Divvy, Lyft (the parent company of Divvy), and the City of Chicago Department of Transportation. The analysis aims to provide these stakeholders with data-driven insights to enhance the Divvy bike-sharing service, better serving the residents of Chicago and its users. The initial rationale behind Divvy's implementation included improving air quality, promoting economic recovery, and reducing traffic congestion within the city. [@aboutdi]
 :::
 
 ## Source
 
-:::{.p-3}
+::: p-1
 The raw 2023 dataset was imported from Divvy Data. [@divvyda]
 :::
 
-
-:::{.column-screen-inset}
+::: column-screen-inset
 ```{r}
 #| label: tbl-raw
 #| tbl-cap: Raw data
 #| cap-location: top
-
-source("Scripts/tabler.R")
 
 location_list <- dplyr::tbl(dbconn, rawPath) |>
 dplyr::collect() |>
@@ -168,7 +166,7 @@ dplyr::collect() |>
 dplyr::slice_head(n = 10) |>
 tabler(
 title = "A Glimpse of the Raw Data",
-source_note = gt::md("**Source:** Divvy Data (ref:source)"),
+source_note = gt::md("**Source**: Divvy Data"),
 note_list = note_list,
 location_list = location_list,
 value_columns = NULL
@@ -181,15 +179,16 @@ footnotes.multiline = FALSE
 ```
 :::
 
-
 ::: {#offcanvas100 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
-::: {#offcanvasLabel .h5 .offcanvas-title}
+::: {.h5 .offcanvas-title}
 Glimpse
 :::
+
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
 :::
+
 ::: offcanvas-body
 ::: flex-code
 ```{r}
@@ -203,6 +202,7 @@ tibble::glimpse()
 :::
 :::
 :::
+
 ::: {.d-flex .justify-content-center}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas100" aria-controls="offcanvas"}
 ```{=html}
@@ -213,7 +213,7 @@ tibble::glimpse()
 
 ## Design
 
-:::{.p-3}
+::: p-1
 Another worthy objective of this analysis is to achieve reproducibility and efficiency. To facilitate future research and enable subsequent analyst teams to build upon this work, the project aimed to provide adequate code documentation and adhere to best practices regarding clean code and modularity.
 
 For instance, certain design decisions were incorporated to eliminate the need for re-downloading and re-processing data. For analysts conducting analysis over an extended period, such as days or months, on this dataset, it is now possible to simply reconnect to the single database file containing all the original data, including tables generated throughout the analysis process, following the initial download and subsequent processing.
@@ -223,17 +223,15 @@ The underlying code incorporates an if-else decision, which includes a source co
 To streamline the process, reduce code duplication, and maintain consistent formatting throughout the project, reusable functions were developed for generating most of the tables and figures. These functions are located in the "Scripts" folder within the working directory. Their modular design not only simplifies the implementation of formatting changes but also facilitates the integration of additional code snippets when necessary. For instance, certain plots might require limiting the range of the axes, which can be achieved by combining these functions with appropriate code addendums. By leveraging these functions, the project benefits from reduced redundancy, improved efficiency, and cohesive formatting across all visualizations and data representations.
 :::
 
-:::{.d-flex}
-:::{.callout-warning title="Table and plot scripts" }
-::: flex-code
+::: d-flex
+::: {.callout-warning .calloutWarning icon="false"}
 ```{r}
 #| label: tablerScript
 #| code-summary: This code was used for generating tables. See the later code dropdowns alongside tables for clues as to how it is implented in this main document.
 #| file: "Scripts/tabler.R"
 #| eval: false 
 ```
-:::
-::: flex-code
+
 ```{r}
 #| label: plotterScript
 #| code-summary: This code was used for generating plots. See the later code dropdowns alongside tables for clues as to how it is implented in this main document.
@@ -242,22 +240,22 @@ To streamline the process, reduce code duplication, and maintain consistent form
 ```
 :::
 :::
-:::
 
 # Tidying
 
-:::p-3
+::: p-3
 The starting observation count was 5,719,877. Then 1,388,170 incomplete observations were then removed by the initial processing script.
 :::
 
-:::{.d-flex .justify-content-center}
-::: {.callout-note title="Click the icon below for coding steps related to the sections they are found" style="width: 60%"}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
+::: {.callout-warning .calloutWarning icon="false" width="auto"}
 Code processing steps are accessible through embedded code icon links, like the one below. Drop-down code summaries provide context on data processing rationale and methodology at various analysis stages, enhancing reader understanding.
-```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5rem; color: #64FFDA;"></i>
-```
 :::
+
+::: {.d-flex .justify-content-center}
+::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
+```{=html}
+<i class="bi bi-code-slash" style="font-size: 1.5rem; color: #00BFA5;"></i>
+```
 :::
 :::
 
@@ -268,12 +266,13 @@ Code processing steps are accessible through embedded code icon links, like the 
 ::: {.h5 .offcanvas-title}
 Code to Remove Duplicates
 :::
+
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
 :::
+
 ::: offcanvas-body
 ::: flex-code
-
 ```{r}
 #| label: originalNobs
 #| code-summary: First, record original observations from the raw data.
@@ -296,16 +295,14 @@ dupeTable <- dplyr::tbl(dbconn,
                         tblPath,
                         check_from = FALSE) |>
     dplyr::select(started_at:end_station_name) |>
-    # Counts of unique rows added for column 'n'
+# Counts of unique rows added for column 'n'
     dplyr::add_count(started_at,
                      ended_at,
                      start_station_name,
                      end_station_name) |>
-    # Only observations that have been duplicated 
-    #  1 or more times are shown.
+# Only observations that have been duplicated 1 or more times are shown.
     dplyr::filter(n > 1) |>
-    # We want to see all rows, 
-    #  not just one row for each obs.
+# To see all rows, not just one row for each obs.
     dplyr::ungroup() |>
     dplyr::arrange(started_at) |>
     dplyr::collect()
@@ -391,18 +388,17 @@ dplyr::tbl(dbconn,
                          name = dupelessPath,
                          overwrite = TRUE)
 ```
-
 :::
 :::
 :::
 
-::: {.p-3}
+::: p-1
 A crucial question arises: How can one identify and handle duplicate data? This section covers the process of checking for duplicates and selectively removing them while exercising caution. It is essential to recognize that the presence of unique values in a single column does not necessarily guarantee the uniqueness of each observation or row.
 
 While all values in the **ride_id** column were found to be unique, not all observations were truly distinct. To verify the uniqueness of each observation, additional columns such as **start_time**, **end_time**, **start_station**, and **end_station** were utilized. These columns provide more granular information, including the precise starting and ending times down to the second, as well as the starting and ending locations. It was assumed that observations with identical starting and ending date-times and stations, despite having different rider IDs, were potentially erroneous duplicates.
 :::
 
-::: {.tableScroller .p-3}
+::: {.tableScroller .p-2}
 ```{r}
 #| label: tbl-duplicates
 #| tbl-cap: Duplicates Table
@@ -450,13 +446,13 @@ gtDupes
 ```
 :::
 
-:::{.p-3}
+::: p-2
 Although the cause of such duplication errors is unknown, it could be assumed that one person checked out multiple bikes simultaneously. In that scenario, each bike would be assigned a unique **ride_id**. However, this occurrence was relatively rare, happening only **18** times over the course of a year. Since there is only one duplicate for each instance, it raises concerns and warrants further investigation. It is possible that trips could be grouped where one person pays for another rider's fare. However, if that were the case, it raises the question of why there is always precisely one duplicate.
 
 In @tbl-duplicates, duplicate observations are listed and grouped by color for visual clarity. In contrast, @tbl-unduplicated presents the data after removing the extra copy of each duplicate observation while preserving the unique observations. Of the duplicates identified, each had one extra copy. It was noted that the number of rows in the duplicates table is 36. Each duplicated observation has one duplicate, where **n** (the count) is always 2. Therefore, the expected number of observations to be removed was 18. A complication arose in determining how to remove not all observations but only the extra duplicate observation from each group.
 :::
 
-::: {.p-3 .tableScroller}
+::: {.p-2 .tableScroller}
 ```{r}
 #| label: tbl-unduplicated
 #| tbl-cap: Un-duplicated Table
@@ -506,17 +502,16 @@ gt_undupes
 ```
 :::
 
-:::{.p-3}
-To ensure the accurate removal of duplicates, the count of distinct `n` values (representing the number of occurrences) for the unduplicated table was computed, confirming the expected 18 unique instances. Subsequently, the total number of observations in the dataset was recorded, initially standing at 4,331,707. After removing the identified duplicate observations, the correct count of observations was 4,331,689. In summary, 18 additional observations were successfully removed, aligning with the expected number of duplicates identified earlier. These steps are documented in @tbl-observationHistory for reference.
+::: p-2
+To ensure the accurate removal of duplicates, the count of distinct n-values (representing the number of occurrences) for the unduplicated table was computed, confirming the expected 18 unique instances. Subsequently, the total number of observations in the dataset was recorded, initially standing at 4,331,707. After removing the identified duplicate observations, the correct count of observations was 4,331,689. In summary, 18 additional observations were successfully removed, aligning with the expected number of duplicates identified earlier. These steps are documented in @tbl-observationHistory for reference.
 
-By carefully analyzing the count of distinct `n` values and the total observation count before and after deduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
+By carefully analyzing the count of distinct n-values and the total observation count before and after deduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
 :::
 
-
-:::{.d-flex .justify-content-center}
+::: {.d-flex .justify-content-center}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5rem; color: #64FFDA;"></i>
+<i class="bi bi-code-slash" style="font-size: 1.5rem; color: #00BFA5;"></i>
 ```
 :::
 :::
@@ -560,13 +555,15 @@ if (duckdb::dbExistsTable(dbconn,
 :::
 :::
 
+::: p-2
 Observations deemed erroneous or irrelevant for identifying usage trends among members and casual users were filtered out. Keeping track of these errors is a good practice, as they might provide insights into the differences in how members and casuals utilize the service.
 
 Trips with negative durations were flagged as errors and removed. Additionally, trips lasting less than a minute but greater than zero were noted and removed, as they could potentially skew the derived statistics. These extremely short trips might be attributed to users briefly trying out the service before committing or quickly realizing their dissatisfaction with it. While some observations seemed nonsensical, most of the data was retained.
 
 Consistent with the previous approach, an **if-else** decision was employed to facilitate testing. An external database filtering script was utilized to streamline the code within the main Quarto document. The resulting filtered data served as the foundation for subsequent analysis and table generation.
+:::
 
-
+::: {.p-2 .flex-code}
 ```{r}
 #| label: countFiltered
 #| code-summary: "To get a count of the new total observations after filtering."
@@ -579,9 +576,9 @@ dplyr::collect() |>
 as.integer()
 
 ```
+:::
 
-
-:::{.p-3}
+::: {.p-3 .flex-code max-width="auto"}
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
@@ -642,9 +639,9 @@ summaryProcessTable
 ```
 :::
 
-::: {.d-flex .justify-content-center max-width="auto"}
-::: {.callout-note title="Filter the database" style="min-width: auto; max-width: auto"}
-::: {#filterScript .codeDisplayer}
+::: {.d-flex max-width="auto"}
+::: {.p .note .note-primary}
+::: {#filterScript .flex-code}
 ```{r}
 #| label: filterScript
 #| code-summary: This would execute if the if-else conditions were met to filter the db/data.db database table
@@ -658,24 +655,23 @@ summaryProcessTable
 ::: {.d-flex .justify-content-center}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5em; color: #64FFDA;"></i>
+<i class="bi bi-code-slash" style="font-size: 1.5em; color: #00BFA5;"></i>
 ```
 :::
 :::
 
-
 # Exploratory Analysis
 
-## Contingency Tables {#sec-writeFreqs}
+## Contingency Tables
 
-:::{.p-3}
-Contingency tables were created to gain quick insights into the data through a methodical, albeit simple, approach that facilitates understanding the bigger picture. Many of these tables are utilized in the tabset section (@sec-freqAnalysis), while some required further customization in the following section.
+::: p-3
+Contingency tables were created to gain quick insights into the data through a methodical, albeit simple, approach that facilitates understanding the bigger picture. Many of these tables are utilized in the tabset section while some required further customization in the following section.
 :::
 
 ::: {.d-flex .justify-content-center .mb-3}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="font-size: .75em; color: #64FFDA;"></i>
+<i class="bi bi-code-slash" style="font-size: .75em; color: #00BFA5;"></i>
 ```
 :::
 :::
@@ -1045,27 +1041,23 @@ dplyr::tbl(dbconn,
 :::
 :::
 
-## Table Analysis {#sec-freqAnalysis}
-
-::: column-screen
+::: column-screen-inset
 ::: {.d-flex .justify-content-center}
-
-::: {.panel-tabset .shadow-sm}
+::: {.panel-tabset}
 
 ## Membership
 
 ::: article
 ::: section
-::: {.d-flex .justify-content-around .align-content-stretch}
-::: {.p-3 .align-self-center .align-content-stretch .auto-fit}
-### Overall Member to Casual Count 
+::: header-container
+::: {.heading-box .fs-2 .text-wrap}
+About Memberships
 :::
+::: {.callout-tip .calloutTip icon="false"}
 
-::: divBox
-:::
+-   @tbl-memberTotals displays the total trip count for annual members and casual riders. 
+-   The remaining tabs in this section provide total counts as well as group-wise counts based on membership status.
 
-::: {.p-3 .align-self-center}
-@tbl-memberTotals displays the total trip count for annual members and casual riders. The remaining tabs in this section provide total counts as well as group-wise counts based on membership status.
 :::
 :::
 :::
@@ -1078,13 +1070,11 @@ dplyr::tbl(dbconn,
 #| label: tbl-memberTotals
 #| tbl-cap: Total Member Frequency
 
-source("Scripts/tabler.R")
-
 dplyr::tbl(dbconn, "db/freq_member.db") |>
 tabler (
 title = "Membership", 
-source_note = gt::md("Taken from: `db/freq_member.db`"),
-footnote = gt::md("Total trips recorded."),
+source_note = gt::md("**Source**: `db/freq_member.db`"),
+footnote = gt::md("The recorded observations."),
 location = n
 ) |>
 gt::cols_label(n = "Trips", member_casual = " ")
@@ -1095,8 +1085,6 @@ gt::cols_label(n = "Trips", member_casual = " ")
 ```{r}
 #| label: fig-totalmemberFrequency
 #| fig-cap: Total Member Frequency
-
-source("Scripts/plotter.R")
 
 gplot <- dplyr::tbl(dbconn, "db/freq_member.db") |>
 plotter(
@@ -1117,29 +1105,25 @@ gplot
 
 ::: article
 ::: section
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .align-self-center}
--   [Totals Summary](#total_types_freq)
--   [Membership Summary](#group_types_freq)
--   [Test Association](#sec-chiTypes)
+::: header-container
+::: {.heading-box .fs-2}
+About the Bicycle Types
 :::
 
-::: divBox
-:::
+::: {.callout-tip .calloutTip icon="false"}
+-   @tbl-ctypeTotals and @fig-ctypeTotals compare the total trips taken on conventional and electric bicycles, clearly showing that electric bikes are not utilized as much as conventional ones.
 
-::: {.p-2 .align-self-center}
-@tbl-ctypeTotals and @fig-ctypeTotals compare the total trips taken on conventional and electric bicycles, clearly showing that electric bikes are not utilized as much as conventional ones.
+-   @tbl-ctypeCompare and @fig-ctypeCompare further break down the trip frequency by membership status, revealing a substantial disparity not only in the overall trip count between annual members and casual riders but also within the annual member group itself. While casual riders exhibit a small difference in trip counts between conventional and electric bikes, this difference is more pronounced among annual members.
 
-@tbl-ctypeCompare and @fig-ctypeCompare further break down the trip frequency by membership status, revealing a substantial disparity not only in the overall trip count between annual members and casual riders but also within the annual member group itself. While casual riders exhibit a small difference in trip counts between conventional and electric bikes, this difference is more pronounced among annual members.
-
-With $p < 0.05$ in @tbl-chiTypes, there appears to be a strong association between membership status (annual member or casual rider) and the type of bicycle preferred, suggesting that these factors are not independent.
+-   With $p < 0.05$ in @tbl-chiTypes, there appears to be a strong association between membership status (annual member or casual rider) and the type of bicycle preferred, suggesting that these factors are not independent.
 :::
 :::
 :::
 
 ------------------------------------------------------------------------
-
-### Totals Summary {#total_types_freq}
+:::{.fs-3}
+Counting Bicycles
+:::
 
 ::: {.d-flex .align-content-stretch}
 ::: p-3
@@ -1147,12 +1131,10 @@ With $p < 0.05$ in @tbl-chiTypes, there appears to be a strong association betwe
 #| label: tbl-ctypeTotals
 #| tbl-cap: Cycle Type Total Frequency
 
-source("Scripts/tabler.R")
-
 dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
 tabler( 
 title = "Bicycles", 
-footnote = gt::md("Total trips taken in 2023 <br> according to bicycle type."),
+footnote = gt::md("The recorded observations."),
 location = n
 )
 
@@ -1179,26 +1161,25 @@ gplot
 :::
 
 ------------------------------------------------------------------------
-
-### Membership Summary {#group_types_freq}
-
+:::{.fs-3}
+Bicycle by Membership
+:::
 ::: {.d-flex .align-content-stretch}
 ::: p-3
 ```{r}
 #| label: tbl-ctypeCompare
 #| tbl-cap: Cycle Type Group Frequency
 
-source("Scripts/tabler.R")
-
 dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+dplyr::arrange(rideable_type, member_casual) |>
 dplyr::collect() |>
 tabler(
 title = "Bicycle Type to Membership", 
 groupName = "rideable_type", 
-footnote = "The total trips recorded.", 
+footnote = "The recorded observations.", 
 location = n,
-source_note = gt::md("Taken from: `db/freqCompare_rType`"),
-label_n = "N",
+source_note = gt::md("**Source**: `db/freqCompare_rType`"),
+label_n = "n",
 label_member = " "
 ) 
 ```
@@ -1208,8 +1189,6 @@ label_member = " "
 ```{r}
 #| label: fig-ctypeCompare
 #| fig-cap: Cycle Type Group Frequency
-
-source("Scripts/plotter.R")
 
 gplot <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
 plotter(
@@ -1231,20 +1210,19 @@ gplot
 :::
 
 ------------------------------------------------------------------------
-
-### Testing the association between membership and bicycle type {#sec-chiTypes}
-
+:::{.fs-3}
+Testing the association between membership and bicycle type
+:::
+:::{.p-3}
 ```{r}
 #| label: tbl-chiTypes
-
-source("Scripts/tabler.R")
 
 dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(rideable_type, member_casual) |>
 dplyr::collect() |>
 tabler(
 title = "Chi-Square: Bicycles & Rider Type",
-source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 label = list(
 rideable_type = "Bicycle Type", 
 member_casual = "Membership"),
@@ -1254,55 +1232,50 @@ isSummary = TRUE
 
 ```
 :::
+:::
 
 ## Month
 
 ::: article
 ::: section
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .align-self-center}
--   [Totals Summary](#total_month_freq)
--   [Membership Summary](#group_month_freq)
--   [Test Association](#sec-monthChi)
+::: header-container
+::: {.heading-box .fs-2}
+About the Months
 :::
 
-::: divBox
-:::
+::: {.callout-tip .calloutTip icon="false"}
+-   Examining the monthly totals in @tbl-monthTotals and @fig-monthTotals, it is evident that warmer months coincide with higher overall trip frequency.
 
-::: {.p-1 .align-self-center}
-Looking at @tbl-monthTotals and @fig-monthTotals, the warmer months appear to coincide with higher trip frequency, in total.
+-   The comparison between subscriber and casual rider groups in @tbl-monthCompare and @fig-monthCompare reveals that both groups exhibit seasonal variations in trip frequency. However, the fluctuations appear to be less pronounced for subscribers compared to casual riders. The disparity in the extent of frequency changes is more apparent when contrasting winter and summer months between the two groups.
 
-In @tbl-monthCompare and @fig-monthCompare, trip frequency in both groups are impacted by the seasons. Although, it would appear that trip frequency of subscribers fluctuates less than for casuals. The disparity in frequency change is more apparent in the comparison of winter to summer months between member groups.
-
-Given $p < 0.05$, it is likely that membership status is associated with a given member's or non-member's use of the service during a particular month or season. @tbl-chiMonths
+-   With $p < 0.05$, (@tbl-chiMonths), there is strong evidence to suggest that membership status is associated with an individual's usage of the service during a particular month or season.
 :::
 :::
 :::
 
 ------------------------------------------------------------------------
 
-### Totals Summary {#total_month_freq}
-
+:::{.fs-3}
+Counting Months
+:::
 ::: d-flex
-::: p-3
+::: mr-2
 ```{r}
 #| label: tbl-monthTotals
 #| tbl-cap: Month Total Frequency
-
-source("Scripts/tabler.R")
 
 dplyr::tbl(dbconn, "db/freq_month.db") |>
 tabler(
 title = "Months",
 source_note = gt::md("**Source:** `db/freq_month.db`"),
-footnote = "Total recorded observations",
+footnote = "The recorded observations.",
 location = n
 )
 
 ```
 :::
 
-::: p-3
+::: ml-2
 ```{r}
 #| label: fig-monthTotals
 #| fig-cap: Month Total Frequency
@@ -1324,32 +1297,32 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Membership Summary {#group_month_frequency}
-
+:::{.fs-3}
+Month by Membership
+:::
 ::: d-flex
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-monthCompare
 #| tbl-cap: Month Group Frequency
 
-source("Scripts/tabler.R")
-
 dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
+dplyr::arrange(months, member_casual) |>
 dplyr::collect() |>
 tabler(
 title = "Months",
 source_note = gt::md("**Source:** `db/freqCompare_month.db`"),
-footnote = "Total recorded observations",
+footnote = "The recorded observations.",
 location = n,
 groupName = "months",
-label_n = "N",
+label_n = "n",
 label_member = " "
 )
 
 ```
 :::
 
-::: ml-5
+::: ml-2
 ```{r}
 #| label: fig-monthCompare
 #| fig-cap: Month Group Frequency
@@ -1374,8 +1347,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Testing the association between membership and month {#sec-monthChi}
-
+:::{.fs-3}
+Testing the association between membership and month
+:::
+:::p-3
 ```{r}
 #| label: tbl-chiMonths
 
@@ -1393,7 +1368,7 @@ month_tbl |>
 dplyr::select(member_casual, months) |>
 tabler(
 title = "Chi-Square: Month & Rider Type",
-source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 label = list(
 months = "Month"),
 by = member_casual,
@@ -1402,35 +1377,32 @@ isSummary = TRUE
 
 ```
 :::
+:::
 
 ## Day
 
 ::: article
 ::: section
-::: {.d-flex .align-content-stretch}
-::: {.p-2 .align-self-center}
--   [Totals Summary](#total_day_freq)
--   [Membership Summary](#group_day_freq)
--   [Test Association](#sec-chiDays)
+::: header-container
+::: {.heading-box .fs-2}
+About the Days
 :::
 
-::: divBox
-:::
+::: {.callout-tip .calloutTip .shadow-lg icon="false"}
+-   @tbl-wkdayTotals and @fig-wkdayTotals indicate a higher total number of trips taken between Tuesday and Saturday compared to Sunday and Monday.
 
-::: {.p-1 .align-self-center}
-@tbl-wkdayTotals and @fig-wkdayTotals indicate a higher total number of trips taken between Tuesday and Saturday compared to Sunday and Monday.
+-   The trend becomes more intricate in @tbl-wkdayCompare and @fig-wkdayCompare, which compare trip frequencies across weekdays for annual members and casual riders separately. Casual riders exhibit an increase in trips towards the weekend, with a dip on weekdays when annual members are more active. Conversely, when annual members are less active, casual riders tend to be more active.
 
-The trend becomes more intricate in @tbl-wkdayCompare and @fig-wkdayCompare, which compare trip frequencies across weekdays for annual members and casual riders separately. Casual riders exhibit an increase in trips towards the weekend, with a dip on weekdays when annual members are more active. Conversely, when annual members are less active, casual riders tend to be more active.
-
-As $p < 0.05$ in @tbl-chiDays, there appears to be a significant association between membership status and the likelihood of using the service on a particular day of the week, suggesting that these factors are not independent.
+-   As $p < 0.05$ in @tbl-chiDays, there appears to be a significant association between membership status and the likelihood of using the service on a particular day of the week, suggesting that these factors are not independent.
 :::
 :::
 :::
 
 ------------------------------------------------------------------------
 
-### Totals Summary {#total_day_freq}
-
+:::{.fs-3}
+Counting Days
+:::
 ::: d-flex
 ::: p-3
 ```{r}
@@ -1440,7 +1412,7 @@ As $p < 0.05$ in @tbl-chiDays, there appears to be a significant association bet
 dplyr::tbl(dbconn, "db/freq_wkday.db") |>
 tabler( 
 title = "Days", 
-footnote = gt::md("Total trips taken in 2023  according <br> to bicycle day of the week"),
+footnote = gt::md("The recorded observations."),
 location = n
 )
 
@@ -1471,8 +1443,9 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Membership Summary {#group_day_freq}
-
+:::{.fs-3}
+Day by Membership
+:::
 ::: d-flex
 ::: p-3
 ```{r}
@@ -1482,20 +1455,21 @@ gplot
 
 dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
 dplyr::collect() |>
+dplyr::arrange(wkday, member_casual) |>
 tabler(
 title = "Weekday Compare",
 source_note = gt::md("**Source:** `db/freqCompare_wkday.db`"),
-footnote = "The total recorded observations.",
+footnote = "The recorded observations.",
 location = n,
 groupName = "wkday",
-label_n = "N",
+label_n = "n",
 label_member = " "
 )
 
 ```
 :::
 
-::: {.ml-2 .align-self-center}
+::: {.p .ml-2 .align-self-center}
 ```{r}
 #| label: fig-wkdayCompare
 #| fig-cap: Weekday Group Frequency
@@ -1521,8 +1495,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Testing the association between day and membership {#sec-chiDays}
-
+:::{.fs-3}
+Testing the association between day and membership
+:::
+:::p-3
 ```{r}
 #| label: tbl-chiDays
 
@@ -1542,7 +1518,7 @@ wkdayTbl |>
 dplyr::select(member_casual, wkday) |>
 tabler(
 title = "Chi-Square: Day & Rider Type",
-source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 label = list(wkday = "Day"),
 by = member_casual,
 isSummary = TRUE
@@ -1550,40 +1526,37 @@ isSummary = TRUE
 
 ```
 :::
+:::
 
 ## Hour
 
 ::: article
 ::: section
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .align-self-center}
--   [Totals Summary](#total_hour_freq)
--   [Membership Summary](#group_hour_freq)
--   [Test Association](#sec-chiHours)
+::: header-container
+::: {.heading-box .fs-2}
+About the Hour of Day
 :::
 
-::: divBox
-:::
+::: {.callout-tip .calloutTip icon="false"}
+-   The overall trend follows the typical work day cycle where one would expect to see with spikes in the mornings and evenings. See @tbl-hourTotals and @fig-hourTotals.
 
-::: {.p-3 .align-self-center}
-The overall trend follows the typical work day cycle where one would expect to see with spikes in the mornings and evenings. @tbl-hourTotals @fig-hourTotals
+-   There is a noted discrepancy between member and casual use during peak commute hours. Members have more notable spike during morning commute hours than casuals, which appears more flat throughout the day. See @tbl-hourCompare and @fig-hourCompare.
 
-There is a noted discrepency between member and casual use during peak commute hours. Members have more notable spike during morning commute hours than casuals, which appears more flat throughout the day. @tbl-hourCompare  @fig-hourCompare.
-
-Given, $p < 0.05$, members and casuals tend to take trips at different hours of the day. @tbl-chiHours
-
+-   Given, $p < 0.05$, members and casuals tend to take trips at different hours of the day. @tbl-chiHours
 :::
 :::
 :::
 
 ------------------------------------------------------------------------
 
-### Totals Summary {#total_hour_freq}
-
+:::{.fs-3}
+Counting Hours
+:::
 ::: {.d-flex .justify-content-around}
+::: {.p-3 .tableScroller}
 ```{r}
-#| label: simplifyHoursFormat
-#| echo: false
+#| label: tbl-hourTotals
+#| tbl-cap: Total freqeuncy by the hour of day
 
 hours_of_Riders <- dplyr::tbl(dbconn, "db/freq_hours.db") |>
 dplyr::collect()
@@ -1601,27 +1574,20 @@ stringr::str_to_lower()
 simpleTimes <- stringr::str_c(x, sep = " ", y)
 
 hours_of_Riders[[1]] <- simpleTimes
-```
-
-::: {.p-3 .tableScroller}
-```{r}
-#| label: tbl-hourTotals
-#| tbl-cap: Total freqeuncy by the hour of day
-
 
 hours_of_Riders |>
 dplyr::select(hour, Total_Riders) |>
 dplyr::rename("n" = Total_Riders) |>
 tabler( 
 title = "Hours", 
-footnote = gt::md("Total trips recorded."),
+footnote = gt::md("The recorded observations."),
 location = n
 )
 
 ```
 :::
 
-::: {.p-3 .flex-grow-1}
+::: {.p-2}
 ```{r}
 #| label: 'fig-hourTotals'
 #| fig-cap: "Total frequency by hour of day."
@@ -1652,8 +1618,9 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Membership Summary
-
+:::{.fs-3}
+Hour by Membership
+:::
 ::: {.d-flex .justify-content-around .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -1694,13 +1661,12 @@ hour_tbl |>
 tabler(
 title = "Hour Groups",
 source_note = gt::md("**Source:** `db/freqCompare_hours.db`"),
-footnote = "Total recorded observations",
+footnote = "The recorded observations.",
 location = n,
 groupName = "hour",
 label_n = "n",
 label_member = " "
 )
-
 
 ```
 :::
@@ -1729,8 +1695,12 @@ gplot
 :::
 :::
 
-### Can the hour of the day predict membership? {#sec-chiHours}
+------------------------------------------------------------------------
 
+:::{.fs-3}
+Can the hour of the day predict membership?
+:::
+:::p-3
 ```{r}
 #| label: tbl-chiHours
 #| tbl-cap: "Can the hour of the day correlate to a binary outcome, such as membership?"
@@ -1775,45 +1745,41 @@ hour_tbl |>
 dplyr::select(member_casual, hour) |>
 tabler(
 title = "Chi-Square: Hour & Rider Type",
-source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 label = list(hour = "Hour"),
 by = member_casual,
 isSummary = TRUE
 )
 
 ```
-
-
+:::
 :::
 
 ## Distance
 
 ::: article
 ::: section
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .align-self-center}
--   [Totals Summary](#total_miles_freq)
--   [Membership Summary](#group_miles_freq)
--   [Test Association](#sec-logMiles)
+::: header-container
+::: {.heading-box .fs-2}
+About the Distance
 :::
 
-::: divBox
-:::
+::: {.callout-tip .calloutTip icon="false"}
+-   The distance of most observed trips in @tbl-milesTotals and @fig-milesTotals fall in between 0.3 to 3 miles.
 
-::: {.p-1 .align-self-center}
-The distance of most observed trips in @tbl-milesTotals and @fig-milesTotals fall in between 0.3 to 3 miles.
+-   The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the same pattern. The casual and member differ mainly in overall scale of trips taken between the 0.3 and 3 mile trip distances.
 
-The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the same pattern. The casual and member differ mainly in overall scale of trips taken between the 0.3 and 3 mile trip distances.
-
-$\beta_1 < 0$, members are less likely to ride as distance traveled in a given trip increases. So, members tend to take shorter trips compared to casual users. @tbl-logMiles
+-   $\beta_1 < 0$, members are less likely to ride as distance traveled in a given trip increases. So, members tend to take shorter trips compared to casual users. @tbl-logMiles
 :::
 :::
 :::
 
 ------------------------------------------------------------------------
 
-### Totals Summary {#total_miles_freq}
 
+:::{.fs-3}
+Counting Distance
+:::
 ::: {.d-flex .justify-content-around}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -1829,7 +1795,7 @@ miles = forcats::fct_inorder(miles)
 ) |>
 tabler( 
 title = "Distance", 
-footnote = gt::md("Total trips taken"),
+footnote = gt::md("The recorded observations."),
 location = n
 )
 
@@ -1842,13 +1808,13 @@ location = n
 #| fig-cap: Miles Total Frequency
 
 miles_tbl <- dplyr::tbl(dbconn, "db/freq_miles.db") |>
+dplyr::filter(miles <= 11) |>
 dplyr::collect() |>
 dplyr::mutate(
 miles = forcats::as_factor(miles),
 miles = forcats::fct_inorder(miles)
 )
 
-source("Scripts/plotter.R")
 
 gplot <- miles_tbl |>
 plotter(
@@ -1857,10 +1823,11 @@ y_col = n,
 geomType = "column", 
 title = "Distance", 
 x_label = "Miles", 
-y_label = "Trips") +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+y_label = "Trips") 
 
-gplot
+gplot +
+ggplot2::scale_x_discrete(
+guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 ```
 :::
@@ -1868,10 +1835,11 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Membership Summary {#group_miles_freq}
-
+:::{.fs-3}
+Distance by Membership
+:::
 ::: {.d-flex .justify-content-around}
-::: {.p-3 .tableScroller style="max-width: 17vw"}
+::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-milesCompare
 #| tbl-cap: Miles Group Frequency
@@ -1881,7 +1849,7 @@ dplyr::collect() |>
 tabler(
 title = "Duration Groups",
 source_note = gt::md("**Source:** `db/freqCompare_miles.db`"),
-footnote = "Recorded observations.",
+footnote = "The recorded observations.",
 location = n,
 groupName = "miles",
 label_n = "n",
@@ -1907,6 +1875,7 @@ miles >= 1 ~ round(miles, digits = 0),
 miles < 1 ~ round(signif(miles, 3), digits = 1)
 )) |>
 dplyr::arrange(miles) |>
+dplyr::filter(miles <= 11) |>
 dplyr::mutate(
 miles = forcats::as_factor(miles),
 miles = forcats::fct_inorder(miles)
@@ -1925,21 +1894,25 @@ y_col = n,
 group_col = member_casual,
 geomType = "column", 
 isFaceted = TRUE
-) +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+)
 
-gplot
-
+gplot +
+ggplot2::scale_x_discrete(
+guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 ```
 :::
 :::
 
-### Can distance predict a binary outcome? {#sec-logMiles}
+------------------------------------------------------------------------
 
+:::{.fs-3}
+Can distance predict a binary outcome?
+:::
+:::p-3
 ```{r}
 #| label: tbl-logMiles
 
-miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(member_casual, miles) |>
 dplyr::collect() |>
 dplyr::mutate(
@@ -1969,42 +1942,40 @@ gtsummary::tbl_regression(label = list(miles = "Distance"))
 mileStats_tbl |>
 tabler(
 title = gt::md("Binary Logistic Regression: <br> Miles & Rider Type"),
-source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE
 )
 
 ```
+:::
 :::
 
 ## Speed
 
 ::: article
 ::: section
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .align-self-center}
--   [Totals Summary](#total_mph_freq)
--   [Membership Summary](#group_mph_freq)
--   [Test Association](#sec-logMph)
+::: header-container
+::: {.heading-box .fs-2}
+About the Speed
 :::
 
-::: divBox
-:::
+::: {.callout-tip .calloutTip icon="false"}
+-   The majority of mph observations fall in between 2-12 mph, as seen in @tbl-mphTotals and @fig-mphTotals.
 
-::: {.p-3 .align-self-center}
-The majority of mph observations fall in between 2-12 mph, as seen in @tbl-mphTotals and @fig-mphTotals.
+<!-- -->
 
-Member mph observations skew towards a higher mph than casual riders, as seen in @tbl-mphCompare and @fig-mphCompare.
+-   Member mph observations skew higher in mph than casual riders, as seen in @tbl-mphCompare and @fig-mphCompare.
 
-Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for the duration of their trips compared to casuals. @tbl-logMph
+-   Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for the duration of their trips compared to casuals. @tbl-logMph
 :::
 :::
 :::
-
 
 ------------------------------------------------------------------------
 
-### Totals Summary {#total_mph_freq}
-
+:::{.fs-3}
+Counting Speed
+:::
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -2029,8 +2000,6 @@ gt::cols_label(mph = "Mph")
 #| label: fig-mphTotals
 #| fig-cap: Mph Total Frequency
 
-source("Scripts/plotter.R")
-
 gplot <- dplyr::tbl(dbconn, "db/freq_mph.db") |>
 plotter(
 x_col = mph, 
@@ -2048,8 +2017,9 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Membership Summary {#group_mph_freq}
-
+:::{.fs-3}
+Speed by Membership
+:::
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -2058,13 +2028,14 @@ gplot
 
 dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
 dplyr::collect() |>
+dplyr::arrange(mph, member_casual) |>
 tabler(
 title = "Mph Groups",
 source_note = gt::md("**Source:** `db/freqCompare_mph.db`"),
-footnote = "The total recorded observations.",
+footnote = "The recorded observations.",
 location = n,
 groupName = "mph",
-label_n = "N",
+label_n = "n",
 label_member = " "
 )
 
@@ -2075,8 +2046,6 @@ label_member = " "
 ```{r}
 #| label: fig-mphCompare
 #| fig-cap: Mph Group Frequency
-
-source("Scripts/plotter.R")
 
 gplot <- dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
 dplyr::arrange(mph, member_casual) |>
@@ -2100,8 +2069,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Can travel speed predict a binary outcome {#sec-logMph}
-
+:::{.fs-3}
+Can travel speed predict a binary outcome?
+:::
+:::p-3
 ```{r}
 #| label: tbl-logMph
 
@@ -2127,47 +2098,42 @@ mphModel <- stats::glm(member_casual ~ mph, data = mph_asNums, family = binomial
 mphStats_tbl <- mphModel |>
 gtsummary::tbl_regression(label = list(mph = "Mph"))
 
-source("Scripts/tabler.R")
-
 mphStats_tbl |>
 tabler(
 title = gt::md("Binary Logistic Regression: <br> Speed & Rider Type"),
-source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE
 )
 
 ```
+:::
 :::
 
 ## Duration
 
 ::: article
 ::: section
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .align-self-center}
--   [Totals Summary](#total_tripTime_freq)
--   [Membership Summary](#group_tripTime_freq)
--   [Test Association](#sec-logTimes)
+::: header-container
+::: {.heading-box .fs-2}
+About the Duration
 :::
 
-::: divBox
-:::
+::: {.callout-tip .calloutTip icon="false"}
+-   As evident from @tbl-triptimeTotals and @fig-triptimeTotals, the duration of most trips falls within the range of 5 to 15 minutes.
 
-::: {.p-3 .align-self-center}
-The time riders are usually spending on these trips lies between 5 to 15 minutes, as seen in @tbl-triptimeTotals and @fig-triptimeTotals.
+-   The group comparison in @tbl-triptimeCompare and @fig-triptimeCompare reveals that both casual riders and members largely follow the overall pattern observed in the totals. However, beyond the 42-minute mark, the count of casual riders exceeds that of members. While members ride more frequently overall, casual riders are more likely to undertake longer trips.
 
-The groups as seen in @tbl-triptimeCompare and @fig-triptimeCompare both follow the totals pattern, largely. At the 42 minute mark in the table and plot, the casual riders count becomes greater than for members. Though members ride more frequently, casual riders are more likely to take longer trips.
-
-Given, $\beta_1 < 0$, members are more likely to take shorter trips in terms of how many minutes they ride for on their trips than casuals. @tbl-logTimes
+-   Given that $\beta_1 < 0$ (@tbl-logTimes), the results indicate that members are more likely to take shorter trips in terms of duration compared to casual riders.
 :::
 :::
 :::
 
 ------------------------------------------------------------------------
 
-### Totals Summary {#total_tripTime_freq}
-
-::: {.d-flex}
+:::{.fs-3}
+Counting Durations
+:::
+::: d-flex
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-triptimeTotals
@@ -2178,7 +2144,7 @@ dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
 dplyr::arrange(trip_time) |>
 tabler( 
 title = "Duration", 
-footnote = gt::md("Total trips taken <br> by duration."),
+footnote = gt::md("The recorded observations."),
 location = n
 ) |>
 gt::cols_align(columns = "trip_time", align = "center")
@@ -2191,8 +2157,6 @@ gt::cols_align(columns = "trip_time", align = "center")
 ```{r}
 #| label: fig-triptimeTotals
 #| fig-cap: Trip-Time Totals
-
-source("Scripts/plotter.R")
 
 gplot <- dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
 plotter(
@@ -2213,9 +2177,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Membership Summary {#group_tripTime_freq}
-
-::: d-flex
+:::{.fs-3}
+Duration by Membership
+:::
+::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-triptimeCompare
@@ -2227,10 +2192,10 @@ dplyr::arrange(trip_time, member_casual) |>
 tabler(
 title = "Duration Compare",
 source_note = gt::md("**Source:** `db/freqCompare_tripTime.db`"),
-footnote = "The total recorded observations.",
+footnote = "The recorded observations.",
 location = n,
 groupName = "trip_time",
-label_n = "N",
+label_n = "n",
 label_member = " "
 )
 
@@ -2241,8 +2206,6 @@ label_member = " "
 ```{r}
 #| label: fig-triptimeCompare
 #| fig-cap: Trip-Time Group Frequency 
-
-source("Scripts/plotter.R")
 
 gplot <- dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
 plotter(
@@ -2265,8 +2228,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-### Can trip duration predict a binary outcome? {#sec-logTimes}
-
+:::{.fs-3}
+Can trip duration predict a binary outcome?
+:::
+:::p-3
 ```{r}
 #| label: tbl-logTimes
 
@@ -2297,7 +2262,7 @@ gtsummary::tbl_regression(label = list(trip_time = "Duration"))
 triptimeStats_tbl |>
 tabler(
 title = gt::md("Binary Logistic Regression: <br> Duration & Rider Type"),
-source_note = gt::md("Data was sourced from: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE
 )
 
@@ -2306,18 +2271,29 @@ isBinary = TRUE
 :::
 :::
 :::
+:::
 
 
-## Traffic Flow {#sec-epiflow}
+### Interpretion of Contingency Table Data
 
-:::{.p-3}
+::: p-1
+After exploring the associations between the behaviors of annual members and casual riders, several correlations with predictive potential were identified. Chi-squared tests analyzed relationships between categorical variables like membership type, bicycle type, month, day, and hour. Binary logistic regression models examined correlations between the binary dependent variable (membership type) and continuous variables such as distance, duration, and speed. These insights empower stakeholders to make informed decisions to increase service utilization.
+
+Annual members exhibit distinct usage patterns compared to casual riders. They use the service more consistently year-round, preferring manual "classic" bicycles. Annual members take more weekday trips, favoring shorter distances but traveling at faster speeds. These individuals likely have specific destinations in mind, using bicycles as a practical transportation mode akin to cars. Multiple factors likely motivate their choice, including cost savings, avoiding traffic congestion, environmental sustainability, and incorporating exercise. The picture of an annual member is someone with somewhere to be.
+
+In contrast, casual riders tend to be more leisure-oriented, taking longer, slower rides predominantly during warmer months. These fair-weather riders may be visiting Chicago on vacation, opting for bicycles over rental cars as a sightseeing or recreational activity. Some casual users may be prospective annual members, weighing the service's value. The picture of a casual rider is someone who needs something to do.
+:::
+
+## Geographic Data
+
+### Traffic Flow {#sec-epiflow}
+
+::: p-1
 @fig-epiflowNetwork presents an intriguing bird's-eye view of trip behaviors through an interactive epiflow diagram. This visualization employs a network of nodes (circles) connected by lines, where the thickness of the lines roughly corresponds to the volume of trips between the nodes, with thicker lines indicating a higher number of trips. The top 34 most frequently traveled stations are depicted in this visual network diagram.
 
 The interactive nature of the epiflow diagram allows users to click on individual nodes and lines to access more detailed information. Additionally, a drop-down window provides further exploration capabilities, enabling users to delve deeper into the data.
 
-These stations represent the most active locations within the system. Fortunately, @sec-mapview explores a potential approach to gain insights into the typical high-traffic station locations and the underlying reasons behind their elevated activity levels.
-
-[@moragab]
+These stations represent the most active locations within the system. Fortunately, @sec-mapview explores a potential approach to gain insights into the typical high-traffic station locations and the underlying reasons behind their elevated activity levels. [@moragab]
 :::
 
 ::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -2454,7 +2430,7 @@ epiflows::vis_epiflows(ef_test)
 ::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas13" aria-controls="offcanvas"}
 ```{=html}
-<i class="bi bi-code-slash" style="color: #64FFDA"></i>
+<i class="bi bi-code-slash" style="color: #00BFA5"></i>
 ```
 :::
 
@@ -2466,8 +2442,9 @@ epiflows::vis_epiflows(ef_test)
 :::
 :::
 
-## Checking the Map {#sec-mapview}
-:::{.p-3}
+### Checking the Map {#sec-mapview}
+
+::: p-1
 This section was made possible thanks to the latitude and longitude coordinates data provided alongside the stations names. Coming from the epiflow diagram, this should help make the data less abstract. The accordion below expands and collapses four *OpenStreet* maps found in the callout section below. These maps were split for viewing logistics. They contain from the epiflow in the section above. These maps are interactive, so the default views are zoomable and movable. The transparent burst buttons enable snappy zooming-in of the station groups.
 :::
 
@@ -2577,7 +2554,7 @@ source("Scripts/mapViewer.R")
 ::: {#accordionParent .accordion .mt-3 .mb-3}
 ::: accordion-item
 ::: {#headingOne .accordion-header}
-::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne" style="background-color: #bbab9b"}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne" style="background-color: #6D4C41"}
 Benson Ave & Church St ... Ellis Ave & 60th St
 :::
 :::
@@ -2599,7 +2576,7 @@ mapViewer(slicerVector[[1]])
 
 ::: accordion-item
 ::: {#headingTwo .accordion-header}
-::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo" style="background-color: #8b6f47"}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo" style="background-color: #5D4037"}
 Greenview Ave & Fullteron Ave ... Loomis Ave & Lexington St
 :::
 :::
@@ -2622,7 +2599,7 @@ mapViewer(slicerVector[[2]])
 
 ::: accordion-item
 ::: {#headingThree .accordion-header}
-::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree" style="background-color: #587e76"}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree" style="background-color: #4E342E"}
 Michigan Ave & Oak St ... State St & 33rd St
 :::
 :::
@@ -2645,7 +2622,7 @@ mapViewer(slicerVector[[3]])
 
 ::: accordion-item
 ::: {#headingFour .accordion-header}
-::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour" style="background-color: #4f3222"}
+::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour" style="background-color: #3E2723"}
 Street Dr & Grand Ave ... Woodlawn Ave & 55th St
 :::
 :::
@@ -2665,22 +2642,40 @@ mapViewer(slicerVector[[4]])
 :::
 :::
 
-:::{.p-3}
+### Interpretion of the Geographic Data
+
+::: p-1
 For example, suppose the user selects *University Ave & 57th St* in the epiflow visualization. This intersection happens to be at the heart of the University of Chicago campus. The natural next question is: where does the traffic to and from this location typically flow? By selecting one of the other nodes highlighted with flows directing away from the previous node, the user can identify *Kimbark Ave and 53rd St*. As seen in the map view, this location is situated adjacent to the *Vue 53 Apartments* complex. By analyzing such connections between nodes, the user can gain insights into common routes and destinations originating from a particular point of interest, potentially revealing patterns related to student housing, campus facilities, or other points of interest in the vicinity.
-:::
-
-# Where to Next?
-
-:::{.p-3}
-After exploring the associations between the behaviors of annual members and casual riders, several correlations with predictive potential were identified. Chi-squared tests analyzed relationships between categorical variables like membership type, bicycle type, month, day, and hour. Binary logistic regression models examined correlations between the binary dependent variable (membership type) and continuous variables such as distance, duration, and speed. These insights empower stakeholders to make informed decisions to increase service utilization.
 
 The data suggests individual members utilize the service multiple times weekly. However, further analysis is needed to determine if a significantly larger volume of unique individuals are annual members. Verifying associations between specific locations and higher or lower traffic could be a next step. Preliminary observations indicate universities, shopping centers, major companies, and nearby apartment complexes tend to have the highest ridership volumes.
 
-Annual members exhibit distinct usage patterns compared to casual riders. They use the service more consistently year-round, preferring manual "classic" bicycles. Annual members take more weekday trips, favoring shorter distances but traveling at faster speeds. These individuals likely have specific destinations in mind, using bicycles as a practical transportation mode akin to cars. Multiple factors likely motivate their choice, including cost savings, avoiding traffic congestion, environmental sustainability, and incorporating exercise. The picture of an annual member is someone with somewhere to be.
-
-In contrast, casual riders tend to be more leisure-oriented, taking longer, slower rides predominantly during warmer months. These fair-weather riders may be visiting Chicago on vacation, opting for bicycles over rental cars as a sightseeing or recreational activity. Some casual users may be prospective annual members, weighing the service's value. The picture of a casual rider is someone who needs something to do.
-
 To improve membership, addressing factors deterring individuals from becoming annual members could be key. These may include a lack of stations within walking distance of residences or destinations, or concerns over electric bicycle battery life and charging station availability, potentially explaining their lower utilization compared to classic bikes. Offering trial periods could allow casual users to experience the service's reliability and convenience, encouraging conversion to annual memberships.
+:::
+
+# Conclusion
+
+::: p-1
+These findings empower stakeholders with data-driven insights to increase service utilization and make informed decisions regarding resource allocation, marketing, and service enhancements.
+:::
+
+## Key Findings
+
+::: p-1
+-   Annual members exhibit consistent, practical usage patterns - frequent weekday trips, shorter distances at faster speeds, favoring "classic" bikes. Likely using the service for transportation, motivated by factors like cost, convenience, and exercise.
+
+-   Casual riders demonstrate more leisurely behavior - longer, slower rides concentrated in warmer months, potentially for sightseeing/recreation purposes when visiting the city.
+
+-   Correlations identified between membership type and variables like distance, duration, speed, month, day, hour, and bike type through statistical testing.
+:::
+
+## Recommendations:
+
+::: p-1
+-   Verify associations between specific locations (universities, shopping centers, businesses, residential areas) and higher/lower traffic to optimize service distribution.
+
+-   Analyze the volume of unique individuals represented in each membership type to gauge potential for conversion from casual to annual.
+
+-   Leverage insights into usage patterns and motivations to tailor marketing strategies, targeting prospective annual members among casual rider demographics.
 :::
 
 ```{r}
