@@ -4,45 +4,93 @@ $theme: "darkly" !default;
 // Base document colors
 $body-bg: #222 !default; //212529 181818
 $body-color: SeaShell !default;
-$link-color: #FCCB1A !default;
+//$link-color: #FE2712 !default;
 $btn-border-width: 0px !default;
 //$background-color: #212529 !default;
 //$color-bg: #212529 !default;
 //$headings-color: #FC7307 !default;
-//$nav-tabs-link-active-bg: rgb(210, 45, 45) !default;
+//$nav-tabs-link-active-bg: #AD1457 !default;
 //$nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
 
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+}
+
+.heading-box {
+  background-color: transparent;
+  padding: 10px;
+  margin-right: 20px;
+  max-width: 15vw;
+  color: rgba(255,255,200);
+  align-content: center;
+  text-align: center;
+  //word-wrap: break-word;
+}
+
+
+.calloutTip {
+  background-color: transparent !important;//rgba(0,20,0) !important;
+}
+
+.calloutWarning {
+  background-color: #2e2005 !important;
+}
+
+
+.callout-warning .callout-body {
+  background-color: #2e2005 !important;
+  color: #FFE57F !important;
+  
+}
+
+.callout-tip {
+  background-color: transparent !important;//rgba(0,20,0) !important;
+  color: ivory; // rgba(75,175,0) !important;
+  border-left-color: rgba(255,255,255,0.2) !important;
+
+}
+
+.h* {
+    text-shadow: 4px 4px black !important;
+}
+
 .h1, h1 {
-  color: #F0F7D4 !important;
+  color: #B9F6CA !important;
 }
 
 .h2, h2 {
-  color: #B2D732 !important;
+  color: #69F0AE !important;
 }
 
-.h3, h3, h4, .h4 {
-  color: #347B98 !important;
+.h3, h3 {
+  color: #00E676 !important;
 }
 
+h4, .h4 {
+  color: #00C853 !important;
+}
 
 a {
   color: #FE2712 !important;
 }
 
-.quarto-title {
- // color: #448D76 !important;
+.fs-3 {
+  color: #E1BEE7 !important;
 }
 
-.plotExpander {
-    min-width: 60vw !important;
-}
 
 .tableScroller {
     max-height: 60vh !important;
     overflow-y: auto !important;
 }
 
+
+// This allows the epiflow diagram to have white text.
+// I'm not sure how else to accomplish this.
 canvas {
     filter: invert(100%) !important;
 }
@@ -75,35 +123,17 @@ p, .p {
 }
 
 
-
 h1.title {
     color: Ivory !important;
     text-transform: uppercase !important;
 }
 
-h1, .h1 {    
-    text-shadow: 3px 3px black !important;
-}
 
 i {
     filter: drop-shadow(10px 10px 10px black) !important;
     font-size: 1.25em !important;
 }
 
-
-.panel-tabset, .nav-tabs {
-//    background-color: transparent !important; //transparent !important;
- //   color: $body-color !important;
-  //  box-shadow: none !important;
-
-}
-
-.h* {
-    //color: FloralWhite !important;
-    text-shadow: 4px 4px black !important;
-    align-self: start !important;
-    //max-width: 40vw !important;
-}
 
 .offcanvas {
     background-color: rgba(0,0,0,.5) !important;
@@ -141,7 +171,7 @@ i {
 
 pre code {
     color: Orange !important;
-    background-color: transparent !important; //rgba(10,0,0,.5)
+    background-color: transparent !important;
 }
 
 
@@ -163,8 +193,6 @@ pre code {
     box-shadow: none !important;
 }
 
-
-
 .code-fold {
     background-color: transparent !important;
 }
@@ -177,12 +205,10 @@ pre code {
 }
 
 .R, .r {
-    background-color: transparent !important; //rgba(0,0,5,.25)
+    background-color: transparent !important;
     border: none !important;
     box-shadow: none !important;
 }
-
-
 
 .cell-code, .cell {
     background-color: transparent !important;
@@ -190,18 +216,15 @@ pre code {
 }
 
 ::marker {
-    color: rgb(0, 188, 140) !important; // #ffd108
+    color: rgb(0, 188, 140) !important;
     font-synthesis-weight: bold !important;
 }
 
 details>summary {
-    color: Linen !important; //#8A2BE2 // #6D9224
-    font: 1em "Cascadia Mono SemiLight" !important;
+    color: #efc776 !important; //Linen
+    font: 1.1em "Cascadia Mono SemiLight" !important;
     background-color: transparent !important;
-    //text-shadow: 0px 0px 1px #00cc00 !important;
-    max-width: 25vw !important;
-    //margin-left: 10% !important;
-    //color: rgb(52, 152, 219) !important;
+    max-width: 35vw !important;
 }
 
 
@@ -214,16 +237,4 @@ details>summary {
     scrollbar-width: thin !important;
     scrollbar-color: #33ccff transparent !important;
     background-color: transparent !important;
-}
-
-.codeDisplayer {
-    overflow-y: auto !important;
-    scrollbar-width: thin !important;
-    scrollbar-color: #33ccff transparent !important;
-    background-color: transparent !important;
-    max-height: 70vh !important;
-    overflow-x: hidden !important;
-    align-self: center !important;
-    margin-left: 10% !important;
-    max-width: auto !important;
 }
