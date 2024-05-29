@@ -8,6 +8,9 @@ execute:
 
 website:
   title: "BikeShare Analysis"
+  open-graph: true
+#  image: "previewThumbnail.png"
+
 #  navbar:
 #   left:
 #      - href: index.qmd
