@@ -8,6 +8,7 @@ source: index.qmd
 abstract-title: "Objective"
 abstract: "Communicate reproducible, data-driven insights."
 description-meta: "Communicate reproducible, data-driven insights."
+image: previewThumbnail.png
 
 code-links:
     - text: "Project Repo"
