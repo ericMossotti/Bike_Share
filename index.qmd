@@ -29,6 +29,9 @@ echo: true
 
 citation-location: margin
 citations-hover: true
+link-citations: true
+csl: csl/apa.csl
+zotero: true
 
 callout-appearance: simple
 
@@ -214,31 +217,31 @@ tibble::glimpse()
 ## Design
 
 ::: p-1
-Another worthy objective of this analysis is to achieve reproducibility and efficiency. To facilitate future research and enable subsequent analyst teams to build upon this work, the project aimed to provide adequate code documentation and adhere to best practices regarding clean code and modularity.
+Another worthy objective of this analysis is to achieve reproducibility and efficiency. To facilitate future research and enable subsequent analyst teams to build upon this work, the project aimed to provide adequate code documentation and adhere to best practices regarding clean code and mod-ability.
 
 For instance, certain design decisions were incorporated to eliminate the need for re-downloading and re-processing data. For analysts conducting analysis over an extended period, such as days or months, on this dataset, it is now possible to simply reconnect to the single database file containing all the original data, including tables generated throughout the analysis process, following the initial download and subsequent processing.
 
 The underlying code incorporates an if-else decision, which includes a source code script responsible for handling the initial data processing and establishing the database filesystem. Opting for a persistent DuckDB filesystem (as opposed to a purely in-memory solution) appeared optimal in terms of simplicity, cost-effectiveness of SQL database queries, and retaining progress made over extended periods. [@whyduck]
 
-To streamline the process, reduce code duplication, and maintain consistent formatting throughout the project, reusable functions were developed for generating most of the tables and figures. These functions are located in the "Scripts" folder within the working directory. Their modular design not only simplifies the implementation of formatting changes but also facilitates the integration of additional code snippets when necessary. For instance, certain plots might require limiting the range of the axes, which can be achieved by combining these functions with appropriate code addendums. By leveraging these functions, the project benefits from reduced redundancy, improved efficiency, and cohesive formatting across all visualizations and data representations.
+To streamline the process, reduce code duplication, and maintain consistent formatting throughout the project, reusable functions were developed for generating most of the tables and figures. These functions are located in the "Scripts" folder within the working directory. Their modular design not only simplifies the implementation of formatting changes but also facilitates the integration of additional code snippets when necessary. For instance, certain plots might require limiting the range of the axes, which can be achieved by combining these functions with appropriate code addendum. By leveraging these functions, the project benefits from reduced redundancy, improved efficiency, and cohesive formatting across all visualizations and data representations.
 :::
 
-::: d-flex
-::: {.callout-warning .calloutWarning icon="false"}
+::: flex-code
 ```{r}
 #| label: tablerScript
-#| code-summary: This code was used for generating tables. See the later code dropdowns alongside tables for clues as to how it is implented in this main document.
+#| code-summary: This code was used for generating many of the tables. See the later code dropdowns alongside tables for clues as to how it is implented in this document.
 #| file: "Scripts/tabler.R"
 #| eval: false 
 ```
+:::
 
+::: flex-code
 ```{r}
 #| label: plotterScript
-#| code-summary: This code was used for generating plots. See the later code dropdowns alongside tables for clues as to how it is implented in this main document.
+#| code-summary: This code was used for generating many of the plots. See the later code dropdowns alongside tables for clues as to how it is implented in this document.
 #| file: "Scripts/plotter.R"
 #| eval: false 
 ```
-:::
 :::
 
 # Tidying
@@ -441,12 +444,11 @@ table.font.color = "SeaShell",
 table.font.size = gt::pct(75),
 )
 
-
 gtDupes
 ```
 :::
 
-::: p-2
+::: {.p-2 .mt-2}
 Although the cause of such duplication errors is unknown, it could be assumed that one person checked out multiple bikes simultaneously. In that scenario, each bike would be assigned a unique **ride_id**. However, this occurrence was relatively rare, happening only **18** times over the course of a year. Since there is only one duplicate for each instance, it raises concerns and warrants further investigation. It is possible that trips could be grouped where one person pays for another rider's fare. However, if that were the case, it raises the question of why there is always precisely one duplicate.
 
 In @tbl-duplicates, duplicate observations are listed and grouped by color for visual clarity. In contrast, @tbl-unduplicated presents the data after removing the extra copy of each duplicate observation while preserving the unique observations. Of the duplicates identified, each had one extra copy. It was noted that the number of rows in the duplicates table is 36. Each duplicated observation has one duplicate, where **n** (the count) is always 2. Therefore, the expected number of observations to be removed was 18. A complication arose in determining how to remove not all observations but only the extra duplicate observation from each group.
@@ -502,10 +504,10 @@ gt_undupes
 ```
 :::
 
-::: p-2
-To ensure the accurate removal of duplicates, the count of distinct n-values (representing the number of occurrences) for the unduplicated table was computed, confirming the expected 18 unique instances. Subsequently, the total number of observations in the dataset was recorded, initially standing at 4,331,707. After removing the identified duplicate observations, the correct count of observations was 4,331,689. In summary, 18 additional observations were successfully removed, aligning with the expected number of duplicates identified earlier. These steps are documented in @tbl-observationHistory for reference.
+::: {.p-2 .mt-2}
+To ensure the accurate removal of duplicates, the count of distinct n-values (representing the number of occurrences) for the un-duplicated table was computed, confirming the expected 18 unique instances. Subsequently, the total number of observations in the dataset was recorded, initially standing at 4,331,707. After removing the identified duplicate observations, the correct count of observations was 4,331,689. In summary, 18 additional observations were successfully removed, aligning with the expected number of duplicates identified earlier. These steps are documented in @tbl-observationHistory for reference.
 
-By carefully analyzing the count of distinct n-values and the total observation count before and after deduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
+By carefully analyzing the count of distinct n-values and the total observation count before and after reduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
 :::
 
 ::: {.d-flex .justify-content-center}
@@ -558,7 +560,7 @@ if (duckdb::dbExistsTable(dbconn,
 ::: p-2
 Observations deemed erroneous or irrelevant for identifying usage trends among members and casual users were filtered out. Keeping track of these errors is a good practice, as they might provide insights into the differences in how members and casuals utilize the service.
 
-Trips with negative durations were flagged as errors and removed. Additionally, trips lasting less than a minute but greater than zero were noted and removed, as they could potentially skew the derived statistics. These extremely short trips might be attributed to users briefly trying out the service before committing or quickly realizing their dissatisfaction with it. While some observations seemed nonsensical, most of the data was retained.
+Trips with negative duration were flagged as errors and removed. Additionally, trips lasting less than a minute but greater than zero were noted and removed, as they could potentially skew the derived statistics. These extremely short trips might be attributed to users briefly trying out the service before committing or quickly realizing their dissatisfaction with it. While some observations seemed nonsensical, most of the data was retained.
 
 Consistent with the previous approach, an **if-else** decision was employed to facilitate testing. An external database filtering script was utilized to streamline the code within the main Quarto document. The resulting filtered data served as the foundation for subsequent analysis and table generation.
 :::
@@ -665,7 +667,7 @@ summaryProcessTable
 ## Contingency Tables
 
 ::: p-3
-Contingency tables were created to gain quick insights into the data through a methodical, albeit simple, approach that facilitates understanding the bigger picture. Many of these tables are utilized in the tabset section while some required further customization in the following section.
+Contingency tables were created to gain quick insights into the data through a methodical, albeit simple, approach that facilitates understanding the bigger picture. Many of these tables are utilized in the tab-set section while some required further customization in the following section.
 :::
 
 ::: {.d-flex .justify-content-center .mb-3}
@@ -1043,8 +1045,7 @@ dplyr::tbl(dbconn,
 
 ::: column-screen-inset
 ::: {.d-flex .justify-content-center}
-::: {.panel-tabset}
-
+::: panel-tabset
 ## Membership
 
 ::: article
@@ -1053,11 +1054,10 @@ dplyr::tbl(dbconn,
 ::: {.heading-box .fs-2 .text-wrap}
 About Memberships
 :::
+
 ::: {.callout-tip .calloutTip icon="false"}
-
--   @tbl-memberTotals displays the total trip count for annual members and casual riders. 
+-   @tbl-memberTotals displays the total trip count for annual members and casual riders.
 -   The remaining tabs in this section provide total counts as well as group-wise counts based on membership status.
-
 :::
 :::
 :::
@@ -1121,7 +1121,8 @@ About the Bicycle Types
 :::
 
 ------------------------------------------------------------------------
-:::{.fs-3}
+
+::: fs-3
 Counting Bicycles
 :::
 
@@ -1161,9 +1162,11 @@ gplot
 :::
 
 ------------------------------------------------------------------------
-:::{.fs-3}
+
+::: fs-3
 Bicycle by Membership
 :::
+
 ::: {.d-flex .align-content-stretch}
 ::: p-3
 ```{r}
@@ -1210,10 +1213,12 @@ gplot
 :::
 
 ------------------------------------------------------------------------
-:::{.fs-3}
+
+::: fs-3
 Testing the association between membership and bicycle type
 :::
-:::{.p-3}
+
+::: p-3
 ```{r}
 #| label: tbl-chiTypes
 
@@ -1255,9 +1260,10 @@ About the Months
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Counting Months
 :::
+
 ::: d-flex
 ::: mr-2
 ```{r}
@@ -1297,9 +1303,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Month by Membership
 :::
+
 ::: d-flex
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -1347,10 +1354,11 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Testing the association between membership and month
 :::
-:::p-3
+
+::: p-3
 ```{r}
 #| label: tbl-chiMonths
 
@@ -1400,9 +1408,10 @@ About the Days
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Counting Days
 :::
+
 ::: d-flex
 ::: p-3
 ```{r}
@@ -1443,9 +1452,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Day by Membership
 :::
+
 ::: d-flex
 ::: p-3
 ```{r}
@@ -1495,10 +1505,11 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Testing the association between day and membership
 :::
-:::p-3
+
+::: p-3
 ```{r}
 #| label: tbl-chiDays
 
@@ -1549,9 +1560,10 @@ About the Hour of Day
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Counting Hours
 :::
+
 ::: {.d-flex .justify-content-around}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -1587,7 +1599,7 @@ location = n
 ```
 :::
 
-::: {.p-2}
+::: p-2
 ```{r}
 #| label: 'fig-hourTotals'
 #| fig-cap: "Total frequency by hour of day."
@@ -1618,9 +1630,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Hour by Membership
 :::
+
 ::: {.d-flex .justify-content-around .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -1697,10 +1710,11 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Can the hour of the day predict membership?
 :::
-:::p-3
+
+::: p-3
 ```{r}
 #| label: tbl-chiHours
 #| tbl-cap: "Can the hour of the day correlate to a binary outcome, such as membership?"
@@ -1776,10 +1790,10 @@ About the Distance
 
 ------------------------------------------------------------------------
 
-
-:::{.fs-3}
+::: fs-3
 Counting Distance
 :::
+
 ::: {.d-flex .justify-content-around}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -1835,9 +1849,10 @@ guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Distance by Membership
 :::
+
 ::: {.d-flex .justify-content-around}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -1905,10 +1920,11 @@ guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Can distance predict a binary outcome?
 :::
-:::p-3
+
+::: p-3
 ```{r}
 #| label: tbl-logMiles
 
@@ -1973,9 +1989,10 @@ About the Speed
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Counting Speed
 :::
+
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -2017,9 +2034,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Speed by Membership
 :::
+
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -2069,10 +2087,11 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Can travel speed predict a binary outcome?
 :::
-:::p-3
+
+::: p-3
 ```{r}
 #| label: tbl-logMph
 
@@ -2130,9 +2149,10 @@ About the Duration
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Counting Durations
 :::
+
 ::: d-flex
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -2177,9 +2197,10 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Duration by Membership
 :::
+
 ::: {.d-flex .align-content-stretch}
 ::: {.p-3 .tableScroller}
 ```{r}
@@ -2228,10 +2249,11 @@ gplot
 
 ------------------------------------------------------------------------
 
-:::{.fs-3}
+::: fs-3
 Can trip duration predict a binary outcome?
 :::
-:::p-3
+
+::: p-3
 ```{r}
 #| label: tbl-logTimes
 
@@ -2273,11 +2295,10 @@ isBinary = TRUE
 :::
 :::
 
-
-### Interpretion of Contingency Table Data
+### Interpretation of Contingency Table Data
 
 ::: p-1
-After exploring the associations between the behaviors of annual members and casual riders, several correlations with predictive potential were identified. Chi-squared tests analyzed relationships between categorical variables like membership type, bicycle type, month, day, and hour. Binary logistic regression models examined correlations between the binary dependent variable (membership type) and continuous variables such as distance, duration, and speed. These insights empower stakeholders to make informed decisions to increase service utilization.
+After exploring the associations between the behaviors of annual members and casual riders, several correlations with predictive potential were identified. Chi-squared tests, [@summary], analyzed relationships between categorical variables like membership type, bicycle type, month, day, and hour. Binary logistic regression models, [@regression], examined correlations between the binary dependent variable (membership type) and continuous variables such as distance, duration, and speed. These insights empower stakeholders to make informed decisions to increase service utilization.
 
 Annual members exhibit distinct usage patterns compared to casual riders. They use the service more consistently year-round, preferring manual "classic" bicycles. Annual members take more weekday trips, favoring shorter distances but traveling at faster speeds. These individuals likely have specific destinations in mind, using bicycles as a practical transportation mode akin to cars. Multiple factors likely motivate their choice, including cost savings, avoiding traffic congestion, environmental sustainability, and incorporating exercise. The picture of an annual member is someone with somewhere to be.
 
@@ -2289,17 +2310,17 @@ In contrast, casual riders tend to be more leisure-oriented, taking longer, slow
 ### Traffic Flow {#sec-epiflow}
 
 ::: p-1
-@fig-epiflowNetwork presents an intriguing bird's-eye view of trip behaviors through an interactive epiflow diagram. This visualization employs a network of nodes (circles) connected by lines, where the thickness of the lines roughly corresponds to the volume of trips between the nodes, with thicker lines indicating a higher number of trips. The top 34 most frequently traveled stations are depicted in this visual network diagram.
+@fig-epiflowNetwork presents an intriguing bird's-eye view of trip behaviors through an interactive *epiflows* graph. \]@moraga\] This R package used for creating this graph was re-purposed from its original intent for visualizing the spread of disease. This visualization employs a network of nodes (circles) connected by lines, where the thickness of the lines roughly corresponds to the volume of trips between the nodes, with thicker lines indicating a higher number of trips. The top 34 most frequently traveled stations are depicted in this visual network diagram.
 
-The interactive nature of the epiflow diagram allows users to click on individual nodes and lines to access more detailed information. Additionally, a drop-down window provides further exploration capabilities, enabling users to delve deeper into the data.
+The interactive nature of the epiflows allows users to click on individual nodes and lines to access more detailed information. Additionally, a drop-down window provides further exploration capabilities, enabling users to delve deeper into the data.
 
-These stations represent the most active locations within the system. Fortunately, @sec-mapview explores a potential approach to gain insights into the typical high-traffic station locations and the underlying reasons behind their elevated activity levels. [@moragab]
+These stations represent the most active locations within the system. Fortunately, @sec-mapview explores a potential approach to gain insights into the typical high-traffic station locations and the underlying reasons behind their elevated activity levels.
 :::
 
 ::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
-Creating an Epiflow
+Creating an EpiFlow
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
@@ -2445,7 +2466,7 @@ epiflows::vis_epiflows(ef_test)
 ### Checking the Map {#sec-mapview}
 
 ::: p-1
-This section was made possible thanks to the latitude and longitude coordinates data provided alongside the stations names. Coming from the epiflow diagram, this should help make the data less abstract. The accordion below expands and collapses four *OpenStreet* maps found in the callout section below. These maps were split for viewing logistics. They contain from the epiflow in the section above. These maps are interactive, so the default views are zoomable and movable. The transparent burst buttons enable snappy zooming-in of the station groups.
+This section was made possible thanks to the latitude and longitude coordinates data provided alongside the stations names. Coming from the epiflow diagram, this should help make the data less abstract. The accordion below expands and collapses four *OpenStreet* maps found in the callout section below. These maps were split for viewing logistics. They contain from the epiflow in the section above. These maps are interactive, so the default views are zoom-able and movable. The transparent burst buttons enable snappy zooming-in of the station groups.
 :::
 
 ::: {#offcanvas20 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -2642,7 +2663,7 @@ mapViewer(slicerVector[[4]])
 :::
 :::
 
-### Interpretion of the Geographic Data
+### Interpretation of the Geographic Data
 
 ::: p-1
 For example, suppose the user selects *University Ave & 57th St* in the epiflow visualization. This intersection happens to be at the heart of the University of Chicago campus. The natural next question is: where does the traffic to and from this location typically flow? By selecting one of the other nodes highlighted with flows directing away from the previous node, the user can identify *Kimbark Ave and 53rd St*. As seen in the map view, this location is situated adjacent to the *Vue 53 Apartments* complex. By analyzing such connections between nodes, the user can gain insights into common routes and destinations originating from a particular point of interest, potentially revealing patterns related to student housing, campus facilities, or other points of interest in the vicinity.
