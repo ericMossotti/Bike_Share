@@ -28,12 +28,11 @@ $btn-close-color: #3366ff !default;
   color: rgba(255,255,200);
   align-content: center;
   text-align: center;
-  //word-wrap: break-word;
 }
 
 
 .calloutTip {
-  background-color: transparent !important;//rgba(0,20,0) !important;
+  background-color: transparent !important;
 }
 
 .calloutWarning {
@@ -48,8 +47,8 @@ $btn-close-color: #3366ff !default;
 }
 
 .callout-tip {
-  background-color: transparent !important;//rgba(0,20,0) !important;
-  color: ivory; // rgba(75,175,0) !important;
+  background-color: transparent !important;
+  color: ivory;
   border-left-color: rgba(255,255,255,0.2) !important;
 
 }
@@ -221,7 +220,7 @@ pre code {
 }
 
 details>summary {
-    color: #efc776 !important; //Linen
+    color: #efc776 !important;
     font: 1.1em "Cascadia Mono SemiLight" !important;
     background-color: transparent !important;
     max-width: 35vw !important;
