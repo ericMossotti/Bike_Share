@@ -9,7 +9,7 @@ execute:
 website:
   title: "BikeShare Analysis"
   open-graph: true
-#  image: "previewThumbnail.png"
+  image: "previewThumbnail.png"
 
 #  navbar:
 #   left:
