@@ -4,14 +4,39 @@ $theme: "darkly" !default;
 // Base document colors
 $body-bg: #222 !default; //212529 181818
 $body-color: SeaShell !default;
-//$link-color: #FE2712 !default;
 $btn-border-width: 0px !default;
-//$background-color: #212529 !default;
-//$color-bg: #212529 !default;
-//$headings-color: #FC7307 !default;
-//$nav-tabs-link-active-bg: #AD1457 !default;
-//$nav-link-hover-color: rgba(255, 26, 26) !default;
 $btn-close-color: #3366ff !default;
+
+$heading-1: #E0E0E0;
+$heading-2: #2eb8b8;
+$heading-3: #99cc00;
+$heading-4: #FFB6C1;
+$heading-5: #DDA0DD;
+
+$link-unvisited: #4CAF50;
+$link-visited: Salmon;
+$link-hover: #FF9800;
+
+
+/*-- scss:ids --*/
+
+#toc-title {
+  color: $heading-1 !important;
+}
+
+#TOC > ul > li > a {
+  color: $heading-2 !important; /* First level */
+}
+
+#TOC > ul > li > ul > li > a {
+  color: $heading-3 !important; /* Second level */
+}
+
+#TOC > ul > li > ul > li > ul > li > a {
+  color: $heading-4 !important; /* Third level */
+}
+
+/*-- scss:classes --*/
 
 .header-container {
   display: flex;
@@ -58,19 +83,19 @@ $btn-close-color: #3366ff !default;
 }
 
 .h1, h1 {
-  color: #B9F6CA !important;
+  color: $heading-1 !important;
 }
 
 .h2, h2 {
-  color: #69F0AE !important;
+  color: $heading-2 !important;
 }
 
 .h3, h3 {
-  color: #00E676 !important;
+  color: $heading-3 !important;
 }
 
 h4, .h4 {
-  color: #00C853 !important;
+  color: $heading-4 !important;
 }
 
 a {
@@ -236,4 +261,24 @@ details>summary {
     scrollbar-width: thin !important;
     scrollbar-color: #33ccff transparent !important;
     background-color: transparent !important;
+}
+
+/*-- scss:selectors --*/
+
+// Helpful link styling for most related use-cases
+a {
+  &:link {
+    color: $link-unvisited;
+    text-decoration: none;
+  }
+  &:visited {
+    color: $link-visited;
+  }
+  &:hover, &:focus {
+    color: $link-hover;
+    text-decoration: underline;
+  }
+  &:active {
+    color: $link-hover;
+  }
 }
