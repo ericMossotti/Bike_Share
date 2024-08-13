@@ -2,13 +2,15 @@
 title: "Bike-Sharing in the Streets of Chicago"
 author: "Eric Mossotti"
 date: "05-23-2024"
+date-modified: last-modified
+date-format: "MMM D, YYYY"
+
 bibliography: references.bib
 repo: https://github.com/ericMossotti/Bike_Share
 source: index.qmd
 abstract-title: "Objective"
-abstract: "Communicate reproducible, data-driven insights."
+abstract: "Communicating reproducible, data-driven insights."
 description-meta: "Communicate reproducible, data-driven insights."
-image: previewThumbnail.png
 
 code-links:
     - text: "Project Repo"
@@ -22,6 +24,7 @@ code-link: true
 toc-expand: true
 toc: true
 number-sections: true
+link-external-newwindow: true
 
 
 smooth-scroll: true
@@ -36,7 +39,9 @@ zotero: true
 
 callout-appearance: simple
 
-#font: merriweather, futura
+license: CC BY-SA
+funding: "The author(s) received no specific funding for this work."
+
 ---
 
 ```{r, include = FALSE}
@@ -84,6 +89,7 @@ dupelessPath <- "db/dupeless.db"
 tblPath_fltrd <- "db/data_fltrd.db"
 rawPath <- "db/rawData.db"
 
+# Loading plot and table scripts while at it. 
 source("Scripts/tabler.R")
 source("Scripts/plotter.R")
 
@@ -96,32 +102,6 @@ source("Scripts/plotter.R")
 #| eval: false 
 ```
 
-```{r}
-#| label: tbl-dbList
-#| code-summary: It would now be helpful to verify the tables written so far.
-#| tbl-cap: Database Table List
-
-
-dbList <- duckdb::dbListTables(dbconn) |>
-as.data.frame() |>
-tabler(
-title = "Database Tables",
-note_list = list(gt::md("The tables contained <br>in data.db, currently.")),
-location_list = list("duckdb::dbListTables(dbconn)")
-) |>
-gt::cols_label("duckdb::dbListTables(dbconn)" = "Table Paths") |>
-gt::tab_style(
-gt::cell_text(
-align = "center",
-stretch = "semi-expanded"
-), 
-locations = list(
-gt::cells_body(columns = gt::everything()),
-gt::cells_column_labels(columns = gt::everything()))
-)
-
-dbList
-```
 :::
 :::
 :::
@@ -144,11 +124,13 @@ The raw 2023 dataset was imported from Divvy Data. [@divvyda]
 #| tbl-cap: Raw data
 #| cap-location: top
 
+# List of column labels to feed tabler() and add_multiple_footnotes()
 location_list <- dplyr::tbl(dbconn, rawPath) |>
 dplyr::collect() |>
 colnames() |>
 as.list()
 
+# A simple list of footnotes to feed tabler() and add_multiple_footnotes().
 note_list <- list(
 "Anonymized trip identifier.", 
 "The bicycle type.", 
@@ -226,6 +208,35 @@ The underlying code incorporates an if-else decision, which includes a source co
 
 To streamline the process, reduce code duplication, and maintain consistent formatting throughout the project, reusable functions were developed for generating most of the tables and figures. These functions are located in the "Scripts" folder within the working directory. Their modular design not only simplifies the implementation of formatting changes but also facilitates the integration of additional code snippets when necessary. For instance, certain plots might require limiting the range of the axes, which can be achieved by combining these functions with appropriate code addendum. By leveraging these functions, the project benefits from reduced redundancy, improved efficiency, and cohesive formatting across all visualizations and data representations.
 :::
+
+## Initial Database Table List
+
+```{r}
+#| label: tbl-dbList
+#| code-summary: "These are the starting tables contained in the data/data.db file. Noting this as we will be adding many more tables in the later stages."
+#| tbl-cap: "Initial DB Table List"
+
+
+dbList <- duckdb::dbListTables(dbconn) |>
+as.data.frame() |>
+tabler(
+title = "Starting Database Tables",
+note_list = list(gt::md("The tables contained <br>in data.db, at the end of the analysis.")),
+location_list = list("duckdb::dbListTables(dbconn)")
+) |>
+gt::cols_label("duckdb::dbListTables(dbconn)" = "Table Paths") |>
+gt::tab_style(
+gt::cell_text(
+align = "center",
+stretch = "semi-expanded"
+), 
+locations = list(
+gt::cells_body(columns = gt::everything()),
+gt::cells_column_labels(columns = gt::everything()))
+)
+
+dbList
+```
 
 ::: flex-code
 ```{r}
@@ -407,7 +418,8 @@ While all values in the **ride_id** column were found to be unique, not all obse
 #| label: tbl-duplicates
 #| tbl-cap: Duplicates Table
 
-
+# Not using the tabler function for this one. Might figure out a way later
+# but just a lot of customization not used in other tables.
 gtDupes <- dupeTable |>
 dplyr::group_by(started_at) |>
 gt::gt(
@@ -1058,6 +1070,7 @@ About Memberships
 
 ::: {.callout-tip .calloutTip icon="false"}
 -   @tbl-memberTotals displays the total trip count for annual members and casual riders.
+
 -   The remaining tabs in this section provide total counts as well as group-wise counts based on membership status.
 :::
 :::
@@ -1207,7 +1220,6 @@ is_colGroup = TRUE
 )
 
 gplot
-
 
 ```
 :::
@@ -1977,13 +1989,14 @@ About the Speed
 :::
 
 ::: {.callout-tip .calloutTip icon="false"}
--   The majority of mph observations fall in between 2-12 mph, as seen in @tbl-mphTotals and @fig-mphTotals.
+
+-   This information, derived from @tbl-mphTotals and @fig-mphTotals, indicates that most riders (both casual and member) travel at speeds between 2 and 12 mph. This range likely represents typical urban cycling speeds, accounting for factors like traffic, road conditions, and rider fitness.
 
 <!-- -->
 
--   Member mph observations skew higher in mph than casual riders, as seen in @tbl-mphCompare and @fig-mphCompare.
+-   The information, shown in @tbl-mphCompare and @fig-mphCompare, suggests that members tend to ride at higher speeds compared to casual riders
 
--   Given, $\beta_1 > 0$, members tend to have a higher estimated average speed for the duration of their trips compared to casuals. @tbl-logMph
+-   Applying the binary logistic regression model, where $\beta_1 > 0$, members tend to have a slightly higher estimated average speed for the duration of their trips compared to casuals. @tbl-logMph
 :::
 :::
 :::
@@ -2057,7 +2070,6 @@ groupName = "mph",
 label_n = "n",
 label_member = " "
 )
-
 ```
 :::
 
@@ -2081,7 +2093,6 @@ is_lineGroup = TRUE
 )
 
 gplot
-
 ```
 :::
 :::
@@ -2124,7 +2135,6 @@ title = gt::md("Binary Logistic Regression: <br> Speed & Rider Type"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE
 )
-
 ```
 :::
 :::
@@ -2191,7 +2201,6 @@ y_label = "Trips"
 ggplot2::xlim(NA, 100)
 
 gplot
-
 ```
 :::
 :::
@@ -2673,6 +2682,35 @@ The data suggests individual members utilize the service multiple times weekly. 
 
 To improve membership, addressing factors deterring individuals from becoming annual members could be key. These may include a lack of stations within walking distance of residences or destinations, or concerns over electric bicycle battery life and charging station availability, potentially explaining their lower utilization compared to classic bikes. Offering trial periods could allow casual users to experience the service's reliability and convenience, encouraging conversion to annual memberships.
 :::
+
+## Updated Database Tables List
+
+
+```{r}
+#| label: tbl-dbList2
+#| code-summary: "Revisiting the list of db tables, with many more tables added. All of these tables are stored within the data/data.db file."
+#| tbl-cap: "Database Table List: Post-Exploratory Analysis"
+
+dbList2 <- duckdb::dbListTables(dbconn) |>
+as.data.frame() |>
+tabler(
+title = "Post-Exploratory Database Tables",
+note_list = list(
+gt::md("The tables contained in data.db, <br> at the end of the analysis.")
+),
+location_list = list("duckdb::dbListTables(dbconn)")
+) |>
+gt::cols_label("duckdb::dbListTables(dbconn)" = "Table Paths") |>
+gt::tab_style(
+gt::cell_text(align = "center", stretch = "semi-expanded"),
+locations = list(
+gt::cells_column_labels(columns = gt::everything())
+)
+)
+
+dbList2
+```
+
 
 # Conclusion
 
