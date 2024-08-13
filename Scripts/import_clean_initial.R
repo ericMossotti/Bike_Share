@@ -2,7 +2,7 @@
 
 library(duckdb)
 
-# Load external libraries ----
+# Load external scripts ----
 source("Scripts/unz_relocate.R")
 
 # Need a list of file download addresses.
@@ -17,7 +17,7 @@ dir.create("tempZips")
 tempZipPaths <- sprintf("tempZips/%d-divvy-tripdata.zip",
                         202301:202312)
 
-# A simple way to download and relocate the downloaded files from the working 
+# A simple way to download and relocate those files from the working 
 # directory to the file-folder paths created earlier. 
 curl::multi_download(durls,
                      destfiles = tempZipPaths)
@@ -33,7 +33,7 @@ tempfile_paths <- sprintf("tempFiles/%d-divvy-tripdata.csv",
 fileNames <- sprintf("%d-divvy-tripdata.csv",
                      202301:202312)
 
-# Executes sourced custom function from the unz_relocate.R file.
+# Execute sourced custom function from the unz_relocate.R file.
 unz_relocate()
 
 # To remove the directory and contents thereof after having finished using.
@@ -58,6 +58,7 @@ tblPath <- "db/data.db"
 # A path for the raw data
 rawPath <- "db/rawData.db"
 
+# Initialize a duckDB database connection
 dbconn <- DBI::dbConnect(duckdb::duckdb(),
                          dbdir = tblPath,
                          read_only = FALSE)
@@ -75,8 +76,7 @@ tripTibble |>
     as.data.frame() |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = rawPath,
-                         overwrite = TRUE,
-                         check_from = FALSE)
+                         overwrite = TRUE)
 
 # Clean up environment.
 rm(tripTibble)
