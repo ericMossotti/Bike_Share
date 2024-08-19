@@ -1,6 +1,8 @@
 # Plotter ----
-
-# To help reduce duplicate code
+# To help reduce duplicate code and implement consistent theming throughout a 
+# markdown project.
+# 
+# This doesn't account for all plot types possible yet.
 plotter <- function(data,
                     x_col,
                     y_col,
@@ -34,7 +36,8 @@ plotter <- function(data,
                     areaFill = NULL,
                     density_fill = ggplot2::waiver(),
                     density_color = ggplot2::waiver(),
-                    alpha = ggplot2::waiver()) {
+                    alpha = ggplot2::waiver(),
+                    isROC = FALSE) {
     # line ----
     if (geomType == "line") {
         if (is_lineGroup == TRUE) {
@@ -55,7 +58,6 @@ plotter <- function(data,
                 ggplot2::scale_colour_distiller(palette = line_palette, name = "")
         }
     }
-    
     # col ----
     else if (geomType == "column") {
         # non-grouped, non-faceted, non-density, non-histogram ----
@@ -74,7 +76,7 @@ plotter <- function(data,
         }
         # grouped, non-faceted, non-density, non-histogram ----
         else if (!isFALSE(is_colGroup) &&
-                 isFALSE(isDensity) &&
+                 isFALSE(isFaceted) &&
                  isFALSE(isDensity) &&
                  isFALSE(isHistogram)) {
             plot <- data |>
@@ -86,7 +88,6 @@ plotter <- function(data,
                 ggplot2::geom_col(show.legend = TRUE, position = "dodge") +
                 ggplot2::scale_fill_brewer(palette = colGroup_palette, name = "")
         }
-        
         # grouped, faceted, non-density, non-histogram ----
         else if (!isFALSE(is_colGroup) &&
                  !isFALSE(isFaceted) &&
@@ -102,7 +103,6 @@ plotter <- function(data,
                 ggplot2::facet_grid(rows = "member_casual") +
                 ggplot2::scale_fill_distiller(palette = facetCol_palette)
         }
-        
         # grouped, faceted, density, non-histogram ----
         else if (!isFALSE(is_colGroup) &&
                  !isFALSE(isFaceted) &&
@@ -117,7 +117,7 @@ plotter <- function(data,
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
-                    guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)
+                    guide = ggplot2::guide_axis(n.dodge = 1, angle = angle)
                 ) 
         }
         # grouped, non-faceted, density, histogram ----
@@ -134,7 +134,7 @@ plotter <- function(data,
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
-                    guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)
+                    guide = ggplot2::guide_axis(n.dodge = 1, angle = angle)
                 ) 
         }
         # grouped, non-faceted, density, non-histogram ----
@@ -153,7 +153,6 @@ plotter <- function(data,
                     guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
                 ) 
         }
-            
         # non-grouped, non-faceted, density, non-histogram ----
         else if (isFALSE(is_colGroup) &&
                  isFALSE(isFaceted) &&
@@ -168,7 +167,41 @@ plotter <- function(data,
                     limits = limits,
                     guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle))
         }
+        # grouped, non-faceted, non-density, histogram ----
+        else if (!isFALSE(is_colGroup) &&
+                 isFALSE(isFaceted) &&
+                 isFALSE(isDensity) &&
+                 !isFALSE(isHistogram)) {
+            plot <- data |>
+                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, fill = {{ group_col }})) +
+                ggplot2::geom_histogram(binwidth = binwidth, color = color_col, alpha = alpha) +
+                ggplot2::scale_x_continuous(
+                    breaks = breaks,
+                    limits = limits,
+                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                )
+        }
+        # grouped, faceted, non-density, non-histogram ----
+        else if (!isFALSE(is_colGroup) &&
+                 !isFALSE(isFaceted) &&
+                 isFALSE(isDensity) &&
+                 isFALSE(isHistogram)) {
+            plot <- data |>
+                ggplot2::ggplot(ggplot2::aes(
+                    x = {{ x_col }},
+                    y = {{ y_col }},
+                    fill = {{ group_col }}
+                )) +
+                ggplot2::geom_col(show.legend = TRUE, position = "dodge") +
+                ggplot2::scale_fill_brewer(palette = colGroup_palette, 
+                                           name = "") +
+                ggplot2::scale_x_discrete(
+                    breaks = breaks,
+                    limits = limits,
+                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                )
             
+        }
         # grouped, faceted, density, histogram ----
         else {
             plot <- data |>
@@ -182,8 +215,14 @@ plotter <- function(data,
                     limits = limits,
                     guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle))
         }
+    # other misc plot types ----
+    } else {
+        # pROC objects ----
+        if (!isFALSE(isROC)) {
+            plot <- data |>
+                ggroc(aes = "linetype", color = "red")
+        }
     }
-    
     # For the rest of the otherwise likely duplicated plot settings ----
     plot <- plot +
         ggplot2::labs(title = title, x = x_label, y = y_label) +
