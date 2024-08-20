@@ -37,7 +37,8 @@ plotter <- function(data,
                     density_fill = ggplot2::waiver(),
                     density_color = ggplot2::waiver(),
                     alpha = ggplot2::waiver(),
-                    isROC = FALSE) {
+                    isROC = FALSE,
+                    roc_color = NULL) {
     # line ----
     if (geomType == "line") {
         if (is_lineGroup == TRUE) {
@@ -130,7 +131,7 @@ plotter <- function(data,
                                              y = ..density.., 
                                              fill = {{ group_col }})) +
                 ggplot2::geom_histogram(binwidth = binwidth, color = color_col) +
-                ggplot2::geom_density(alpha = 0.6) +
+                ggplot2::geom_density(alpha = alpha) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
@@ -146,7 +147,9 @@ plotter <- function(data,
                 ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
                                              y = ..density.., 
                                              fill = {{ group_col }})) +
-                ggplot2::geom_density(alpha = alpha) +
+                ggplot2::geom_density(alpha = alpha,
+                                      color = density_color,
+                                      fill = density_fill) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
@@ -202,6 +205,25 @@ plotter <- function(data,
                 )
             
         }
+        # grouped, non-faceted, density, histogram ----
+        else if (!isFALSE(is_colGroup) &&
+                 isFALSE(isFaceted) &&
+                 !isFALSE(isDensity) &&
+                 !isFALSE(isHistogram)) {
+            plot <- data |>
+                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
+                                             y = ..density.., 
+                                             fill = {{ group_col }}, 
+                                             color = {{ group_col }})) +
+                ggplot2::geom_histogram(binwidth = binwidth, color = color_col) +
+                ggplot2::geom_density(color = color_col, fill = density_fill) +
+                ggplot2::scale_x_continuous(
+                    breaks = breaks,
+                    limits = limits,
+                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                )
+            
+        }
         # grouped, faceted, density, histogram ----
         else {
             plot <- data |>
@@ -220,7 +242,7 @@ plotter <- function(data,
         # pROC objects ----
         if (!isFALSE(isROC)) {
             plot <- data |>
-                ggroc(aes = "linetype", color = "red")
+                ggroc(aes = "linetype", color = roc_color)
         }
     }
     # For the rest of the otherwise likely duplicated plot settings ----
