@@ -41,7 +41,6 @@ callout-appearance: simple
 
 license: CC BY-SA
 funding: "The author(s) received no specific funding for this work."
-
 ---
 
 ```{r, include = FALSE}
@@ -101,7 +100,6 @@ source("Scripts/plotter.R")
 #| file: "Scripts/import_clean_initial.R"
 #| eval: false 
 ```
-
 :::
 :::
 :::
@@ -604,7 +602,7 @@ summaryProcessTable <- tidyr::tribble(
 ~ "Counts",
 "Original   ",
 original_nobs,
-"Processed   ",
+"Complete Observations   ",
 count_incorrectDists,
 "Duplicates   ",
 (count_incorrectDists - count_correctDists),
@@ -936,7 +934,7 @@ dplyr::tbl(dbconn,
                          check_from = FALSE,
                          overwrite = TRUE)
 
-# For the week days  comparison
+# For the week days comparison
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -1034,7 +1032,7 @@ dplyr::tbl(dbconn,
                          name = "db/freqCompare_pairStations.db",
                          check_from = FALSE,
                          overwrite = TRUE)
-
+# For the hours comparison
 dplyr::tbl(dbconn,
            tblPath_fltrd,
            check_from = FALSE) |>
@@ -1872,10 +1870,16 @@ Distance by Membership
 #| label: tbl-milesCompare
 #| tbl-cap: Miles Group Frequency
 
-dplyr::tbl(dbconn, "db/freqCompare_miles.db") |>
-dplyr::collect() |>
+miles_compTbl <- dplyr::tbl(dbconn, "db/freqCompare_miles.db") |>
+dplyr::collect()
+
+dir.create("tables")
+
+miles_compTbl |> data.table::fwrite("tables\\mile_groups.csv")
+
+miles_compTbl |>
 tabler(
-title = "Duration Groups",
+title = "Distance Groups",
 source_note = gt::md("**Source:** `db/freqCompare_miles.db`"),
 footnote = "The recorded observations.",
 location = n,
@@ -1884,7 +1888,6 @@ label_n = "n",
 label_member = " "
 )
 
-
 ```
 :::
 
@@ -1892,7 +1895,6 @@ label_member = " "
 ```{r}
 #| label: fig-milesCompare
 #| fig-cap: Miles Group Frequency
-
 
 # For the miles group frequency membership comparison
 milesCompare_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
@@ -1908,76 +1910,285 @@ dplyr::mutate(
 miles = forcats::as_factor(miles),
 miles = forcats::fct_inorder(miles)
 )
+```
+
+
+```{r}
 
 gplot <- milesCompare_tbl |>
 dplyr::group_by(miles, member_casual) |>
 dplyr::summarize(n = dplyr::n()) |>
 dplyr::ungroup() |>
 plotter(
-title = "Distance Groups",
+title = "Distance Groups (Aggregated)",
 x_label = "Miles",
 y_label = "Trips",
 x_col = miles, 
 y_col = n, 
 group_col = member_casual,
 geomType = "column", 
-isFaceted = TRUE
+isFaceted = TRUE,
+is_colGroup = TRUE
 )
 
-gplot +
-ggplot2::scale_x_discrete(
-guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+gplot
 ```
+
+
+
+
+
 :::
 :::
 
 ------------------------------------------------------------------------
 
 ::: fs-3
-Can distance predict a binary outcome?
+Distance has weak predictive value
 :::
 
-::: p-3
 ```{r}
-#| label: tbl-logMiles
 
-miles_asNums <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(member_casual, miles) |>
+distance_factored <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(miles, member_casual) |>
 dplyr::collect() |>
+dplyr::arrange(miles, member_casual) |>
 dplyr::mutate(
-miles = dplyr::case_when(
-miles >= 1 ~ round(miles, digits = 0),
-miles < 1 ~ round(signif(miles, 3), 
-digits = 1))) |>
-dplyr::arrange(miles)
+member_casual = forcats::as_factor(member_casual),
+member_casual = forcats::fct_inorder(member_casual)
+)
 
-miles_asNums$member_casual <- stringr::str_replace(miles_asNums$member_casual, pattern = "casual", "0")
+distance_factored$member_casual <- stringr::str_replace(distance_factored$member_casual, pattern = "casual", "0")
 
-miles_asNums$member_casual <- stringr::str_replace(miles_asNums$member_casual, pattern = "member", "1")
+distance_factored$member_casual <- stringr::str_replace(distance_factored$member_casual, pattern = "member", "1")
 
-miles_asNums$member_casual <- miles_asNums$member_casual |> as.integer()
+distance_factored$member_casual <- distance_factored$member_casual |> as.integer()
 
-miles_asNums$member_casual <- factor(
-miles_asNums$member_casual,
+distance_factored$member_casual <- factor(
+distance_factored$member_casual,
 levels = c(0, 1),
 labels = c("casual", "member")
 )
 
-milesModel <- stats::glm(member_casual ~ miles, data = miles_asNums, family = binomial)
+distance_factored <- distance_factored |> 
+dplyr::mutate(
+member_casual = forcats::fct_inorder(member_casual)
+)
+
+```
+
+
+```{r}
+
+mileBreaks <- c(0.1, 0.4, 0.7, 1.0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+```
+
+
+```{r}
+#| label: axis breaks for distance
+#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- distance_factored |>
+dplyr::filter(member_casual == "casual", miles <= 10) |>
+calcBreaks()
+```
+
+```{r}
+
+source("Scripts/plotter.R")
+
+# histogram IQR viz for the distance metric
+gplot <- distance_factored |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::select(miles) |>
+plotter(
+title = "Distance - Casuals",
+x_label = "Distance (miles)",
+y_label = "Trips",
+x_col = miles, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+#limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+
+
+```{r}
+
+source("Scripts/plotter.R")
+
+# histogram IQR viz for the distance metric
+gplot <- distance_factored |>
+dplyr::filter(member_casual == "member") |>
+dplyr::select(miles) |>
+plotter(
+title = "Distance - Casuals",
+x_label = "Distance (miles)",
+y_label = "Trips",
+x_col = miles, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+#limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+
+
+```{r}
+
+
+source("Scripts/plotter.R")
+
+# density viz for the miles metric
+gplot <- distance_factored |>
+plotter(
+title = "Distance Group Density",
+x_label = paste0("Distance", "\n", "(miles)"),
+y_label = "Trips",
+x_col = miles, 
+#y_col = n,
+group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+isDensity = TRUE,
+#isHistogram = TRUE,
+is_colGroup = TRUE,
+#limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 1,
+density_color = "gray",
+density_fill = "transparent",
+alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+density_alpha = 0.4,
+)
+
+gplot
+```
+
+
+```{r}
+
+source("Scripts/tabler.R")
+
+gtsummary::theme_gtsummary_compact()
+#reset_gtsummary_theme()
+
+distance_factored |>
+gtsummary::tbl_summary(
+by = member_casual,
+type = mph ~ "continuous2",
+label = list(mph ~ "Speed (miles per hour)"),
+digits = list(
+trip_time ~ c(2, 2)),
+statistic = 
+gtsummary::all_continuous() ~ c(
+"{median} ({p25}, {p75})", 
+"{mean} ({sd})", 
+"{min}, {max}")
+) |>
+gtsummary::italicize_levels() |>
+tabler(
+title = gt::md("Summary Statistics: <br> Distance - Membership"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE,
+)
+
+```
+
+
+
+::: p-3
+```{r}
+
+milesModel <- stats::glm(member_casual ~ miles, data = distance_factored, family = binomial)
 
 mileStats_tbl <- milesModel |>
-gtsummary::tbl_regression(label = list(miles = "Distance"))
+gtsummary::tbl_regression(label = list(miles = "Duration"))
 
 mileStats_tbl |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Miles & Rider Type"),
+title = gt::md("Binary Logistic Regression: <br> Distance & Rider Type"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE
 )
 
 ```
 :::
+
+::: p-3
+```{r}
+
+# Generate ROC curve
+roc_miles <- pROC::roc(distance_factored$member_casual, predict(milesModel, type = "response"))
+
+# Find the area under the curve value
+auc_miles <- round(pROC::auc(roc_miles), 4)
+
+gplot <- roc_miles |>
+plotter(
+x_col = NULL, 
+y_col = NULL, 
+isROC = TRUE,
+geomType = "ROC",
+title = paste0(
+"ROC Curve for Distance", 
+" (AUC = ", 
+auc_miles, 
+")"),
+x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
+y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
+roc_color = "red"
+)
+
+# false positive rate = x-axis; true positive rate = y-axis
+gplot
+```
 :::
+:::
+
 
 ## Speed
 
@@ -1989,7 +2200,6 @@ About the Speed
 :::
 
 ::: {.callout-tip .calloutTip icon="false"}
-
 -   This information, derived from @tbl-mphTotals and @fig-mphTotals, indicates that most riders (both casual and member) travel at speeds between 2 and 12 mph. This range likely represents typical urban cycling speeds, accounting for factors like traffic, road conditions, and rider fitness.
 
 <!-- -->
@@ -2021,8 +2231,6 @@ note_list = list("miles per hour"),
 location_list = list("mph")
 ) |>
 gt::cols_label(mph = "Mph")
-
-
 ```
 :::
 
@@ -2041,7 +2249,6 @@ x_label = "Miles per Hour",
 y_label = "Trips")
 
 gplot
-
 ```
 :::
 :::
@@ -2082,18 +2289,22 @@ gplot <- dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
 dplyr::arrange(mph, member_casual) |>
 dplyr::collect() |>
 plotter(
-title = "Speed Groups",
+title = "Speed Groups (Aggregated)",
 x_label = "Miles per Hour",
 y_label = "Trips",
 x_col = mph, 
 y_col = n, 
 color_col = member_casual,
-geomType = "line",
-is_lineGroup = TRUE
+geomType = "column",
+#is_lineGroup = TRUE,
+is_colGroup = TRUE,
+isFaceted = TRUE
 )
 
 gplot
+
 ```
+
 :::
 :::
 
@@ -2103,31 +2314,209 @@ gplot
 Can travel speed predict a binary outcome?
 :::
 
+```{r}
+
+mph_factored <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(mph, member_casual) |>
+dplyr::collect() |>
+dplyr::arrange(mph, member_casual) |>
+dplyr::mutate(
+member_casual = forcats::as_factor(member_casual),
+member_casual = forcats::fct_inorder(member_casual)
+)
+
+mph_factored$member_casual <- stringr::str_replace(mph_factored$member_casual, pattern = "casual", "0")
+
+mph_factored$member_casual <- stringr::str_replace(mph_factored$member_casual, pattern = "member", "1")
+
+mph_factored$member_casual <- mph_factored$member_casual |> as.integer()
+
+mph_factored$member_casual <- factor(
+mph_factored$member_casual,
+levels = c(0, 1),
+labels = c("casual", "member")
+)
+
+mph_factored <- mph_factored |> 
+dplyr::mutate(
+member_casual = forcats::fct_inorder(member_casual)
+)
+```
+
+
+```{r}
+
+x <- c(0:21)
+
+# Need a vectorized subset for the x-axis labels
+evens <- function(x) subset(x, x %% 2 == 0)
+
+mphBreaks <- evens(x)
+```
+
+```{r}
+#| label: axis breaks for speed
+#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- duration_factored |>
+dplyr::filter(member_casual == "casual", mph <= 21) |>
+calcBreaks()
+```
+
+```{r}
+
+source("Scripts/plotter.R")
+
+# histogram IQR viz for the speed metric
+gplot <- mph_factored |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::select(trip_time) |>
+plotter(
+title = "Speed - Casuals",
+x_label = "Speed (miles per hour)",
+y_label = "Trips",
+x_col = mph, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+#limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+
+
+```{r}
+
+source("Scripts/plotter.R")
+
+# histogram IQR viz for the speed metric
+gplot <- mph_factored |>
+dplyr::filter(member_casual == "member") |>
+dplyr::select(trip_time) |>
+plotter(
+title = "Speed - Casuals",
+x_label = "Speed (miles per hour)",
+y_label = "Trips",
+x_col = mph, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+#limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+
+
+```{r}
+
+
+source("Scripts/plotter.R")
+
+# density viz for the mph metric
+gplot <- 
+mph_factored |>
+plotter(
+title = "Trip Speed Group Density",
+x_label = paste0("Speed", "\n", "(miles per hour)"),
+y_label = "Trips",
+x_col = mph, 
+#y_col = n,
+group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+isDensity = TRUE,
+#isHistogram = TRUE,
+is_colGroup = TRUE,
+#limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 1,
+density_color = "gray",
+density_fill = "transparent",
+alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+density_alpha = 0.4,
+)
+
+gplot
+```
+
+
+```{r}
+
+source("Scripts/tabler.R")
+
+gtsummary::theme_gtsummary_compact()
+#reset_gtsummary_theme()
+
+mph_factored |>
+gtsummary::tbl_summary(
+by = member_casual,
+type = mph ~ "continuous2",
+label = list(mph ~ "Speed (miles per hour)"),
+digits = list(
+trip_time ~ c(2, 2)),
+statistic = 
+gtsummary::all_continuous() ~ c(
+"{median} ({p25}, {p75})", 
+"{mean} ({sd})", 
+"{min}, {max}")
+) |>
+gtsummary::italicize_levels() |>
+tabler(
+title = gt::md("Summary Statistics: <br> Speed - Membership"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE,
+)
+
+```
+
+
 ::: p-3
 ```{r}
-#| label: tbl-logMph
 
-mph_asNums <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(mph, member_casual) |>
-dplyr::mutate(mph = round(mph, digits = 0)) |>
-dplyr::arrange(mph) |>
-dplyr::collect()
-
-mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "casual", "0")
-
-mph_asNums$member_casual <- stringr::str_replace(mph_asNums$member_casual, pattern = "member", "1")
-
-mph_asNums$member_casual <- mph_asNums$member_casual |> as.integer()
-
-mph_asNums$member_casual <- factor(
-mph_asNums$member_casual,
-levels = c(0, 1),
-labels = c("casual", "member"))
-
-mphModel <- stats::glm(member_casual ~ mph, data = mph_asNums, family = binomial)
+mphModel <- stats::glm(member_casual ~ mph, data = mph_factored, family = binomial)
 
 mphStats_tbl <- mphModel |>
-gtsummary::tbl_regression(label = list(mph = "Mph"))
+gtsummary::tbl_regression(label = list(mph = "Speed"))
 
 mphStats_tbl |>
 tabler(
@@ -2135,6 +2524,39 @@ title = gt::md("Binary Logistic Regression: <br> Speed & Rider Type"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE
 )
+```
+:::
+
+::: p-3
+```{r}
+
+source("Scripts/plotter.R")
+
+# Generate ROC curve
+roc_mph <- pROC::roc(mph_factored$member_casual, predict(mphModel, type = "response"))
+
+# Find the area under the curve value
+auc_mph <- round(pROC::auc(roc_mph), 4)
+
+gplot <- roc_mph |>
+plotter(
+x_col = NULL, 
+y_col = NULL, 
+isROC = TRUE,
+geomType = "ROC",
+title = paste0(
+"ROC Curve for Speed", 
+" (AUC = ", 
+auc_mph, 
+")"),
+x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
+y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
+roc_color = "red"
+)
+
+# false positive rate = x-axis; true positive rate = y-axis
+gplot
+
 ```
 :::
 :::
@@ -2179,7 +2601,6 @@ footnote = gt::md("The recorded observations."),
 location = n
 ) |>
 gt::cols_align(columns = "trip_time", align = "center")
-
 
 ```
 :::
@@ -2254,52 +2675,300 @@ ggplot2::xlim(NA, 100)
 gplot
 
 ```
+
 :::
 :::
 
 ------------------------------------------------------------------------
 
 ::: fs-3
-Can trip duration predict a binary outcome?
+Trip duration has weak predictive value
 :::
 
 ::: p-3
 ```{r}
-#| label: tbl-logTimes
 
-# For the trip times comparison
-triptime_asNums <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(member_casual, trip_time) |>
-dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
-dplyr::arrange(trip_time) |>
-dplyr::collect()
+duration_factored <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(trip_time, member_casual) |>
+dplyr::collect() |>
+#dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
+dplyr::arrange(trip_time, member_casual) |>
+dplyr::mutate(
+member_casual = forcats::as_factor(member_casual),
+member_casual = forcats::fct_inorder(member_casual)
+)
 
-triptime_asNums$member_casual <- stringr::str_replace(triptime_asNums$member_casual, pattern = "casual", "0")
+duration_factored$member_casual <- stringr::str_replace(duration_factored$member_casual, pattern = "casual", "0")
 
-triptime_asNums$member_casual <- stringr::str_replace(triptime_asNums$member_casual, pattern = "member", "1")
+duration_factored$member_casual <- stringr::str_replace(duration_factored$member_casual, pattern = "member", "1")
 
-triptime_asNums$member_casual <- triptime_asNums$member_casual |> as.integer()
+duration_factored$member_casual <- duration_factored$member_casual |> as.integer()
 
-triptime_asNums$member_casual <- factor(
-triptime_asNums$member_casual,
+duration_factored$member_casual <- factor(
+duration_factored$member_casual,
 levels = c(0, 1),
 labels = c("casual", "member")
 )
 
-triptimeModel <- stats::glm(member_casual ~ trip_time, data = triptime_asNums, family = binomial)
+duration_factored <- duration_factored |> 
+dplyr::mutate(
+member_casual = forcats::fct_inorder(member_casual)
+)
+```
+:::
 
-triptimeStats_tbl <- triptimeModel |>
-gtsummary::tbl_regression(label = list(trip_time = "Duration"))
 
-triptimeStats_tbl |>
+```{r}
+#| label: axis breaks for duration
+#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- duration_factored |>
+dplyr::filter(member_casual == "casual", trip_time <= 100) |>
+calcBreaks()
+```
+
+
+
+::: p-3
+```{r}
+
+source("Scripts/plotter.R")
+
+# histogram IQR viz for the duration metric
+gplot <- duration_factored |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::select(trip_time) |>
+plotter(
+title = "Duration - Casuals",
+x_label = "Duration (minutes)",
+y_label = "Trips",
+x_col = trip_time, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+:::
+
+```{r}
+#| label: axis breaks for duration
+#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- duration_factored |>
+dplyr::filter(member_casual == "member", trip_time <= 100) |>
+calcBreaks()
+```
+
+
+
+```{r}
+source("Scripts/plotter.R")
+
+# histogram IQR viz for the duration metric
+gplot <- duration_factored |>
+dplyr::filter(member_casual == "member") |>
+dplyr::select(trip_time) |>
+plotter(
+title = "Duration - Members",
+x_label = "Duration (minutes)",
+y_label = "Trips",
+x_col = trip_time, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+
+
+68.26% of the data points are located between -1 and +1 standard deviations (34.13% in either direction).
+95.44% of the data points are located between -2 and +2 standard deviations (47.72% in either direction).
+99.72% of the data points are located between -3 and +3 standard deviations (49.86% in either direction)
+
+
+
+
+```{r}
+
+source("Scripts/tabler.R")
+
+gtsummary::theme_gtsummary_compact()
+#reset_gtsummary_theme()
+
+duration_factored |>
+gtsummary::tbl_summary(
+by = member_casual,
+type = trip_time ~ "continuous2",
+label = list(trip_time ~ "Duration (minutes)"),
+digits = list(
+trip_time ~ c(2, 2)),
+statistic = 
+gtsummary::all_continuous() ~ c(
+"{median} ({p25}, {p75})", 
+"{mean} ({sd})", 
+"{min}, {max}")
+) |>
+gtsummary::italicize_levels() |>
+tabler(
+title = gt::md("Summary Statistics: <br> Duration - Membership"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE,
+)
+
+```
+
+
+
+```{r}
+
+
+source("Scripts/plotter.R")
+
+# density viz for the duration metric
+gplot <- 
+#duration_factored |>
+duration_factored |>
+plotter(
+title = "Trip Duration Group Density",
+x_label = paste0("Duration", "\n", "(minutes)"),
+y_label = "Trips",
+x_col = trip_time, 
+#y_col = n,
+group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+isDensity = TRUE,
+#isHistogram = TRUE,
+is_colGroup = TRUE,
+limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 1,
+density_color = "gray",
+density_fill = "transparent",
+alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+density_alpha = 0.4,
+)
+
+gplot
+```
+
+
+::: p-3
+```{r}
+
+duraSet <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(trip_time, member_casual) |>
+dplyr::collect() |>
+dplyr::mutate(
+member_casual = stringr::str_replace(member_casual, pattern = "casual", "0"),
+member_casual = stringr::str_replace(member_casual, pattern = "member", "1"),
+member_casual = as.integer(member_casual)
+) |>
+dplyr::arrange(trip_time, member_casual)
+
+durationModel <- stats::glm(member_casual ~ trip_time, data = duraSet, family = binomial)
+
+durationStats_tbl <- durationModel |>
+gtsummary::tbl_regression(
+label = list(trip_time = "Duration"), 
+#conf.int = FALSE
+)
+
+summary(durationModel)$coefficients
+
+durationStats_tbl |>
 tabler(
 title = gt::md("Binary Logistic Regression: <br> Duration & Rider Type"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE
 )
 
+
+
 ```
 :::
+
+
+::: p-3
+```{r}
+
+source("Scripts/plotter.R")
+
+# Generate ROC curve
+roc_duration <- pROC::roc(duration_factored$member_casual, predict(durationModel, type = "response"))
+
+# Find the area under the curve value
+auc_duration <- round(pROC::auc(roc_duration), 4)
+
+gplot <- roc_duration |>
+plotter(
+x_col = NULL, 
+y_col = NULL, 
+isROC = TRUE,
+geomType = "ROC",
+title = paste0(
+"ROC Curve for Duration", 
+" (AUC = ", 
+auc_duration, 
+")"),
+x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
+y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
+roc_color = "red"
+)
+
+# false positive rate = x-axis; true positive rate = y-axis
+gplot
+
+
+```
+
+:::
+
 :::
 :::
 :::
@@ -2385,8 +3054,6 @@ locationData <- dplyr::tbl(dbconn,
                ) |>
     dplyr::arrange(desc(trip_count)) |>
     dplyr::collect()
-
-
 
 # Need to combine all names to single column and recalculate 
 # or retain other stats.
@@ -2685,7 +3352,6 @@ To improve membership, addressing factors deterring individuals from becoming an
 
 ## Updated Database Tables List
 
-
 ```{r}
 #| label: tbl-dbList2
 #| code-summary: "Revisiting the list of db tables, with many more tables added. All of these tables are stored within the data/data.db file."
@@ -2710,7 +3376,6 @@ gt::cells_column_labels(columns = gt::everything())
 
 dbList2
 ```
-
 
 # Conclusion
 
