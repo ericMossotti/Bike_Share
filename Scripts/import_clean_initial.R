@@ -68,8 +68,7 @@ tripTibble |>
     as.data.frame() |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = tblPath,
-                         overwrite = TRUE,
-                         check_from = FALSE)
+                         overwrite = TRUE)
 
 # Write a copy for the original raw data
 tripTibble |>
@@ -78,29 +77,37 @@ tripTibble |>
                          name = rawPath,
                          overwrite = TRUE)
 
-# Clean up environment.
+# Clean up wd environment
 rm(tripTibble)
 
-# Incomplete observations removed
+
+# Clean and Transform ----
+
+# Remove incomplete obs
 dplyr::tbl(dbconn, tblPath) |>
     dplyr::collect() |>
-    tidyr::drop_na() |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = tblPath,
                          overwrite = TRUE)
 
-# To make use of the supplied trip interval data, record duration of trip 
-# in minutes
+# Add useful data transformations
 dplyr::tbl(dbconn, tblPath) |>
     dplyr::collect() |>
-    dplyr::mutate("trip_time" = lubridate::time_length(
-        lubridate::interval(started_at,
-                            ended_at),
-        unit = "minute"), 
-        .keep = "all") |>
+    dplyr::mutate(
+        "months" = lubridate::month(started_at, label = TRUE, abbr = TRUE),
+        "wkday" = lubridate::wday(started_at, abbr = TRUE, label = TRUE),
+        "h_m_s" = strftime(started_at, format = "%T"),
+        "h_m" = strftime(started_at, format = "%H:%M %p"),
+        "h" = strftime(started_at, format = "%H %p"),
+        "trip_time" = lubridate::time_length(lubridate::interval(started_at, 
+                                                                 ended_at), 
+                                             unit = "minute"),
+        .keep = "all"
+    ) |> 
     duckdb::dbWriteTable(conn = dbconn,
                          name = tblPath,
                          overwrite = TRUE)
+
 
 # Would like to remove  all files and sub-folders within the tempFiles folder.
 unlink("tempFiles", recursive = TRUE)
