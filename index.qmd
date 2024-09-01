@@ -1007,12 +1007,11 @@ dplyr::tbl(dbconn,
                          overwrite = TRUE)
 # For the hours comparison
 dplyr::tbl(dbconn,
-           tblPath_fltrd,
-           check_from = FALSE) |>
+           tblPath_fltrd) |>
     dplyr::select(started_at, member_casual) |>
     dplyr::mutate("hour" = lubridate::hour(started_at)) |>
     dplyr::group_by(member_casual, hour) |>
-    dplyr::summarise("Total_Riders" = dplyr::n()) |> #or count?
+    dplyr::summarize("Total_Riders" = dplyr::n()) |>
     dplyr::arrange(hour, member_casual) |>
     dplyr::collect() |>
     dplyr::mutate("hour" = hms::hms(hours = hour),
@@ -1479,7 +1478,7 @@ title = "Days",
 x_label = "Day of the Week", 
 y_label = "Trips") +
 # To zoom the data a bit
-ggplot2::coord_cartesian(ylim = c(4.5 * 10 ^ 5, NA))
+ggplot2::coord_cartesian(ylim = c(4.5 * 10^5, NA))
 
 gplot
 
@@ -1710,6 +1709,7 @@ hour = forcats::as_factor(hour),
 hour = forcats::fct_inorder(hour))
 
 hour_tbl |>
+dplyr::select(hour, member_casual, n) |>
 tabler(
 title = "Hour Groups",
 source_note = gt::md("**Source:** `db/freqCompare_hours.db`"),
@@ -1752,6 +1752,426 @@ gplot
 ::: fs-3
 Can the hour of the day predict membership?
 :::
+
+```{r}
+
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(h, member_casual) |>
+#dplyr::mutate(h = round(miles, digits = 1)) |>
+dplyr::collect() |>
+duckdb::dbWriteTable(
+conn = dbconn,
+name = "db/rounded_h.db",
+overwrite = TRUE)
+
+source("Scripts/transformData.R")
+
+weighted_data <- transformData(
+dbconn, 
+"db/rounded_h.db", 
+select_cols = c("h", "member_casual"), 
+group_cols = c("h", "member_casual"), 
+binary_col = "member_casual", 
+ntile_col = "ntile_col", 
+pred_col = "h", 
+zero_val = "casual", 
+one_val = "member",
+qtile_levels = c(
+"[00 : 06]", "(06 : 10]", "(10 : 13]", "(13 : 23]"),
+doWeights = TRUE)
+
+expanded_data <- weighted_data |>
+tidyr::uncount(n, .remove = FALSE) |>
+dplyr::select(h, member_casual)
+
+model <- weighted_data |> 
+glm(
+formula = member_casual ~ ntile_col, 
+weights = n, 
+family = binomial)
+
+regression_tbl <- model |>
+gtsummary::tbl_regression(
+label = list(ntile_col = "Hour Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE)
+
+regression_tbl |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE)
+
+# 
+# members are about 2.1 times to fall into Q1 as casuals
+# 11% less likely Q2 as Q1
+# 61% less likely Q3 as Q1
+# 78% less likely Q4 as Q1
+# 
+
+#    25% ,   25%  ,   25%  ,    25%
+# 0<=x<=6, 6<x<=10, 10<x<=13, 13<x<=23
+# 
+
+weighted_data
+```
+```{r}
+
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(h_m, member_casual) |>
+#dplyr::mutate(h = round(miles, digits = 1)) |>
+dplyr::collect() |>
+duckdb::dbWriteTable(
+conn = dbconn,
+name = "db/rounded_h_m.db",
+overwrite = TRUE)
+
+source("Scripts/transformData.R")
+
+weighted_data <- transformData(
+dbconn, 
+"db/rounded_h_m.db", 
+select_cols = c("h_m", "member_casual"), 
+group_cols = c("h_m", "member_casual"), 
+binary_col = "member_casual", 
+ntile_col = "ntile_col", 
+pred_col = "h_m", 
+zero_val = "casual", 
+one_val = "member",
+qtile_levels = c(
+"[00 : 06]", "(06 : 10]", "(10 : 13]", "(13 : 23]"),
+doWeights = TRUE)
+
+expanded_data <- weighted_data |>
+tidyr::uncount(n, .remove = FALSE) |>
+dplyr::select(h_m, member_casual)
+
+model <- weighted_data |> 
+glm(
+formula = member_casual ~ ntile_col, 
+weights = n, 
+family = binomial)
+
+regression_tbl <- model |>
+gtsummary::tbl_regression(
+label = list(ntile_col = "Hour Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE)
+
+regression_tbl |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE)
+
+# 
+# members are about 2.1 times to fall into Q1 as casuals
+# 11% less likely Q2 as Q1
+# 61% less likely Q3 as Q1
+# 78% less likely Q4 as Q1
+# 
+
+#    25% ,   25%  ,   25%  ,    25%
+# 0<=x<=6, 6<x<=10, 10<x<=13, 13<x<=23
+# 
+
+weighted_data
+```
+
+
+```{r}
+
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(h_m_s, member_casual) |>
+#dplyr::mutate(h = round(miles, digits = 1)) |>
+dplyr::collect() |>
+duckdb::dbWriteTable(
+conn = dbconn,
+name = "db/rounded_h_m_s.db",
+overwrite = TRUE)
+
+source("Scripts/transformData.R")
+
+weighted_data <- transformData(
+dbconn, 
+"db/rounded_h_m_s.db", 
+select_cols = c("h_m_s", "member_casual"), 
+group_cols = c("h_m_s", "member_casual"), 
+binary_col = "member_casual", 
+ntile_col = "ntile_col", 
+pred_col = "h_m_s", 
+zero_val = "casual", 
+one_val = "member",
+qtile_levels = c(
+"[00 : 06]", "(06 : 10]", "(10 : 13]", "(13 : 23]"),
+doWeights = TRUE)
+
+expanded_data <- weighted_data |>
+tidyr::uncount(n, .remove = FALSE) |>
+dplyr::select(h_m_s, member_casual)
+
+model <- weighted_data |> 
+glm(
+formula = member_casual ~ ntile_col, 
+weights = n, 
+family = binomial)
+
+regression_tbl <- model |>
+gtsummary::tbl_regression(
+label = list(ntile_col = "Hour Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE)
+
+regression_tbl |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE)
+
+# 
+# members are about 2.1 times to fall into Q1 as casuals
+# 11% less likely Q2 as Q1
+# 61% less likely Q3 as Q1
+# 78% less likely Q4 as Q1
+# 
+
+#    25% ,   25%  ,   25%  ,    25%
+# 0<=x<=6, 6<x<=10, 10<x<=13, 13<x<=23
+# 
+
+weighted_data
+```
+
+
+```{r}
+#| label: axis breaks for casuals' hour 
+#| code-summary: Determining optimal breaks in the hour charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- expanded_data |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::mutate(h_m_s = strptime(h_m_s, format = "%T")) |>
+calcBreaks()
+
+plotBreaks
+```
+
+
+```{r}
+
+source("Scripts/plotter.R")
+
+# histogram IQR viz for the distance metric
+#gplot <- distance_factored |>
+gplot <- expanded_data |>
+#@dplyr::mutate(
+#h = as.numeric(h)
+#) |>
+#tidyr::uncount(n, .remove = FALSE) |>
+#dplyr::select(miles, member_casual) |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::select(h_m_s) |>
+plotter(
+title = "Hour - Casuals",
+x_label = "Hour of Day",
+y_label = "Trips",
+x_col = h_m_s, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+limits = c(0, 23),
+angle = 45,
+#breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+#vline_color = "lightyellow",
+#vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+
+
+```{r}
+#| label: axis breaks for members' hour 
+#| code-summary: Determining optimal breaks in the hour charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- expanded_data |>
+dplyr::filter(member_casual == "member") |>
+dplyr::mutate(h = as.numeric(h)) |>
+calcBreaks(min.n = 0)
+```
+
+
+```{r}
+
+source("Scripts/plotter.R")
+
+# histogram IQR viz for the distance metric
+gplot <- expanded_data |>
+dplyr::filter(member_casual == "member") |>
+dplyr::select(h) |>
+dplyr::mutate(
+h = as.numeric(h)
+) |>
+plotter(
+title = "Hour - Members",
+x_label = "Hour of Day",
+y_label = "Trips",
+x_col = h, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+limits = c(0, 23),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+#| label: axis breaks for all hours 
+#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- expanded_data |>
+#dplyr::filter(hours <= 10) |>
+calcBreaks()
+```
+
+
+
+```{r}
+
+source("Scripts/plotter.R")
+
+# density viz for the miles metric
+gplot <- expanded_data |>
+dplyr::mutate(
+h = as.numeric(h)
+) |>
+plotter(
+title = "Hour Group Density",
+x_label = paste0("Hours"),
+y_label = "Trips",
+x_col = h, 
+#y_col = n,
+group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+isDensity = TRUE,
+#isHistogram = TRUE,
+is_colGroup = TRUE,
+limits = c(0, 23),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 1,
+#density_color = "gray",
+#density_fill = "transparent",
+#alpha = 0.75,
+#vline_color = "lightyellow",
+#vline_size = 0.5,
+density_alpha = 0.7
+)
+
+gplot
+```
+
+
+```{r}
+
+source("Scripts/tabler.R")
+
+gtsummary::theme_gtsummary_compact()
+#reset_gtsummary_theme()
+
+expanded_data |>
+gtsummary::tbl_summary(
+by = member_casual,
+type = miles ~ "continuous2",
+label = list(miles ~ "Distance (miles)"),
+digits = list(
+miles ~ c(2, 2)),
+statistic = 
+gtsummary::all_continuous() ~ c(
+"{median} ({p25}, {p75})", 
+"{mean} ({sd})", 
+"{min}, {max}")
+) |>
+gtsummary::italicize_levels() |>
+tabler(
+title = gt::md("Summary Statistics: <br> Distance - Membership"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE
+)
+
+```
+
+
+::: p-3
+```{r}
+
+# Generate ROC curve
+roc_miles <- pROC::roc(distance_factored$member_casual, predict(milesModel, type = "response"))
+
+# Find the area under the curve value
+auc_miles <- round(pROC::auc(roc_miles), 4)
+
+gplot <- roc_miles |>
+plotter(
+x_col = NULL, 
+y_col = NULL, 
+isROC = TRUE,
+geomType = "ROC",
+title = paste0(
+"ROC Curve for Distance", 
+" (AUC = ", 
+auc_miles, 
+")"),
+x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
+y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
+roc_color = "red"
+)
+
+# false positive rate = x-axis; true positive rate = y-axis
+gplot
+```
+
 
 ::: p-3
 ```{r}
@@ -1964,10 +2384,6 @@ is_colGroup = TRUE
 gplot
 ```
 
-
-
-
-
 :::
 :::
 
@@ -1977,38 +2393,69 @@ gplot
 Trip distance has weak predictive value on membership status
 :::
 
+
 ```{r}
+#| label: duration weighted stats modeling
+#| code-summary: "The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
 
-distance_factored <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(miles, member_casual) |>
+dplyr::mutate(miles = round(miles, digits = 1)) |>
 dplyr::collect() |>
-dplyr::arrange(miles, member_casual) |>
-dplyr::mutate(
-member_casual = forcats::as_factor(member_casual),
-member_casual = forcats::fct_inorder(member_casual)
-)
+duckdb::dbWriteTable(
+conn = dbconn,
+name = "db/rounded_miles.db",
+overwrite = TRUE)
 
 
+source("Scripts/transformData.R")
 
-distance_factored$member_casual <- stringr::str_replace(distance_factored$member_casual, pattern = "casual", "0")
+weighted_data <- transformData(
+dbconn, 
+"db/rounded_miles.db", 
+select_cols = c("miles", "member_casual"), 
+group_cols = c("miles", "member_casual"), 
+binary_col = "member_casual", 
+ntile_col = "ntile_col", 
+pred_col = "miles", 
+zero_val = "casual", 
+one_val = "member",
+qtile_levels = c(
+"[0.10 : 0.60]", "(0.60 : 1.00]", "(1.00 : 1.80]", "(1.80 : 20.5]"))
 
-distance_factored$member_casual <- stringr::str_replace(distance_factored$member_casual, pattern = "member", "1")
+expanded_data <- weighted_data |>
+tidyr::uncount(n, .remove = FALSE) |>
+dplyr::select(miles, member_casual)
 
-distance_factored$member_casual <- distance_factored$member_casual |> as.integer()
+model <- weighted_data |> 
+glm(
+formula = member_casual ~ ntile_col, 
+weights = n, 
+family = binomial)
 
-distance_factored$member_casual <- factor(
-distance_factored$member_casual,
-levels = c(0, 1),
-labels = c("casual", "member")
-)
+regression_tbl <- model |>
+gtsummary::tbl_regression(
+label = list(ntile_col = "Mile Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE)
 
-distance_factored <- distance_factored |> 
-dplyr::mutate(
-member_casual = forcats::fct_inorder(member_casual)
-)
+regression_tbl |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Distance & Rider Type"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE)
+
+# 
+# members are about 2.1 times to fall into Q1 as casuals
+# 11% less likely Q2 as Q1
+# 61% less likely Q3 as Q1
+# 78% less likely Q4 as Q1
+# 
+
+#     25%     ,   25%  ,    25%        25%
+# 0.1<=x<=0.6, 0.6<x<=1, 1<x<=1.8, 1.8<x<=20.5
 
 ```
-
 
 
 
@@ -2018,17 +2465,23 @@ member_casual = forcats::fct_inorder(member_casual)
 
 source("Scripts/calcBreaks.R")
 
-plotBreaks <- distance_factored |>
-dplyr::filter(member_casual == "casual", miles <= 9) |>
+plotBreaks <- expanded_data |>
+dplyr::filter(member_casual == "casual", miles <= 10) |>
 calcBreaks()
+
+plotBreaks
 ```
+
 
 ```{r}
 
 source("Scripts/plotter.R")
 
 # histogram IQR viz for the distance metric
-gplot <- distance_factored |>
+#gplot <- distance_factored |>
+gplot <- expanded_data |>
+#tidyr::uncount(n, .remove = FALSE) |>
+#dplyr::select(miles, member_casual) |>
 dplyr::filter(member_casual == "casual") |>
 dplyr::select(miles) |>
 plotter(
@@ -2068,8 +2521,8 @@ gplot
 
 source("Scripts/calcBreaks.R")
 
-plotBreaks <- distance_factored |>
-dplyr::filter(member_casual == "member", miles <= 9) |>
+plotBreaks <- expanded_data |>
+dplyr::filter(member_casual == "member", miles <= 10) |>
 calcBreaks()
 ```
 
@@ -2109,7 +2562,6 @@ high = "red"
 ) 
 
 gplot
-
 ```
 
 
@@ -2119,7 +2571,7 @@ gplot
 
 source("Scripts/calcBreaks.R")
 
-plotBreaks <- distance_factored |>
+plotBreaks <- expanded_data |>
 dplyr::filter(miles <= 10) |>
 calcBreaks()
 ```
@@ -2128,11 +2580,10 @@ calcBreaks()
 
 ```{r}
 
-
 source("Scripts/plotter.R")
 
 # density viz for the miles metric
-gplot <- distance_factored |>
+gplot <- expanded_data |>
 plotter(
 title = "Distance Group Density",
 x_label = paste0("Distance", "\n", "(miles)"),
@@ -2155,7 +2606,7 @@ color_col = "black",
 #alpha = 0.75,
 #vline_color = "lightyellow",
 #vline_size = 0.5,
-density_alpha = 0.7,
+density_alpha = 0.7
 )
 
 gplot
@@ -2169,11 +2620,11 @@ source("Scripts/tabler.R")
 gtsummary::theme_gtsummary_compact()
 #reset_gtsummary_theme()
 
-distance_factored |>
+expanded_data |>
 gtsummary::tbl_summary(
 by = member_casual,
 type = miles ~ "continuous2",
-label = list(miles ~ "Speed (miles per hour)"),
+label = list(miles ~ "Distance (miles)"),
 digits = list(
 miles ~ c(2, 2)),
 statistic = 
@@ -2186,28 +2637,11 @@ gtsummary::italicize_levels() |>
 tabler(
 title = gt::md("Summary Statistics: <br> Distance - Membership"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE,
-)
-
-```
-
-::: p-3
-```{r}
-
-milesModel <- stats::glm(member_casual ~ miles, data = distance_factored, family = binomial)
-
-mileStats_tbl <- milesModel |>
-gtsummary::tbl_regression(label = list(miles = "Duration"), conf.int = FALSE)
-
-mileStats_tbl |>
-tabler(
-title = gt::md("Binary Logistic Regression: <br> Distance & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE
 )
 
 ```
-:::
+
 
 ::: p-3
 ```{r}
@@ -2365,32 +2799,54 @@ Speed has weak predictive value on membership status
 
 :::p-3
 ```{r}
+#| label: speed weighted stats modeling
+#| code-summary: "The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
 
-mph_factored <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(mph, member_casual) |>
+dplyr::mutate(mph = round(mph, digits = 0)) |>
 dplyr::collect() |>
-dplyr::arrange(mph, member_casual) |>
-dplyr::mutate(
-member_casual = forcats::as_factor(member_casual),
-member_casual = forcats::fct_inorder(member_casual)
-)
+duckdb::dbWriteTable(
+conn = dbconn,
+name = "db/rounded_mph.db",
+overwrite = TRUE)
 
-mph_factored$member_casual <- stringr::str_replace(mph_factored$member_casual, pattern = "casual", "0")
+source("Scripts/transformData.R")
 
-mph_factored$member_casual <- stringr::str_replace(mph_factored$member_casual, pattern = "member", "1")
+weighted_data <- transformData(
+dbconn, 
+"db/rounded_mph.db", 
+select_cols = c("mph", "member_casual"), 
+group_cols = c("mph", "member_casual"), 
+binary_col = "member_casual", 
+ntile_col = "ntile_col", 
+pred_col = "mph", 
+zero_val = "casual", 
+one_val = "member",
+qtile_levels = c(
+"[1 : 5]", "(5 : 7]", "(7 : 9]", "(9 : 20]"))
 
-mph_factored$member_casual <- mph_factored$member_casual |> as.integer()
+expanded_data <- weighted_data |>
+tidyr::uncount(n, .remove = FALSE) |>
+dplyr::select(mph, member_casual)
 
-mph_factored$member_casual <- factor(
-mph_factored$member_casual,
-levels = c(0, 1),
-labels = c("casual", "member")
-)
+model <- weighted_data |> 
+glm(
+formula = member_casual ~ ntile_col, 
+weights = n, 
+family = binomial)
 
-mph_factored <- mph_factored |> 
-dplyr::mutate(
-member_casual = forcats::fct_inorder(member_casual)
-)
+regression_tbl <- model |>
+gtsummary::tbl_regression(
+label = list(ntile_col = "MPH Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE)
+
+regression_tbl |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Speed & Rider Type"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE)
 ```
 :::
 
@@ -2401,7 +2857,7 @@ member_casual = forcats::fct_inorder(member_casual)
 
 source("Scripts/calcBreaks.R")
 
-plotBreaks <- mph_factored |>
+plotBreaks <- expanded_data |>
 dplyr::filter(member_casual == "casual") |>
 calcBreaks()
 ```
@@ -2443,7 +2899,6 @@ high = "red"
 ) 
 
 gplot
-
 ```
 :::
 
@@ -2502,12 +2957,28 @@ gplot
 
 
 ```{r}
+
+source("Scripts/transformData.R")
+
+unrounded_data <- transformData(
+dbconn, 
+tblPath_fltrd, 
+select_cols = c("mph", "member_casual"), 
+binary_col = "member_casual", 
+zero_val = "casual", 
+one_val = "member"
+)
+
+```
+
+
+```{r}
 #| label: axis breaks for all speed
 #| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
 
 source("Scripts/calcBreaks.R")
 
-plotBreaks <- mph_factored |>
+plotBreaks <- unrounded_data |>
 #dplyr::mutate(
 #mph = round(mph, digits = 0)) |>
 #dplyr::filter(member_casual == "member") |>
@@ -2522,9 +2993,9 @@ source("Scripts/plotter.R")
 
 # density viz for the mph metric
 gplot <- 
-mph_factored |>
-dplyr::mutate(
-mph = round(mph, digits = 1)) |>
+unrounded_data |>
+#dplyr::mutate(
+#mph = round(mph, digits = 2)) |>
 plotter(
 title = "Trip Speed Group Density",
 x_label = paste0("Speed", "\n", "(miles per hour)"),
@@ -2772,34 +3243,58 @@ Trip duration has weak predictive value on membership status
 :::
 
 ::: p-3
+
 ```{r}
 
-duration_factored <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+#| label: duration weighted stats modeling
+#| code-summary: "The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
+
+dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(trip_time, member_casual) |>
+dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
 dplyr::collect() |>
-#dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
-dplyr::arrange(trip_time, member_casual) |>
-dplyr::mutate(
-member_casual = forcats::as_factor(member_casual),
-member_casual = forcats::fct_inorder(member_casual)
-)
+duckdb::dbWriteTable(
+conn = dbconn,
+name = "db/rounded_trip_time.db",
+overwrite = TRUE)
 
-duration_factored$member_casual <- stringr::str_replace(duration_factored$member_casual, pattern = "casual", "0")
+source("Scripts/transformData.R")
 
-duration_factored$member_casual <- stringr::str_replace(duration_factored$member_casual, pattern = "member", "1")
+weighted_data <- transformData(
+dbconn, 
+"db/rounded_trip_time.db", 
+select_cols = c("trip_time", "member_casual"), 
+group_cols = c("trip_time", "member_casual"), 
+binary_col = "member_casual", 
+ntile_col = "ntile_col", 
+pred_col = "trip_time", 
+zero_val = "casual", 
+one_val = "member",
+qtile_levels = c(
+"[1 : 6]", "(6 : 10]", "(10 : 16]", "(16 : 475]"),
+doWeights = TRUE)
 
-duration_factored$member_casual <- duration_factored$member_casual |> as.integer()
+expanded_data <- weighted_data |>
+tidyr::uncount(n, .remove = FALSE) |>
+dplyr::select(trip_time, member_casual)
 
-duration_factored$member_casual <- factor(
-duration_factored$member_casual,
-levels = c(0, 1),
-labels = c("casual", "member")
-)
+model <- weighted_data |> 
+glm(
+formula = member_casual ~ ntile_col, 
+weights = n, 
+family = binomial)
 
-duration_factored <- duration_factored |> 
-dplyr::mutate(
-member_casual = forcats::fct_inorder(member_casual)
-)
+regression_tbl <- model |>
+gtsummary::tbl_regression(
+label = list(ntile_col = "Duration Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE)
+
+regression_tbl |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Duration & Rider Type"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE)
 ```
 :::
 
@@ -2810,7 +3305,7 @@ member_casual = forcats::fct_inorder(member_casual)
 
 source("Scripts/calcBreaks.R")
 
-plotBreaks <- duration_factored |>
+plotBreaks <- expanded_data |>
 dplyr::filter(member_casual == "casual", trip_time <= 100) |>
 calcBreaks()
 ```
@@ -2823,7 +3318,8 @@ calcBreaks()
 source("Scripts/plotter.R")
 
 # histogram IQR viz for the duration metric
-gplot <- duration_factored |>
+#gplot <- duration_factored |>
+gplot <- expanded_data |>
 dplyr::filter(member_casual == "casual") |>
 dplyr::select(trip_time) |>
 plotter(
@@ -2863,7 +3359,7 @@ gplot
 
 source("Scripts/calcBreaks.R")
 
-plotBreaks <- duration_factored |>
+plotBreaks <- expanded_data |>
 dplyr::filter(member_casual == "member", trip_time <= 100) |>
 calcBreaks()
 ```
@@ -2874,7 +3370,7 @@ calcBreaks()
 source("Scripts/plotter.R")
 
 # histogram IQR viz for the duration metric
-gplot <- duration_factored |>
+gplot <- expanded_data |>
 dplyr::filter(member_casual == "member") |>
 dplyr::select(trip_time) |>
 plotter(
@@ -2912,6 +3408,19 @@ gplot
 95.44% of the data points are located between -2 and +2 standard deviations (47.72% in either direction).
 99.72% of the data points are located between -3 and +3 standard deviations (49.86% in either direction)
 
+```{r}
+
+source("Scripts/transformData.R")
+
+unrounded_data <- transformData(
+dbconn, 
+tblPath_fltrd, 
+select_cols = c("trip_time", "member_casual"), 
+binary_col = "member_casual", 
+zero_val = "casual", 
+one_val = "member"
+)
+```
 
 
 ```{r}
@@ -2921,7 +3430,7 @@ source("Scripts/plotter.R")
 
 # density viz for the duration metric
 gplot <- 
-duration_factored |>
+unrounded_data |>
 plotter(
 title = "Trip Duration Group Density",
 x_label = paste0("Duration", "\n", "(minutes)"),
@@ -2958,7 +3467,7 @@ source("Scripts/tabler.R")
 gtsummary::theme_gtsummary_compact()
 #reset_gtsummary_theme()
 
-duration_factored |>
+unrounded_data |>
 gtsummary::tbl_summary(
 by = member_casual,
 type = trip_time ~ "continuous2",
@@ -2984,25 +3493,6 @@ isBinary = TRUE,
 
 
 ::: p-3
-```{r}
-
-durationModel <- stats::glm(
-member_casual ~ trip_time, data = duration_factored, family = binomial)
-
-durationStats_tbl <- durationModel |>
-gtsummary::tbl_regression(
-label = list(trip_time = "Duration"), conf.int = FALSE)
-
-durationStats_tbl |>
-tabler(
-title = gt::md("Binary Logistic Regression: <br> Duration & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE)
-```
-:::
-
-
-::: p-3
 
 ```{r}
 
@@ -3010,8 +3500,8 @@ source("Scripts/plotter.R")
 
 # Generate ROC curve
 roc_duration <- pROC::roc(
-response = duration_factored$member_casual, 
-predictor = predict(durationModel, type = "response"))
+response = unrounded_data$member_casual, 
+predictor = predict(model, type = "response"))
 
 # Find the area under the curve value
 auc_duration <- round(pROC::auc(roc_duration), 4)
@@ -3155,9 +3645,6 @@ summary(statsi$miles)
 tile <- dplyr::ntile(
 x = statsi$miles, n = 4)
 
-
-
-
 #
 #     25%     ,   25%  ,    25%        25%
 # 0.1<=x<=0.6, 0.6<x<=1, 1<x<=1.8, 1.8<x<=20.5  
@@ -3176,9 +3663,6 @@ summary(model)
 anova(model)
 ```
 
-```{r}
-
-```
 
 
 ```{r}
@@ -3282,7 +3766,6 @@ summary(model)
 
 ```{r}
 
-
 regression_tbl <- model |>
 gtsummary::tbl_regression(
 label = list(wkday = "Weekday"), 
@@ -3294,11 +3777,7 @@ title = gt::md("Binary Logistic Regression: <br> Weekday & Rider Type"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE)
 
-
 ```
-
-
-
 
 
 
