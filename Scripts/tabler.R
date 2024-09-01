@@ -13,7 +13,7 @@ tabler <- function(tbl_name,
                    footnote = NULL,
                    value_columns = gt::everything(),
                    decimals = 0,
-                   font_color = "SeaShell",
+                   font_color = "seashell",
                    bg_color = "transparent",
                    vline_color = "gray20",
                    hline_color = "gray20",
@@ -21,10 +21,11 @@ tabler <- function(tbl_name,
                    isSummary = FALSE,
                    isBinary = FALSE,
                    note_list = NULL,
-                   location_list = NULL) {
+                   location_list = NULL,
+                   noteColumns = FALSE,
+                   noteRows = FALSE) {
     
     # Need to account for grouped tables and non-grouped tables
-    
     # Grouped ----
     if (!is.null(groupName)) {
         tbl <- gt::gt(tbl_name,
@@ -63,7 +64,6 @@ tabler <- function(tbl_name,
                 column_labels.font.weight = "bold"
             ) |>
             gt::tab_source_note(source_note = source_note)
-        
     } 
     
     # Binary Logistic ----
@@ -76,19 +76,18 @@ tabler <- function(tbl_name,
             table.font.color = font_color,
             table_body.vlines.color = vline_color,
             table_body.hlines.color = hline_color,
-            column_labels.hidden = hide_column_labels,
+          #  column_labels.hidden = hide_column_labels,
             row.striping.include_table_body = TRUE,
             column_labels.font.weight = "bold"
         ) |>
             gt::tab_source_note(source_note = source_note)
         
+    # Ungrouped ----
     } else {
-        
-        # Ungrouped ----
-         tbl <- tbl_name |>
+        tbl <- tbl_name |>
             gt::gt() |>
-             gt::tab_header(title = title, subtitle = subtitle) |>
-             gt::fmt_number(decimals = decimals, columns = value_columns) |>
+            gt::tab_header(title = title, subtitle = subtitle) |>
+            gt::fmt_number(decimals = decimals, columns = value_columns) |>
             gt::tab_options(
                 table.background.color = bg_color,
                 table.font.color = font_color,
@@ -97,31 +96,45 @@ tabler <- function(tbl_name,
                 column_labels.hidden = hide_column_labels,
                 row.striping.include_table_body = TRUE,
                 column_labels.font.weight = "bold"
-                
             ) |>
-             gt::tab_source_note(source_note = source_note)
-         }
+            gt::tab_source_note(source_note = source_note)
+    }
     
+    # To add footnotes to the various table types ----
     if (!is.null(note_list) && !is.null(location_list)) {
+    
         tbl <- tbl |>
-            add_multiple_footnotes(note_list, location_list)
+            add_multiple_footnotes(note_list, location_list, noteColumns, noteRows)
     }
     
     return(tbl)
 }
 
 
-add_multiple_footnotes <- function(tbl, note_list, location_list) {
+# Footnotes function ----
+add_multiple_footnotes <- function(tbl, note_list, location_list, noteColumns, noteRows) {
+    
     if (length(note_list) != length(location_list)) {
         stop("The lengths of note_list and location_list must be equal.")
     }
     
-    for (i in seq_along(note_list)) {
-        tbl <- tbl |>
-            gt::tab_footnote(
-                footnote = note_list[[i]],
-                location = gt::cells_column_labels(columns = location_list[[i]])
-            )
+    if (isTRUE(noteColumns)) {
+        for (i in seq_along(note_list)) {
+            tbl <- tbl |>
+                gt::tab_footnote(
+                    footnote = note_list[[i]],
+                    location = gt::cells_column_labels(columns = location_list[[i]])
+                )
+        }
+    }
+    
+    else if (isTRUE(noteRows)) {
+        for (i in seq_along(note_list)) {
+            tbl <- tbl |>
+                gt::tab_footnote(footnote = note_list[[i]],
+                                 location = gt::cells_stub(rows = location_list[[i]])
+                )
+        }
     }
     
     return(tbl)
