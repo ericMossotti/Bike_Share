@@ -3,9 +3,11 @@ filterDatabase <- function(conxn = dbconn,
                            path2 = tblPath_fltrd) {
     dplyr::tbl(conxn, 
                path1) |>
+        # rideable_type rationale - docked_bike stopped being recorded as a distinct 
+        # category within the time being analyzed (2023)
         dplyr::filter(trip_time > 1, 
-                      trip_time < 480
-                      #rideable_type != "docked_bike"
+                      trip_time < 480,
+                      rideable_type != "docked_bike"
                       ) |>
         dplyr::collect() |>
         
