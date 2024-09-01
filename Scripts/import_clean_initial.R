@@ -49,7 +49,7 @@ tripTibble <-
 
 # duckDB for data storage ----
 
-# Folder to hold database files..
+# Folder to hold database files
 dir.create("db")
 
 # A path for the initial database then processed database file 
@@ -86,6 +86,7 @@ rm(tripTibble)
 # Remove incomplete obs
 dplyr::tbl(dbconn, tblPath) |>
     dplyr::collect() |>
+    tidyr::drop_na() |>
     duckdb::dbWriteTable(conn = dbconn,
                          name = tblPath,
                          overwrite = TRUE)
@@ -97,8 +98,8 @@ dplyr::tbl(dbconn, tblPath) |>
         "months" = lubridate::month(started_at, label = TRUE, abbr = TRUE),
         "wkday" = lubridate::wday(started_at, abbr = TRUE, label = TRUE),
         "h_m_s" = strftime(started_at, format = "%T"),
-        "h_m" = strftime(started_at, format = "%H:%M %p"),
-        "h" = strftime(started_at, format = "%H %p"),
+        "h_m" = strftime(started_at, format = "%H:%M"),
+        "h" = strftime(started_at, format = "%H"),
         "trip_time" = lubridate::time_length(lubridate::interval(started_at, 
                                                                  ended_at), 
                                              unit = "minute"),
@@ -109,6 +110,6 @@ dplyr::tbl(dbconn, tblPath) |>
                          overwrite = TRUE)
 
 
-# Would like to remove  all files and sub-folders within the tempFiles folder.
+# Clean up environment
 unlink("tempFiles", recursive = TRUE)
 
