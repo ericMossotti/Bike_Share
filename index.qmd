@@ -21,11 +21,11 @@ code-overflow: wrap
 code-tools: true
 code-link: true
 
-toc-expand: true
 toc: true
+toc-location: left
+toc-depth: 5
 number-sections: true
 link-external-newwindow: true
-
 
 smooth-scroll: true
 fig-responsive: true
@@ -93,6 +93,7 @@ rawPath <- "db/rawData.db"
 # Loading plot and table scripts while at it. 
 source("Scripts/tabler.R")
 source("Scripts/plotter.R")
+source("transformData.R")
 
 ```
 
@@ -411,6 +412,8 @@ While all values in the **ride_id** column were found to be unique, not all obse
 ```{r}
 #| label: tbl-duplicates
 #| tbl-cap: Duplicates Table
+#| eval: false
+#| include: false
 
 # Not using the tabler function for this one. Might figure out a way later
 # but just a lot of customization not used in other tables.
@@ -465,7 +468,8 @@ In @tbl-duplicates, duplicate observations are listed and grouped by color for v
 ```{r}
 #| label: tbl-unduplicated
 #| tbl-cap: Un-duplicated Table
-#| echo: false
+#| eval: false
+#| include: false
 
 gt_undupes <- undupedTable |>
 dplyr::collect() |>
@@ -566,18 +570,17 @@ if (duckdb::dbExistsTable(dbconn,
 :::
 :::
 
-::: p-2
 Observations deemed erroneous or irrelevant for identifying usage trends among members and casual users were filtered out. Keeping track of these errors is a good practice, as they might provide insights into the differences in how members and casuals utilize the service.
 
 Trips with negative duration were flagged as errors and removed. Additionally, trips lasting less than a minute but greater than zero were noted and removed, as they could potentially skew the derived statistics. These extremely short trips might be attributed to users briefly trying out the service before committing or quickly realizing their dissatisfaction with it. While some observations seemed nonsensical, most of the data was retained.
 
 Consistent with the previous approach, an **if-else** decision was employed to facilitate testing. An external database filtering script was utilized to streamline the code within the main Quarto document. The resulting filtered data served as the foundation for subsequent analysis and table generation.
-:::
 
 ::: {.p-2 .flex-code}
 ```{r}
 #| label: countFiltered
 #| code-summary: "To get a count of the new total observations after filtering."
+#| tidy: formatR
 
 count_filtered <- dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(ride_id) |>
@@ -593,6 +596,7 @@ as.integer()
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
+#| tidy: formatR
 
 # To see the history of obs in our dataset.
 summaryProcessTable <- tidyr::tribble(
@@ -675,9 +679,7 @@ summaryProcessTable
 
 ## Contingency Tables
 
-::: p-3
 Contingency tables were created to gain quick insights into the data through a methodical, albeit simple, approach that facilitates understanding the bigger picture. Many of these tables are utilized in the tab-set section while some required further customization in the following section.
-:::
 
 ::: {.d-flex .justify-content-center .mb-3}
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
@@ -1020,31 +1022,19 @@ dplyr::tbl(dbconn,
 :::
 :::
 
-::: column-screen-inset
-::: {.d-flex .justify-content-center}
-::: panel-tabset
+
 ## Membership
 
-::: article
-::: section
-::: header-container
-::: {.heading-box .fs-2 .text-wrap}
-About Memberships
-:::
-
-::: {.callout-tip .calloutTip icon="false"}
+::: {.callout-important icon="false"}
 <!-- -->
+
 -   @tbl-memberTotals displays the total trip count for annual members and casual riders.
 
 -   The remaining tabs in this section provide total counts as well as group-wise counts based on membership status.
 :::
-:::
-:::
 
-------------------------------------------------------------------------
+### Counting Members
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: tbl-memberTotals
 #| tbl-cap: Total Member Frequency
@@ -1058,12 +1048,11 @@ location = n
 ) |>
 gt::cols_label(n = "Trips", member_casual = " ")
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: fig-totalmemberFrequency
 #| fig-cap: Total Member Frequency
+
 
 gplot <- dplyr::tbl(dbconn, "db/freq_member.db") |>
 plotter(
@@ -1076,38 +1065,22 @@ y_label = "Trips")
 
 gplot
 ```
-:::
-:::
-:::
+
 
 ## Cycle Types
 
-::: article
-::: section
-::: header-container
-::: {.heading-box .fs-2}
-About the Bicycle Types
-:::
-
-::: {.callout-tip .calloutTip icon="false"}
+::: {.callout-important icon="false"}
 <!-- -->
+
 -   @tbl-ctypeTotals and @fig-ctypeTotals compare the total trips taken on conventional and electric bicycles, clearly showing that electric bikes are not utilized as much as conventional ones.
 
 -   @tbl-ctypeCompare and @fig-ctypeCompare further break down the trip frequency by membership status, revealing a substantial disparity not only in the overall trip count between annual members and casual riders but also within the annual member group itself. While casual riders exhibit a small difference in trip counts between conventional and electric bikes, this difference is more pronounced among annual members.
 
 -   With $p < 0.05$ in @tbl-chiTypes, there appears to be a strong association between membership status (annual member or casual rider) and the type of bicycle preferred, suggesting that these factors are not independent.
 :::
-:::
-:::
 
-------------------------------------------------------------------------
+### Counting Bicycles
 
-::: fs-3
-Counting Bicycles
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: tbl-ctypeTotals
 #| tbl-cap: Cycle Type Total Frequency
@@ -1120,9 +1093,7 @@ location = n
 )
 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: fig-ctypeTotals
 #| fig-cap: Cycle Type Total Frequency 
@@ -1138,17 +1109,9 @@ y_label = "Trips")
 
 gplot
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Bicycle by Membership
 
-::: fs-3
-Bicycle by Membership
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: tbl-ctypeCompare
 #| tbl-cap: Cycle Type Group Frequency
@@ -1166,13 +1129,12 @@ label_n = "n",
 label_member = " "
 ) 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: fig-ctypeCompare
 #| fig-cap: Cycle Type Group Frequency
 
+source("Scripts/plotter.R")
 gplot <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
 plotter(
 title = "Bicycle Groups",
@@ -1182,23 +1144,17 @@ x_col = rideable_type,
 y_col = n, 
 group_col = member_casual,
 geomType = "column", 
-is_colGroup = TRUE
+is_colGroup = TRUE,
+color_col = "black",
+colPosition = "dodge",
+colGroup_palette = "Paired"
 )
 
 gplot
-
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Testing the association between membership and bicycle type
 
-::: fs-3
-Testing the association between membership and bicycle type
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: tbl-chiTypes
 
@@ -1216,9 +1172,7 @@ isSummary = TRUE
 )
 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: query cycle type with weights
 #| code-summary: "Return aggregated distinct rows utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
@@ -1238,11 +1192,7 @@ doWeights = TRUE
 )
 
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: cycle type modeling
 #| code-summary: "Predicting the log-odds of being a member versus being a casual user based on the particular bicycle type."
@@ -1251,10 +1201,9 @@ doWeights = TRUE
 model <- weighted_data |>
 glm(formula = member_casual ~ rideable_type, weights = n, family = binomial)
 ```
-:::
 
-::: p-3
 ```{r}
+#| label: tbl-ctypeModel
 
 regression_tbl <- model |>
 gtsummary::tbl_regression(
@@ -1267,38 +1216,395 @@ source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE)
 
 ```
+
+
+## Duration
+
+::: {.callout-important icon="false"}
+<!-- -->
+
+-   As evident from @tbl-triptimeTotals2 and @fig-triptimeTotals2, the duration of most trips falls within the range of 5 to 15 minutes.
+
+-   The group comparison in @tbl-triptimeCompare2 and @fig-triptimeCompare2 reveals that both casual riders and members largely follow the overall pattern observed in the totals. However, beyond the 42-minute mark, the count of casual riders exceeds that of members. While members ride more frequently overall, casual riders are more likely to undertake longer trips.
+
+-   Given that $\beta_1 < 0$ (@tbl-logTimes2), the results indicate that members are more likely to take shorter trips in terms of duration compared to casual riders.
 :::
+
+### Counting Duration
+
+::: tableScroller
+```{r}
+#| label: tbl-triptimeTotals
+#| tbl-cap: Trip-Time Totals
+
+
+dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
+dplyr::arrange(trip_time) |>
+tabler( 
+title = "Duration", 
+footnote = gt::md("The recorded observations."),
+location = n
+) |>
+gt::cols_align(columns = "trip_time", align = "left")
+```
 :::
+
+```{r}
+#| label: fig-triptimeTotals
+#| fig-cap: Trip-Time Totals
+#| fig-dpi: 600
+#| column: body-outset-right
+
+gplot <- dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
+dplyr::filter(trip_time <= 100) |>
+plotter(
+x_col = trip_time, 
+y_col = n,
+geomType = "column", 
+title = "Duration", 
+x_label = "Minutes", 
+y_label = "Overall Trips",
+color_col = "black") 
+
+gplot
+```
+
+### Duration by Membership
+
+::: tableScroller
+```{r}
+#| label: tbl-triptimeCompare
+#| tbl-cap: Trip Time Comparison
+
+
+dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
+dplyr::collect() |>
+dplyr::arrange(trip_time, member_casual) |>
+tabler(
+title = "Duration Compare",
+source_note = gt::md("**Source:** `db/freqCompare_tripTime.db`"),
+footnote = "The recorded observations.",
+location = n,
+groupName = "trip_time",
+label_n = "n",
+label_member = " "
+)
+
+```
 :::
+
+```{r}
+#| label: fig-triptimeCompare
+#| fig-cap: Trip-Time Group Frequency
+#| fig-dpi: 600
+#| column: body-outset-right
+
+gplot <- dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
+dplyr::arrange(trip_time, member_casual) |>
+dplyr::filter(trip_time <= 100) |>
+dplyr::collect() |>
+plotter(
+title = "Duration Groups",
+x_label = "Minutes",
+y_label = "Trips",
+x_col = trip_time, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column",
+is_colGroup = TRUE,
+colPosition = ggplot2::position_stack(reverse = TRUE),
+color_col = "black"
+)
+
+gplot
+```
+
+### Predicting with Duration?
+
+```{r}
+#| label: fig-durationModeling
+#| fig-dpi: 600
+#| column: body-outset-right
+
+# The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems.
+
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(trip_time, member_casual) |>
+dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
+dplyr::collect() |>
+duckdb::dbWriteTable(
+conn = dbconn,
+name = "db/rounded_trip_time.db",
+overwrite = TRUE)
+
+source("Scripts/transformData.R")
+
+weighted_data <- transformData(
+dbconn, 
+"db/rounded_trip_time.db", 
+select_cols = c("trip_time", "member_casual"), 
+group_cols = c("trip_time", "member_casual"), 
+binary_col = "member_casual", 
+ntile_col = "ntile_col", 
+pred_col = "trip_time", 
+zero_val = "casual", 
+one_val = "member",
+qtile_levels = c(
+"[1 : 6]", "(6 : 10]", "(10 : 16]", "(16 : 475]"),
+doWeights = TRUE,
+doQuantile = TRUE)
+
+expanded_data <- weighted_data |>
+tidyr::uncount(n, .remove = FALSE) |>
+dplyr::select(trip_time, member_casual)
+
+model <- weighted_data |> 
+glm(
+formula = member_casual ~ ntile_col, 
+weights = n, 
+family = binomial)
+
+regression_tbl <- model |>
+gtsummary::tbl_regression(
+label = list(ntile_col = "Duration Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE)
+
+regression_tbl |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Duration & Rider Type"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE)
+```
+
+```{r}
+#| label: axis breaks for casuals' duration
+#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- expanded_data |>
+dplyr::filter(member_casual == "casual", trip_time <= 100) |>
+calcBreaks()
+```
+
+```{r}
+#| label: fig-cDurationHistogram
+#| fig-cap: "Casuals Duration Histogram"
+#| fig-dpi: 600
+#| column: body-outset-right
+
+# histogram IQR viz for the duration metric
+#gplot <- duration_factored |>
+gplot <- expanded_data |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::select(trip_time) |>
+plotter(
+title = "Duration - Casuals",
+x_label = "Duration (minutes)",
+y_label = "Trips",
+x_col = trip_time, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+
+```{r}
+#| label: axis breaks for members' duration
+#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
+
+source("Scripts/calcBreaks.R")
+
+plotBreaks <- expanded_data |>
+dplyr::filter(member_casual == "member", trip_time <= 100) |>
+calcBreaks()
+```
+
+```{r}
+#| label: fig-mDurationHistogram
+#| fig-dpi: 600
+#| column: body-outset-right
+
+# histogram IQR viz for the duration metric
+gplot <- expanded_data |>
+dplyr::filter(member_casual == "member") |>
+dplyr::select(trip_time) |>
+plotter(
+title = "Duration - Members",
+x_label = "Duration (minutes)",
+y_label = "Trips",
+x_col = trip_time, 
+#y_col = n, 
+#group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+#isDensity = TRUE,
+isHistogram = TRUE,
+#is_colGroup = TRUE,
+limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 4,
+#density_color = "black",
+#density_fill = "red",
+#alpha = 0.75,
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red"
+) 
+
+gplot
+
+```
+
+68.26% of the data points are located between -1 and +1 standard deviations (34.13% in either direction). 95.44% of the data points are located between -2 and +2 standard deviations (47.72% in either direction). 99.72% of the data points are located between -3 and +3 standard deviations (49.86% in either direction)
+
+```{r}
+#| label: transformDuration
+
+source("Scripts/transformData.R")
+
+unrounded_data <- transformData(
+dbconn, 
+tblPath_fltrd, 
+select_cols = c("trip_time", "member_casual"), 
+binary_col = "member_casual", 
+zero_val = "casual", 
+one_val = "member"
+)
+```
+
+```{r}
+#| label: fig-durationDensity
+#| fig-dpi: 600
+#| column: body-outset-right
+
+source("Scripts/plotter.R")
+
+# density viz for the duration metric
+gplot <- 
+unrounded_data |>
+plotter(
+title = "Trip Duration Group Density",
+x_label = paste0("Duration", "\n", "(minutes)"),
+y_label = "Trips",
+x_col = trip_time, 
+#y_col = n,
+group_col = member_casual,
+geomType = "column", 
+#isFaceted = TRUE,
+isDensity = TRUE,
+#isHistogram = TRUE,
+is_colGroup = TRUE,
+limits = c(0, 100),
+angle = 45,
+breaks = plotBreaks,
+color_col = "black",
+#binwidth = 1,
+density_color = "gray",
+density_fill = "transparent",
+#alpha = 0.75,
+#vline_color = "lightyellow",
+#vline_size = 0.5,
+density_alpha = 0.6,
+)
+
+gplot
+```
+
+```{r}
+#| label: tbl-durationSummary
+
+source("Scripts/tabler.R")
+
+unrounded_data |>
+gtsummary::tbl_summary(
+by = member_casual,
+type = trip_time ~ "continuous2",
+label = list(trip_time ~ "Duration (minutes)"),
+digits = list(
+trip_time ~ c(2, 2)),
+statistic = 
+gtsummary::all_continuous() ~ c(
+"{median} ({p25}, {p75})", 
+"{mean} ({sd})", 
+"{min}, {max}")
+) |>
+gtsummary::italicize_levels() |>
+tabler(
+title = gt::md("Summary Statistics: <br> Duration - Membership"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE,
+)
+
+```
+
+```{r}
+#| label: fig-rocDuration
+#| fig-dpi: 600
+#| column: body-outset-right
+
+source("Scripts/plotter.R")
+
+# Generate ROC curve
+roc_duration <- pROC::roc(
+unrounded_data$member_casual, unrounded_data$trip_time, levels = c("casual", "member"))
+
+# Find the area under the curve value
+auc_duration <- round(pROC::auc(roc_duration), 4)
+
+gplot <- roc_duration |>
+plotter(
+x_col = NULL, 
+y_col = NULL, 
+isROC = TRUE,
+geomType = "ROC",
+title = paste0("ROC Curve for Duration", " (AUC = ", auc_duration, ")"),
+x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
+y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
+roc_color = "red")
+
+# false positive rate = x-axis; true positive rate = y-axis
+gplot
+```
+
 
 ## Month
 
-::: article
-::: section
-::: header-container
-::: {.heading-box .fs-2}
-About the Months
-:::
-
-::: {.callout-tip .calloutTip icon="false"}
+::: {.callout-important icon="false"}
 <!-- -->
+
 -   Examining the monthly totals in @tbl-monthTotals and @fig-monthTotals, it is evident that warmer months coincide with higher overall trip frequency.
 
 -   The comparison between subscriber and casual rider groups in @tbl-monthCompare and @fig-monthCompare reveals that both groups exhibit seasonal variations in trip frequency. However, the fluctuations appear to be less pronounced for subscribers compared to casual riders. The disparity in the extent of frequency changes is more apparent when contrasting winter and summer months between the two groups.
 
 -   With $p < 0.05$, (@tbl-chiMonths), there is strong evidence to suggest that membership status is associated with an individual's usage of the service during a particular month or season.
 :::
-:::
-:::
 
-------------------------------------------------------------------------
+### Counting Months
 
-::: fs-3
-Counting Months
-:::
-
-::: {.d-flex .align-content-stretch}
-::: mr-2
 ```{r}
 #| label: tbl-monthTotals
 #| tbl-cap: Month Total Frequency
@@ -1312,9 +1618,7 @@ location = n
 )
 
 ```
-:::
 
-::: ml-2
 ```{r}
 #| label: fig-monthTotals
 #| fig-cap: Month Total Frequency
@@ -1331,17 +1635,9 @@ y_label = "Trips")
 gplot
 
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Month by Membership
 
-::: fs-3
-Month by Membership
-:::
-
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-monthCompare
 #| tbl-cap: Month Group Frequency
@@ -1360,9 +1656,7 @@ label_member = " "
 )
 
 ```
-:::
 
-::: ml-2
 ```{r}
 #| label: fig-monthCompare
 #| fig-cap: Month Group Frequency
@@ -1383,17 +1677,9 @@ is_colGroup = TRUE
 gplot
 
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Testing the association between membership and month
 
-::: fs-3
-Testing the association between membership and month
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: tbl-chiMonths
 
@@ -1418,9 +1704,7 @@ isSummary = TRUE
 )
 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: accurate simple month density query and plot 
 
@@ -1449,38 +1733,22 @@ date_labels = "%b")
 gplot
 
 ```
-:::
-:::
-:::
+
 
 ## Day
 
-::: article
-::: section
-::: header-container
-::: {.heading-box .fs-2}
-About the Days
-:::
-
-::: {.callout-tip .calloutTip .shadow-lg icon="false"}
+::: {.callout-important icon="false"}
 <!-- -->
+
 -   @tbl-wkdayTotals and @fig-wkdayTotals indicate a higher total number of trips taken between Tuesday and Saturday compared to Sunday and Monday.
 
 -   The trend becomes more intricate in @tbl-wkdayCompare and @fig-wkdayCompare, which compare trip frequencies across weekdays for annual members and casual riders separately. Casual riders exhibit an increase in trips towards the weekend, with a dip on weekdays when annual members are more active. Conversely, when annual members are less active, casual riders tend to be more active.
 
 -   As $p < 0.05$ in @tbl-chiDays, there appears to be a significant association between membership status and the likelihood of using the service on a particular day of the week, suggesting that these factors are not independent.
 :::
-:::
-:::
 
-------------------------------------------------------------------------
+### Counting Days
 
-::: fs-3
-Counting Days
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: tbl-wkdayTotals
 #| tbl-cap: Weekday Total Frequency
@@ -1493,9 +1761,7 @@ location = n
 )
 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: fig-wkdayTotals
 #| fig-cap: Weekday Totals Frequency
@@ -1514,17 +1780,9 @@ ggplot2::coord_cartesian(ylim = c(4.5 * 10^5, NA))
 gplot
 
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Day by Membership
 
-::: fs-3
-Day by Membership
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: tbl-wkdayCompare
 #| tbl-cap: Weekday Group Frequency
@@ -1544,9 +1802,7 @@ label_member = " "
 )
 
 ```
-:::
 
-::: {.p .ml-2 .align-self-center}
 ```{r}
 #| label: fig-wkdayCompare
 #| fig-cap: Weekday Group Frequency
@@ -1568,17 +1824,9 @@ is_colGroup = TRUE
 gplot
 
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Testing the association between day and membership
 
-::: fs-3
-Testing the association between day and membership
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: accurate wkday query and density plot
 
@@ -1596,7 +1844,6 @@ year = 2024,
 month = 9, 
 day = compare_wkdays$wkdays)
 
-source("Scripts/plotter.R")
 
 gplot <- compare_wkdays |>
 plotter(
@@ -1615,9 +1862,7 @@ date_labels = "%a")
 
 gplot
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: accurate day of week chi-square query and table 
 
@@ -1635,145 +1880,138 @@ isSummary = TRUE
 )
 
 ```
-:::
-:::
-:::
+
 
 ## Hour
 
-::: article
-::: section
-::: header-container
-::: {.heading-box .fs-2}
-About the Hour of Day
-:::
-
-::: {.callout-tip .calloutTip icon="false"}
+::: {.callout-important icon="false"}
 <!-- -->
+
 -   The overall trend follows the typical work day cycle where one would expect to see with spikes in the mornings and evenings. See @tbl-hourTotals and @fig-hourTotals.
 
 -   There is a noted discrepancy between member and casual use during peak commute hours. Members have more notable spike during morning commute hours than casuals, which appears more flat throughout the day. See @tbl-hourCompare and @fig-hourCompare.
 
 -   Given, $p < 0.05$, members and casuals tend to take trips at different hours of the day. @tbl-chiHours
 :::
-:::
-:::
 
-------------------------------------------------------------------------
 
-::: fs-3
-Counting Hours
-:::
-
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
 ```{r}
-#| label: tbl-hourTotals
-#| tbl-cap: Total freqeuncy by the hour of day
-
-hours_of_Riders <- dplyr::tbl(dbconn, "db/freq_hours.db") |>
-dplyr::collect()
-
-x <-
-stringr::str_sub_all(hours_of_Riders[[1]], start = 1, end = 2) |>
-as.character() |>
-stringr::str_remove(pattern = "^0")
-
-
-y <- 
-stringr::str_sub(hours_of_Riders[[1]], start = -2, end = -1) |>
-stringr::str_to_lower()
-
-simpleTimes <- stringr::str_c(x, sep = " ", y)
-
-hours_of_Riders[[1]] <- simpleTimes
-
-hours_of_Riders |>
-dplyr::select(hour, Total_Riders) |>
-dplyr::rename("n" = Total_Riders) |>
-tabler( 
-title = "Hours", 
-footnote = gt::md("The recorded observations."),
-location = n
-)
-
-```
-:::
-
-::: p-3
-```{r}
-#| label: 'fig-hourTotals'
-#| fig-cap: "Total frequency by hour of day."
-
-hours_tbl <- hours_of_Riders |>
-dplyr::select(hour, Total_Riders) |>
-dplyr::rename("n" = Total_Riders) |>
-dplyr::mutate(
-hour = forcats::as_factor(hour),
-hour = forcats::fct_inorder(hour)
-)
-
-gplot <- hours_tbl |>
-plotter(
-x_col = hour, 
-y_col = n,
-geomType = "column", 
-title = "Hour of Day", 
-x_label = "Hour", 
-y_label = "Trips") +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
-
-gplot
-```
-:::
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
-```{r}
-#| label: accurate density plot for hour
-#| code-summary: "Seems like a more accurate hour query and density plot."
-
-
-compare_hours <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+#| label: mainHoursQuery
+#| code-summary: How I created the database table for the purpose of hours related EDA.  
+#| tidy: true
+  
+dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(started_at, member_casual) |>
 dplyr::arrange(started_at) |>
 dplyr::collect() |>
 dplyr::mutate(
-member_casual = factor(member_casual, levels = c("casual", "member")))
+started_at_time = update(started_at, year = 2023, month = 1, day = 1),
+hr = stringr::str_to_lower(
+format(lubridate::round_date(started_at, unit = "hour"), "%I %p")),
+hrMin = stringr::str_to_lower(
+format(lubridate::round_date(started_at, unit = "minute"), "%I:%M %p")),
+hrminSec = stringr::str_to_lower(
+format(lubridate::round_date(started_at, unit = "second"), "%r"))) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/base_hours.db",
+overwrite = TRUE)
 
-compare_hours$started_at <- update(
-compare_hours$started_at, 
-year = 2023, 
-month = 1, 
-day = 1)
+```
 
-source("Scripts/transformData.R")
- 
-weighted_data <- transformData(
-df = compare_hours,
-select_cols = c("started_at", "member_casual"),
-group_cols = c("started_at", "member_casual"),
-binary_col = "member_casual",
-pred_col = "started_at",
-ntile_col = "quartile",
-zero_val = "casual",
-one_val = "member",
-qtile_levels = c("Q1 (00:04 - 12:46]", "Q2 (12:46 - 15:58]", "Q3 (15:58 - 19:56]", "Q4 (19:56 - 23:58]"),
-doQuantile = TRUE,
-doWeights = TRUE,
-isDF = TRUE
+```{r}
+#| label: tbl-dbHours
+#| code-summary: A kable output of the hours db table.
+#| tidy: formatR
+
+dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::collect() |>
+head()
+#kableExtra::kable()
+```
+
+
+::: tableScroller
+```{r}
+#| label: tbl-hourTotals
+#| tbl-cap: Total freqeuncy by the hour of day
+
+dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::collect() |>
+dplyr::add_count(hr) |>
+dplyr::distinct(hr, n) |>
+tabler( 
+title = "Hours", 
+footnote = gt::md("The recorded observations."), 
+location = n)
+```
+:::
+
+
+::: tableScroller
+```{r}
+#| label: tbl-hourMembership
+#| tbl-cap: Frequencies for membership by hour.
+
+dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::collect() |>
+dplyr::group_by(hr, member_casual) |>
+dplyr::add_count(hr) |>
+dplyr::distinct(hr, member_casual, n) |>
+tabler(
+title = "Hours Membership Groups",
+source_note = gt::md("**Source:** `db/fltrd_db.db`"),
+footnote = "The recorded observations.",
+location = n,
+groupName = "member_casual",
+label_n = "n",
+label_member = " "
 )
 
+```
 
-source("Scripts/plotter.R")
+:::
 
-gplot <- compare_hours |>
+```{r}
+#| label: fig-hourTotals
+#| fig-cap: "Total frequency by hour of day."
+#| fig-dpi: 600
+#| column: body-outset-right
+
+dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::collect() |>
+dplyr::add_count(hr) |>
+dplyr::distinct(hr, n) |>
+dplyr::mutate(
+hr = stringr::str_to_lower(hr),
+hr = forcats::as_factor(hr)
+) |>
+plotter(
+x_col = hr, 
+y_col = n,
+geomType = "column", 
+title = "Hour of Day", 
+x_label = "Hour", 
+y_label = "Trips",
+) +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+
+gplot
+```
+
+### Hour by Membership
+
+```{r}
+#| label: fig-hourDensity
+#| code-summary: "Seems like a more accurate hour query and density plot."
+#| fig-dpi: 600
+#| column: body-outset-right
+
+gplot <- dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::collect() |>
 plotter(
 title = "Hour Group Density",
 x_label = paste0("Hour of the Day"),
-#y_label = "Trips",
-x_col = started_at, 
+x_col = started_at_time, 
 group_col = member_casual,
 geomType = "other",
 angle = 45,
@@ -1781,106 +2019,107 @@ color_col = "black",
 density_alpha = 0.75,
 isTime = TRUE,
 date_breaks = "1 hour",
-date_labels = "%I %p"
+date_labels = "%I %p",
 )
 
 gplot
 ```
-:::
 
-::: p-3
+
 ```{r}
+#| label: hoursWeightedQuantiles
+#| code-summary: How I weighted the data by quartile for hours. 
+#| tidy: formatR
 
-model <- weighted_data |> 
+transformData(
+conn = dbconn,
+path = "db/base_hours.db",
+select_cols = c("started_at_time", "member_casual"),
+group_cols = c("started_at_time", "member_casual"),
+binary_col = "member_casual",
+pred_col = "started_at_time",
+ntile_col = "quartile",
+zero_val = "casual",
+one_val = "member",
+qtile_levels = c("Q1 (00:04 - 12:46]", "Q2 (12:46 - 15:58]", "Q3 (15:58 - 19:56]", "Q4 (19:56 - 23:58]"),
+doQuantile = TRUE,
+doWeights = TRUE
+) |>
+duckdb::dbWriteTable(conn = dbconn, name = "db/hour_wtq.db", overwrite = TRUE)
+```
+```{r}
+#| label: tbl-hoursWTQ
+#| code-summary: A kable output of the hour's weighted quantile db table.
+#| tidy: formatR
+
+dplyr::tbl(dbconn, "db/hour_wtq.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+
+
+```{r}
+#| label: modelHourQ
+#| code-summary: Create model object for hour based on quartile range. 
+
+model <- 
+dplyr::tbl(dbconn, "db/hour_wtq.db") |>
+dplyr::collect() |> 
 glm(
 formula = member_casual ~ quartile, 
 family = binomial,
 weights = n)
+```
 
-regression_tbl <- model |>
+```{r}
+#| label: tbl-modelHourQ
+#| code-summary: Model fitting results for hour's quartile ranges. 
+
+model |>
 gtsummary::tbl_regression(
 label = list(quartile = "Hour Ranges"), 
 conf.int = FALSE, 
-exponentiate = TRUE)
-
-regression_tbl |>
+exponentiate = TRUE) |>
 tabler(
 title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE)
 
 ```
-:::
-:::
 
-------------------------------------------------------------------------
-
-::: fs-3
-Hour by Membership
-:::
-
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
 ```{r}
-#| label: tbl-hourCompare
-#| tbl-cap: Grouped hour frequency
+#| label: nHr
+#| code-summary: How to grouped n by hour and member was created.
 
-
-hour_tbl <- 
-dplyr::tbl(dbconn, "db/freqCompare_hours.db") |>
+dplyr::tbl(dbconn, "db/base_hours.db") |>
 dplyr::collect() |>
 dplyr::mutate(
-hour = forcats::as_factor(hour), 
-hour = forcats::fct_inorder(hour),
-Total_Riders = as.integer(Total_Riders)
+hr = forcats::as_factor(hr),
+member_casual = forcats::fct(member_casual, levels = c("casual", "member"))
 ) |>
-dplyr::rename("n" = Total_Riders)
-
-x <-
-stringr::str_sub_all(hour_tbl[[2]], start = 1, end = 2) |>
-as.character() |>
-stringr::str_remove(pattern = "^0")
-
-
-y <- 
-stringr::str_sub(hour_tbl[[2]], start = -2, end = -1) |>
-stringr::str_to_lower()
-
-simpleTimes <- stringr::str_c(x, sep = " ", y)
-
-hour_tbl[[2]] <- simpleTimes
-
-hour_tbl <- hour_tbl |>
-dplyr::mutate(
-hour = forcats::as_factor(hour),
-hour = forcats::fct_inorder(hour))
-
-hour_tbl |>
-dplyr::select(hour, member_casual, n) |>
-tabler(
-title = "Hour Groups",
-source_note = gt::md("**Source:** `db/freqCompare_hours.db`"),
-footnote = "The recorded observations.",
-location = n,
-groupName = "hour",
-label_n = "n",
-label_member = " "
-)
-
+dplyr::add_count(member_casual, hr) |>
+dplyr::arrange(hr, member_casual) |>
+dplyr::distinct(member_casual, hr, n) |>
+duckdb::dbWriteTable(conn = dbconn, 
+name = "db/hour_nHr.db", 
+overwrite = TRUE)
 ```
-:::
 
-::: {.p-3 .align-self-center}
+
 ```{r}
 #| label: fig-hourCompare
 #| fig-cap: Grouped hour frequency
+#| fig-dpi: 600
+#| column: body-outset-right
 
-gplot <- hour_tbl |>
+gplot <- dplyr::tbl(dbconn, "db/hour_nHr.db") |>
+dplyr::collect() |>
 plotter(
 title = "Hour Groups",
 x_label = "Hour of Day",
 y_label = "Trips",
-x_col = hour, 
+x_col = hr, 
 y_col = n, 
 group_col = member_casual,
 geomType = "column", 
@@ -1890,509 +2129,46 @@ is_colGroup = TRUE
 ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 gplot
-
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Predicting with Hour?
 
-::: fs-3
-Can the hour of the day predict membership?
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
-```{r}
-#| eval: false
-#| include: false
-
-dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(h, member_casual) |>
-#dplyr::mutate(h = round(miles, digits = 1)) |>
-dplyr::collect() |>
-duckdb::dbWriteTable(
-conn = dbconn,
-name = "db/rounded_h.db",
-overwrite = TRUE)
-
-source("Scripts/transformData.R")
-
-weighted_data <- transformData(
-dbconn, 
-"db/rounded_h.db", 
-select_cols = c("h", "member_casual"), 
-group_cols = c("h", "member_casual"), 
-binary_col = "member_casual", 
-ntile_col = "ntile_col", 
-pred_col = "h", 
-zero_val = "casual", 
-one_val = "member",
-qtile_levels = c(
-"[00 : 06]", "(06 : 10]", "(10 : 13]", "(13 : 23]"),
-doWeights = TRUE,
-doQuantile = TRUE)
-
-expanded_data <- weighted_data |>
-tidyr::uncount(n, .remove = FALSE) |>
-dplyr::select(h, member_casual)
-
-model <- weighted_data |> 
-glm(
-formula = member_casual ~ ntile_col, 
-weights = n, 
-family = binomial)
-
-regression_tbl <- model |>
-gtsummary::tbl_regression(
-label = list(ntile_col = "Hour Ranges"), 
-conf.int = FALSE, 
-exponentiate = TRUE)
-
-regression_tbl |>
-tabler(
-title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE)
-
-# 
-# members are about 2.1 times to fall into Q1 as casuals
-# 11% less likely Q2 as Q1
-# 61% less likely Q3 as Q1
-# 78% less likely Q4 as Q1
-# 
-
-#    25% ,   25%  ,   25%  ,    25%
-# 0<=x<=6, 6<x<=10, 10<x<=13, 13<x<=23
-# 
-
-
-```
-:::
-
-::: p-3
-```{r}
-#| eval: false
-#| include: false
-
-dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(h_m, member_casual) |>
-#dplyr::mutate(h = round(miles, digits = 1)) |>
-dplyr::collect() |>
-duckdb::dbWriteTable(
-conn = dbconn,
-name = "db/rounded_h_m.db",
-overwrite = TRUE)
-
-source("Scripts/transformData.R")
-
-weighted_data <- transformData(
-dbconn, 
-"db/rounded_h_m.db", 
-select_cols = c("h_m", "member_casual"), 
-group_cols = c("h_m", "member_casual"), 
-binary_col = "member_casual", 
-ntile_col = "ntile_col", 
-pred_col = "h_m", 
-zero_val = "casual", 
-one_val = "member",
-qtile_levels = c(
-"[00 : 06]", "(06 : 10]", "(10 : 13]", "(13 : 23]"),
-doWeights = TRUE,
-doQuantile = TRUE)
-
-expanded_data <- weighted_data |>
-tidyr::uncount(n, .remove = FALSE) |>
-dplyr::select(h_m, member_casual)
-
-model <- weighted_data |> 
-glm(
-formula = member_casual ~ ntile_col, 
-weights = n, 
-family = binomial)
-
-regression_tbl <- model |>
-gtsummary::tbl_regression(
-label = list(ntile_col = "Hour Ranges"), 
-conf.int = FALSE, 
-exponentiate = TRUE)
-
-regression_tbl |>
-tabler(
-title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE)
-
-# 
-# members are about 2.1 times to fall into Q1 as casuals
-# 11% less likely Q2 as Q1
-# 61% less likely Q3 as Q1
-# 78% less likely Q4 as Q1
-# 
-
-#    25% ,   25%  ,   25%  ,    25%
-# 0<=x<=6, 6<x<=10, 10<x<=13, 13<x<=23
-# 
-#
-```
-:::
-
-::: p-3
-```{r}
-#| label: modeling hours
-#| code_summary: Modeling hours
-
-dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(h_m_s, h, member_casual) |>
-#dplyr::mutate(h = round(miles, digits = 1)) |>
-dplyr::collect() |>
-duckdb::dbWriteTable(
-conn = dbconn,
-name = "db/rounded_h_m_s.db",
-overwrite = TRUE)
-
-source("Scripts/transformData.R")
-
-weighted_data <- transformData(
-dbconn, 
-"db/rounded_h_m_s.db", 
-select_cols = c("h_m_s", "h", "member_casual"), 
-group_cols = c("h_m_s", "h", "member_casual"), 
-binary_col = "member_casual", 
-ntile_col = "ntile_col", 
-pred_col = "h_m_s", 
-zero_val = "casual", 
-one_val = "member",
-qtile_levels = c(
-"[00 : 06]", "(06 : 10]", "(10 : 13]", "(13 : 23]"),
-doWeights = TRUE,
-doQuantile = TRUE)
-
-expanded_data <- weighted_data |>
-tidyr::uncount(n, .remove = FALSE) |>
-dplyr::select(h_m_s, h, member_casual)
-
-model <- weighted_data |> 
-glm(
-formula = member_casual ~ ntile_col, 
-weights = n, 
-family = binomial)
-
-regression_tbl <- model |>
-gtsummary::tbl_regression(
-label = list(ntile_col = "Hour Ranges"), 
-conf.int = FALSE, 
-exponentiate = TRUE)
-
-regression_tbl |>
-tabler(
-title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE)
-
-# 
-# members are about 2.1 times to fall into Q1 as casuals
-# 11% less likely Q2 as Q1
-# 61% less likely Q3 as Q1
-# 78% less likely Q4 as Q1
-# 
-
-#    25% ,   25%  ,   25%  ,    25%
-# 0<=x<=6, 6<x<=10, 10<x<=13, 13<x<=23
-# 
-
-```
-:::
-
-::: p-3
-```{r}
-#| label: axis breaks for casuals' hour 
-#| code-summary: Determining optimal breaks in the hour charts based on the x-axis metrics.
-#| eval: false
-#| include: false
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "casual") |>
-dplyr::mutate(h_m_s = strptime(h_m_s, format = "%T")) |>
-calcBreaks()
-
-plotBreaks
-```
-:::
-:::
-
-::: p-3
-```{r}
-#| eval: false
-#| include: false
-
-source("Scripts/plotter.R")
-
-# histogram IQR viz for the distance metric
-#gplot <- distance_factored |>
-gplot <- expanded_data |>
-#dplyr::mutate(
-#h = as.numeric(h)) |>
-dplyr::filter(member_casual == "casual") |>
-plotter(
-title = "Hour - Casuals",
-x_label = "Hour of Day",
-y_label = "Trips",
-x_col = h_m_s, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(0, 23),
-angle = 45,
-#breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-#vline_color = "lightyellow",
-#vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
-
-gplot
-
-```
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
-```{r}
-#| label: axis breaks for members' hour 
-#| code-summary: Determining optimal breaks in the hour charts based on the x-axis metrics.
-#| eval: false
-#| include: false
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "member") |>
-dplyr::mutate(h = as.numeric(h)) |>
-calcBreaks(min.n = 0)
-```
-:::
-
-::: p-3
-```{r}
-#| eval: false
-#| include: false
-
-
-source("Scripts/plotter.R")
-
-# histogram IQR viz for the distance metric
-gplot <- expanded_data |>
-dplyr::filter(member_casual == "member") |>
-dplyr::select(h) |>
-dplyr::mutate(
-h = as.numeric(h)
-) |>
-plotter(
-title = "Hour - Members",
-x_label = "Hour of Day",
-y_label = "Trips",
-x_col = h, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(0, 23),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
-
-gplot
-```
-:::
-
-::: p-3
-```{r}
-#| label: axis breaks for all hours 
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::select(h) |>
-dplyr::mutate(h = as.numeric(h)) |>
-calcBreaks(min.n = 0)
-```
-:::
-
-::: p-3
-```{r}
-#| eval: false
-#| include: false
-
-source("Scripts/tabler.R")
-
-gtsummary::theme_gtsummary_compact()
-#reset_gtsummary_theme()
-
-expanded_data |>
-gtsummary::tbl_summary(
-by = member_casual,
-type = h ~ "continuous2",
-label = list(h ~ "Hours"),
-digits = list(
-miles ~ c(2, 2)),
-statistic = 
-gtsummary::all_continuous() ~ c(
-"{median} ({p25}, {p75})", 
-"{mean} ({sd})", 
-"{min}, {max}")
-) |>
-gtsummary::italicize_levels() |>
-tabler(
-title = gt::md("Summary Statistics: <br> Hours - Membership"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE
-)
-
-```
-:::
-
-::: p-3
-```{r}
-#| eval: false
-#| include: false
-
-# Generate ROC curve
-roc_hours <- pROC::roc(expanded_data$member_casual, expanded_data$h, levels = c("casual", "member"))
-
-
-# Find the area under the curve value
-auc_hours <- round(pROC::auc(roc_hours), 4)
-
-gplot <- roc_hours |>
-plotter(
-x_col = NULL, 
-y_col = NULL, 
-isROC = TRUE,
-geomType = "ROC",
-title = paste0(
-"ROC Curve for Hours", 
-" (AUC = ", 
-auc_hours, 
-")"),
-x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
-y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
-roc_color = "red"
-)
-
-# false positive rate = x-axis; true positive rate = y-axis
-gplot
-```
-:::
-
-::: p-3
 ```{r}
 #| label: tbl-chiHours
-#| tbl-cap: "Can the hour of the day correlate to a binary outcome, such as membership?"
+#| tbl-cap: Chi-Squared for aggregated hours data to the level of rounded hours.
 
-# conversion of the datetime column to a new time only column for hour of day
-hour_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(started_at, member_casual) |>
-dplyr::mutate("hour" = lubridate::hour(started_at)) |>
-dplyr::arrange(hour) |>
+
+dplyr::tbl(dbconn, "db/hour_nHr.db") |>
 dplyr::collect() |>
-dplyr::mutate(
-hour = hms::hms(hours = hour),
-# Need the 12 hour format with am and pm
-hour = format(strptime(hour, format = "%H"), "%r"),
-hour = forcats::as_factor(hour),
-hour = forcats::fct_inorder(hour)
-)
-
-x <-
-stringr::str_sub_all(hour_tbl[[3]], start = 1, end = 2) |>
-as.character() |>
-stringr::str_remove(pattern = "^0")
-
-
-y <- 
-stringr::str_sub(hour_tbl[[3]], start = -2, end = -1) |>
-stringr::str_to_lower()
-
-simpleTimes <- stringr::str_c(x, sep = " ", y)
-
-hour_tbl[[3]] <- simpleTimes
-
-# Need to reapply forcats functions to retain time order
-hour_tbl <- hour_tbl |>
-dplyr::select(hour, member_casual) |>
-dplyr::mutate(
-hour = forcats::as_factor(hour),
-hour = forcats::fct_inorder(hour)
-)
-
-hour_tbl |>
-dplyr::select(member_casual, hour) |>
+tidyr::uncount(n, .remove = TRUE) |>
 tabler(
 title = "Chi-Square: Hour & Rider Type",
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-label = list(hour = "Hour"),
+label = list(hr = "Hour"),
 by = member_casual,
 isSummary = TRUE
 )
-
 ```
-:::
-:::
-:::
+
+
+
+
 
 ## Distance
 
-::: article
-::: section
-::: header-container
-::: {.heading-box .fs-2}
-About the Distance
-:::
-
-::: {.callout-tip .calloutTip icon="false"}
+::: {.callout-important icon="false"}
 <!-- -->
+
 -   The distance of most observed trips in @tbl-milesTotals and @fig-milesTotals fall in between 0.3 to 3 miles.
 
 -   The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the same pattern. The casual and member differ mainly in overall scale of trips taken between the 0.3 and 3 mile trip distances.
 
 -   $\beta_1 < 0$, members are less likely to ride as distance traveled in a given trip increases. So, members tend to take shorter trips compared to casual users. @tbl-logMiles
 :::
-:::
-:::
 
-------------------------------------------------------------------------
 
-::: fs-3
-Counting Distance
-:::
+### Counting Distance
 
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-milesTotals
 #| tbl-cap: Miles Total Frequency
@@ -2410,9 +2186,7 @@ location = n
 )
 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: fig-milesTotals
 #| fig-cap: Miles Total Frequency
@@ -2440,17 +2214,9 @@ ggplot2::scale_x_discrete(
 guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Distance by Membership
 
-::: fs-3
-Distance by Membership
-:::
-
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-milesCompare
 #| tbl-cap: Miles Group Frequency
@@ -2474,9 +2240,7 @@ label_member = " "
 )
 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: fig-milesCompare
 #| fig-cap: Miles Group Frequency
@@ -2494,11 +2258,7 @@ dplyr::filter(miles <= 11) |>
 dplyr::mutate(
 miles = forcats::as_factor(miles))
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: compareMiles
 #| code-summary: plot of miles
@@ -2521,17 +2281,9 @@ is_colGroup = TRUE
 
 gplot
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Trip distance has weak predictive value on membership status
 
-::: fs-3
-Trip distance has weak predictive value on membership status
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: distance weighted stats modeling
 #| code-summary: "The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
@@ -2603,9 +2355,7 @@ isBinary = TRUE)
 # 0.1<=x<=0.6, 0.6<x<=1, 1<x<=1.8, 1.8<x<=20.5
 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: axis breaks for casuals' distance 
 #| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
@@ -2618,11 +2368,7 @@ calcBreaks()
 
 plotBreaks
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 
 source("Scripts/plotter.R")
@@ -2663,9 +2409,7 @@ high = "red"
 gplot
 
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: axis breaks for members' distance 
 #| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
@@ -2676,11 +2420,7 @@ plotBreaks <- expanded_data |>
 dplyr::filter(member_casual == "member", miles <= 10) |>
 calcBreaks()
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 
 source("Scripts/plotter.R")
@@ -2717,9 +2457,7 @@ high = "red"
 
 gplot
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: axis breaks for all distance 
 #| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
@@ -2730,11 +2468,7 @@ plotBreaks <- expanded_data |>
 dplyr::filter(miles <= 10) |>
 calcBreaks()
 ```
-:::
-:::
 
-::: {.d-flex .align-content-center}
-::: p-3
 ```{r}
 
 source("Scripts/plotter.R")
@@ -2768,15 +2502,8 @@ density_alpha = 0.7
 
 gplot
 ```
-:::
 
-::: p-3
 ```{r}
-
-source("Scripts/tabler.R")
-
-gtsummary::theme_gtsummary_compact()
-#reset_gtsummary_theme()
 
 expanded_data |>
 gtsummary::tbl_summary(
@@ -2799,12 +2526,9 @@ isBinary = TRUE
 )
 
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
+#| label: fig-rocMiles
 
 # Generate ROC curve
 roc_miles <- pROC::roc(
@@ -2832,38 +2556,21 @@ roc_color = "red"
 # false positive rate = x-axis; true positive rate = y-axis
 gplot
 ```
-:::
-:::
-:::
 
 ## Speed
 
-::: article
-::: section
-::: header-container
-::: {.heading-box .fs-2}
-About the Speed
-:::
-
-::: {.callout-tip .calloutTip icon="false"}
+::: {.callout-important icon="false"}
 <!-- -->
+
 -   This information, derived from @tbl-mphTotals and @fig-mphTotals, indicates that most riders (both casual and member) travel at speeds between 2 and 12 mph. This range likely represents typical urban cycling speeds, accounting for factors like traffic, road conditions, and rider fitness.
 
 -   The information, shown in @tbl-mphCompare and @fig-mphCompare, suggests that members tend to ride at higher speeds compared to casual riders
 
 -   Applying the binary logistic regression model, where $\beta_1 > 0$, members tend to have a slightly higher estimated average speed for the duration of their trips compared to casuals. @tbl-logMph
 :::
-:::
-:::
 
-------------------------------------------------------------------------
+### Counting Speed
 
-::: fs-3
-Counting Speed
-:::
-
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-mphTotals
 #| tbl-cap: Mph Total Frequency
@@ -2878,9 +2585,7 @@ location_list = list("mph")
 gt::cols_label(mph = "Mph") |>
 gt::cols_align(mph, align = "left")
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: fig-mphTotals
 #| fig-cap: Mph Total Frequency
@@ -2896,17 +2601,9 @@ y_label = "Trips")
 
 gplot
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Speed by Membership
 
-::: fs-3
-Speed by Membership
-:::
-
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
 ```{r}
 #| label: tbl-mphCompare
 #| tbl-cap: Mph Group Frequency
@@ -2924,9 +2621,7 @@ label_n = "n",
 label_member = " "
 )
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: fig-mphCompare
 #| fig-cap: Mph Group Frequency
@@ -2950,19 +2645,11 @@ isFaceted = TRUE
 gplot
 
 ```
-:::
-:::
 
-------------------------------------------------------------------------
+### Speed has weak predictive value on membership status
 
-::: fs-3
-Speed has weak predictive value on membership status
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
-#| label: speed weighted stats modeling
+#| label: tbl-mphModel
 #| code-summary: "The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
 
 dplyr::tbl(dbconn, tblPath_fltrd) |>
@@ -3013,9 +2700,7 @@ title = gt::md("Binary Logistic Regression: <br> Speed & Rider Type"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE)
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: axis breaks for speed
 #| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics for casuals.
@@ -3026,11 +2711,7 @@ plotBreaks <- expanded_data |>
 dplyr::filter(member_casual == "casual") |>
 calcBreaks()
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 
 source("Scripts/plotter.R")
@@ -3067,9 +2748,7 @@ high = "red"
 
 gplot
 ```
-:::
 
-::: p-3
 ```{r}
 #| label: axis breaks for members' speed
 #| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
@@ -3080,11 +2759,7 @@ plotBreaks <- expanded_data |>
 dplyr::filter(member_casual == "member") |>
 calcBreaks()
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 
 source("Scripts/plotter.R")
@@ -3122,9 +2797,7 @@ high = "red"
 gplot
 
 ```
-:::
 
-::: p-3
 ```{r}
 
 source("Scripts/transformData.R")
@@ -3139,11 +2812,7 @@ one_val = "member"
 )
 
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
 #| label: axis breaks for all speed
 #| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
@@ -3156,11 +2825,9 @@ plotBreaks <- unrounded_data |>
 #dplyr::filter(member_casual == "member") |>
 calcBreaks()
 ```
-:::
 
-::: p-3
 ```{r}
-
+#| label: fig-densityMPH
 
 source("Scripts/plotter.R")
 
@@ -3196,17 +2863,11 @@ density_alpha = 0.7,
 
 gplot
 ```
-:::
-:::
 
-::: {.d-flex .align-content-stretch}
-::: p-3
 ```{r}
+#| label: tbl-mphSummary
 
 source("Scripts/tabler.R")
-
-#gtsummary::theme_gtsummary_compact()
-#reset_gtsummary_theme()
 
 unrounded_data |>
 gtsummary::tbl_summary(
@@ -3229,10 +2890,9 @@ isBinary = TRUE
 )
 
 ```
-:::
 
-::: p-3
 ```{r}
+#| label: fig-rocMph
 
 source("Scripts/plotter.R")
 
@@ -3259,430 +2919,8 @@ roc_color = "red"
 gplot
 
 ```
-:::
-:::
-:::
 
-## Duration
-
-::: article
-::: section
-::: header-container
-::: {.heading-box .fs-2}
-About the Duration
-:::
-
-::: {.callout-tip .calloutTip icon="false"}
-<!-- -->
--   As evident from @tbl-triptimeTotals and @fig-triptimeTotals, the duration of most trips falls within the range of 5 to 15 minutes.
-
--   The group comparison in @tbl-triptimeCompare and @fig-triptimeCompare reveals that both casual riders and members largely follow the overall pattern observed in the totals. However, beyond the 42-minute mark, the count of casual riders exceeds that of members. While members ride more frequently overall, casual riders are more likely to undertake longer trips.
-
--   Given that $\beta_1 < 0$ (@tbl-logTimes), the results indicate that members are more likely to take shorter trips in terms of duration compared to casual riders.
-:::
-:::
-:::
-
-------------------------------------------------------------------------
-
-::: fs-3
-Counting Durations
-:::
-
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
-```{r}
-#| label: tbl-triptimeTotals
-#| tbl-cap: Trip-Time Totals
-
-
-dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
-dplyr::arrange(trip_time) |>
-tabler( 
-title = "Duration", 
-footnote = gt::md("The recorded observations."),
-location = n
-) |>
-gt::cols_align(columns = "trip_time", align = "left")
-
-```
-:::
-
-::: p-3
-```{r}
-#| label: fig-triptimeTotals
-#| fig-cap: Trip-Time Totals
-
-source("Scripts/plotter.R")
-
-gplot <- dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
-plotter(
-x_col = trip_time, 
-y_col = n,
-geomType = "line", 
-title = "Duration", 
-x_label = "Minutes", 
-y_label = "Trips",
-lineColor = "white"
-) +
-ggplot2::xlim(NA, 100)
-
-gplot
-```
-:::
-:::
-
-------------------------------------------------------------------------
-
-::: fs-3
-Duration by Membership
-:::
-
-::: {.d-flex .align-content-stretch}
-::: {.p-3 .tableScroller}
-```{r}
-#| label: tbl-triptimeCompare
-#| tbl-cap: Trip Time Comparison
-
-dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
-dplyr::collect() |>
-dplyr::arrange(trip_time, member_casual) |>
-tabler(
-title = "Duration Compare",
-source_note = gt::md("**Source:** `db/freqCompare_tripTime.db`"),
-footnote = "The recorded observations.",
-location = n,
-groupName = "trip_time",
-label_n = "n",
-label_member = " "
-)
-
-```
-:::
-
-::: p-3
-```{r}
-#| label: fig-triptimeCompare
-#| fig-cap: Trip-Time Group Frequency 
-
-gplot <- dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
-plotter(
-title = "Duration Groups",
-x_label = "Minutes",
-y_label = "Trips",
-x_col = trip_time, 
-y_col = n, 
-color_col = member_casual,
-geomType = "line",
-is_lineGroup = TRUE
-) +
-ggplot2::xlim(NA, 100)
-
-gplot
-
-```
-:::
-:::
-
-------------------------------------------------------------------------
-
-::: fs-3
-Trip duration's predictive value on membership status
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
-```{r}
-#| label: duration weighted stats modeling
-#| code-summary: The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems.
-
-dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(trip_time, member_casual) |>
-dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
-dplyr::collect() |>
-duckdb::dbWriteTable(
-conn = dbconn,
-name = "db/rounded_trip_time.db",
-overwrite = TRUE)
-
-source("Scripts/transformData.R")
-
-weighted_data <- transformData(
-dbconn, 
-"db/rounded_trip_time.db", 
-select_cols = c("trip_time", "member_casual"), 
-group_cols = c("trip_time", "member_casual"), 
-binary_col = "member_casual", 
-ntile_col = "ntile_col", 
-pred_col = "trip_time", 
-zero_val = "casual", 
-one_val = "member",
-qtile_levels = c(
-"[1 : 6]", "(6 : 10]", "(10 : 16]", "(16 : 475]"),
-doWeights = TRUE,
-doQuantile = TRUE)
-
-expanded_data <- weighted_data |>
-tidyr::uncount(n, .remove = FALSE) |>
-dplyr::select(trip_time, member_casual)
-
-model <- weighted_data |> 
-glm(
-formula = member_casual ~ ntile_col, 
-weights = n, 
-family = binomial)
-
-regression_tbl <- model |>
-gtsummary::tbl_regression(
-label = list(ntile_col = "Duration Ranges"), 
-conf.int = FALSE, 
-exponentiate = TRUE)
-
-regression_tbl |>
-tabler(
-title = gt::md("Binary Logistic Regression: <br> Duration & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE)
-```
-:::
-
-::: p-3
-```{r}
-#| label: axis breaks for casuals' duration
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "casual", trip_time <= 100) |>
-calcBreaks()
-```
-:::
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
-```{r}
-
-source("Scripts/plotter.R")
-
-# histogram IQR viz for the duration metric
-#gplot <- duration_factored |>
-gplot <- expanded_data |>
-dplyr::filter(member_casual == "casual") |>
-dplyr::select(trip_time) |>
-plotter(
-title = "Duration - Casuals",
-x_label = "Duration (minutes)",
-y_label = "Trips",
-x_col = trip_time, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(0, 100),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
-
-gplot
-
-```
-:::
-
-::: p-3
-```{r}
-#| label: axis breaks for members' duration
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "member", trip_time <= 100) |>
-calcBreaks()
-```
-:::
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
-```{r}
-
-source("Scripts/plotter.R")
-
-# histogram IQR viz for the duration metric
-gplot <- expanded_data |>
-dplyr::filter(member_casual == "member") |>
-dplyr::select(trip_time) |>
-plotter(
-title = "Duration - Members",
-x_label = "Duration (minutes)",
-y_label = "Trips",
-x_col = trip_time, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(0, 100),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
-
-gplot
-
-```
-:::
-
-:::p-3
-68.26% of the data points are located between -1 and +1 standard deviations (34.13% in either direction). 95.44% of the data points are located between -2 and +2 standard deviations (47.72% in either direction). 99.72% of the data points are located between -3 and +3 standard deviations (49.86% in either direction)
-:::
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
-```{r}
-
-source("Scripts/transformData.R")
-
-unrounded_data <- transformData(
-dbconn, 
-tblPath_fltrd, 
-select_cols = c("trip_time", "member_casual"), 
-binary_col = "member_casual", 
-zero_val = "casual", 
-one_val = "member"
-)
-```
-:::
-
-::: p-3
-```{r}
-
-source("Scripts/plotter.R")
-
-# density viz for the duration metric
-gplot <- 
-unrounded_data |>
-plotter(
-title = "Trip Duration Group Density",
-x_label = paste0("Duration", "\n", "(minutes)"),
-y_label = "Trips",
-x_col = trip_time, 
-#y_col = n,
-group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-isDensity = TRUE,
-#isHistogram = TRUE,
-is_colGroup = TRUE,
-limits = c(0, 100),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 1,
-density_color = "gray",
-density_fill = "transparent",
-#alpha = 0.75,
-#vline_color = "lightyellow",
-#vline_size = 0.5,
-density_alpha = 0.6,
-)
-
-gplot
-```
-:::
-:::
-
-::: {.d-flex .align-content-stretch}
-::: p-3
-```{r}
-
-source("Scripts/tabler.R")
-
-gtsummary::theme_gtsummary_compact()
-#reset_gtsummary_theme()
-
-unrounded_data |>
-gtsummary::tbl_summary(
-by = member_casual,
-type = trip_time ~ "continuous2",
-label = list(trip_time ~ "Duration (minutes)"),
-digits = list(
-trip_time ~ c(2, 2)),
-statistic = 
-gtsummary::all_continuous() ~ c(
-"{median} ({p25}, {p75})", 
-"{mean} ({sd})", 
-"{min}, {max}")
-) |>
-gtsummary::italicize_levels() |>
-tabler(
-title = gt::md("Summary Statistics: <br> Duration - Membership"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE,
-)
-
-```
-:::
-
-::: p-3
-```{r}
-
-source("Scripts/plotter.R")
-
-# Generate ROC curve
-roc_duration <- pROC::roc(
-unrounded_data$member_casual, unrounded_data$trip_time, levels = c("casual", "member"))
-
-# Find the area under the curve value
-auc_duration <- round(pROC::auc(roc_duration), 4)
-
-gplot <- roc_duration |>
-plotter(
-x_col = NULL, 
-y_col = NULL, 
-isROC = TRUE,
-geomType = "ROC",
-title = paste0("ROC Curve for Duration", " (AUC = ", auc_duration, ")"),
-x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
-y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
-roc_color = "red")
-
-# false positive rate = x-axis; true positive rate = y-axis
-gplot
-```
-:::
-:::
-:::
-:::
-:::
-:::
-
-### Interpretation of Contingency Table Data
+## Interpretation of EDA
 
 ::: p-1
 After exploring the associations between the behaviors of annual members and casual riders, several correlations with predictive potential were identified. Chi-squared tests, [@summary], analyzed relationships between categorical variables like membership type, bicycle type, month, day, and hour. Binary logistic regression models, [@regression], examined correlations between the binary dependent variable (membership type) and continuous variables such as distance, duration, and speed. These insights empower stakeholders to make informed decisions to increase service utilization.
