@@ -1,8 +1,15 @@
-# Plotter ----
-# To help reduce duplicate code and implement a consistent theme throughout a 
-# markdown project.
-# 
-# This doesn't account for all plot types possible yet.
+# Header ----
+# Author: Eric Mossotti
+# Date: `r paste(Sys.Date())`
+# Copyright (c) Eric Mossotti, `r paste(format(Sys.Date(), "%Y"))`
+# Email: ecmossotti@gmail.com
+#
+# Description ----
+#
+# To help reduce duplicate code and implement a consistent theme throughout a
+# markdown project. This doesn't account for all plot types possible yet.
+#
+# plotter() ----
 plotter <- function(data,
                     x_col,
                     y_col,
@@ -46,7 +53,17 @@ plotter <- function(data,
                     bins = NULL,
                     histo_breaks = NULL,
                     low = NULL,
-                    high = NULL) {
+                    high = NULL,
+                    isTime = FALSE,
+                    date_breaks = ggplot2::waiver(),
+                    date_labels = ggplot2::waiver(),
+                    date_minor_breaks = ggplot2::waiver(),
+                    lineColor = NULL,
+                    colPosition = "stack",
+                    labels = ggplot2::waiver(),
+                    isTimeHist = FALSE,
+                    quartiles = NULL,
+                    qformat = NULL) {
     # line ----
     if (geomType == "line") {
         if (is_lineGroup == TRUE) {
@@ -58,13 +75,8 @@ plotter <- function(data,
                 ggplot2::geom_line(show.legend = TRUE) +
                 ggplot2::scale_color_brewer(palette = lineGroup_palette, name = "")
         } else {
-            plot <- data |> ggplot2::ggplot(mapping = ggplot2::aes(
-                x = {{ x_col }},
-                y = {{ y_col }},
-                color = {{ y_col }}
-            )) +
-                ggplot2::geom_line(show.legend = TRUE) +
-                ggplot2::scale_colour_distiller(palette = line_palette, name = "")
+            plot <- data |> ggplot2::ggplot(mapping = ggplot2::aes(x = {{ x_col }}, y = {{ y_col }})) +
+                ggplot2::geom_line(show.legend = TRUE, color = lineColor)
         }
     }
     # col ----
@@ -83,7 +95,7 @@ plotter <- function(data,
                 ggplot2::geom_col(show.legend = FALSE) +
                 ggplot2::scale_fill_distiller(palette = col_palette)
         }
-        # grouped, non-faceted, non-density, non-histogram ----
+        # grouped, non - faceted, non - density, non - histogram----
         else if (!isFALSE(is_colGroup) &&
                  isFALSE(isFaceted) &&
                  isFALSE(isDensity) &&
@@ -94,13 +106,17 @@ plotter <- function(data,
                     y = {{ y_col }},
                     fill = {{ group_col }}
                 )) +
-                ggplot2::geom_col(show.legend = TRUE, position = "dodge") +
+                ggplot2::geom_col(
+                    show.legend = TRUE,
+                    position = colPosition,
+                    color = color_col
+                ) +
                 ggplot2::scale_fill_brewer(palette = colGroup_palette, name = "")
         }
         # grouped, faceted, non-density, non-histogram ----
         else if (!isFALSE(is_colGroup) &&
                  !isFALSE(isFaceted) &&
-                 isFALSE(isDensity) && 
+                 isFALSE(isDensity) &&
                  isFALSE(isHistogram)) {
             plot <- data |>
                 ggplot2::ggplot(ggplot2::aes(
@@ -118,16 +134,18 @@ plotter <- function(data,
                  !isFALSE(isDensity) &&
                  isFALSE(isHistogram)) {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
-                                             y = ..density.., 
-                                             fill = {{ group_col }})) +
+                ggplot2::ggplot(ggplot2::aes(
+                    x = {{ x_col }},
+                    y = ..density..,
+                    fill = {{ group_col }}
+                )) +
                 ggplot2::geom_density(alpha = alpha) +
                 ggplot2::facet_grid(rows = "member_casual") +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
                     guide = ggplot2::guide_axis(n.dodge = 1, angle = angle)
-                ) 
+                )
         }
         # grouped, non-faceted, density, histogram ----
         else if (!isFALSE(is_colGroup) &&
@@ -135,24 +153,27 @@ plotter <- function(data,
                  !isFALSE(isDensity) &&
                  !isFALSE(isHistogram)) {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
-                                             y = ..density.., 
-                                             fill = {{ group_col }})) +
-                ggplot2::geom_histogram(binwidth = binwidth, 
-                                        color = color_col, 
-                                        alpha = alpha,
-                                        breaks = histo_breaks) +
+                ggplot2::ggplot(ggplot2::aes(
+                    x = {{ x_col }},
+                    y = ..density..,
+                    fill = {{ group_col }}
+                )) +
+                ggplot2::geom_histogram(
+                    binwidth = binwidth,
+                    color = color_col,
+                    alpha = alpha,
+                    breaks = histo_breaks
+                ) +
                 ggplot2::geom_density(alpha = alpha,
                                       color = density_color,
                                       fill = density_fill) +
-                ggplot2::stat_function(fun = dnorm, 
-                                       args = list(mean = mean({{ x_col }}), 
-                                                   sd = sd({{ x_col }}))) +
+                ggplot2::stat_function(fun = dnorm,
+                                       args = list(mean = mean({{ x_col }}), sd = sd({{ x_col }}))) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
                     guide = ggplot2::guide_axis(n.dodge = 1, angle = angle)
-                ) 
+                )
         }
         # grouped, non-faceted, density, non-histogram ----
         else if (!isFALSE(is_colGroup) &&
@@ -160,18 +181,18 @@ plotter <- function(data,
                  !isFALSE(isDensity) &&
                  isFALSE(isHistogram)) {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
-                                             y = ..density.., 
-                                             fill = {{ group_col }})) +
-                ggplot2::geom_density(alpha = density_alpha,
-                                      color = color_col) +
+                ggplot2::ggplot(ggplot2::aes(
+                    x = {{ x_col }},
+                    y = ggplot2::after_stat(density),
+                    fill = {{ group_col }}
+                )) +
+                ggplot2::geom_density(alpha = density_alpha, color = color_col) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
                     guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
                 ) +
                 ggplot2::scale_fill_brewer(palette = colGroup_palette, name = "")
-            
         }
         # non-grouped, non-faceted, density, non-histogram ----
         else if (isFALSE(is_colGroup) &&
@@ -179,43 +200,70 @@ plotter <- function(data,
                  !isFALSE(isDensity) &&
                  isFALSE(isHistogram)) {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
-                                             y = ..density..,
-                                             fill = density_fill,
-                                             color = density_color)) +
+                ggplot2::ggplot(
+                    ggplot2::aes(
+                        x = {{ x_col }},
+                        y = ..density..,
+                        fill = density_fill,
+                        color = density_color
+                    )
+                ) +
                 ggplot2::geom_density(show.legend = FALSE) +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{x_col}})),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "solid") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{x_col}})),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "solid"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + (
+                        2 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - (
+                        2 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + (
+                        3 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - (
+                        3 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
-                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle))
+                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                )
         }
         # grouped, non-faceted, non-density, histogram ----
         else if (!isFALSE(is_colGroup) &&
@@ -224,10 +272,12 @@ plotter <- function(data,
                  !isFALSE(isHistogram)) {
             plot <- data |>
                 ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, fill = {{ group_col }})) +
-                ggplot2::geom_histogram(binwidth = binwidth, 
-                                        color = color_col, 
-                                        alpha = alpha,
-                                        breaks = histo_breaks) +
+                ggplot2::geom_histogram(
+                    binwidth = binwidth,
+                    color = color_col,
+                    alpha = alpha,
+                    breaks = histo_breaks
+                ) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
@@ -246,14 +296,12 @@ plotter <- function(data,
                     fill = {{ group_col }}
                 )) +
                 ggplot2::geom_col(show.legend = TRUE, position = "dodge") +
-                ggplot2::scale_fill_brewer(palette = colGroup_palette, 
-                                           name = "") +
+                ggplot2::scale_fill_brewer(palette = colGroup_palette, name = "") +
                 ggplot2::scale_x_discrete(
                     breaks = breaks,
                     limits = limits,
                     guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
                 )
-            
         }
         # grouped, faceted, non-density, histogram ----
         else if (!isFALSE(is_colGroup) &&
@@ -261,45 +309,69 @@ plotter <- function(data,
                  isFALSE(isDensity) &&
                  !isFALSE(isHistogram)) {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
-                                             fill = {{ group_col }})) +
-                ggplot2::geom_histogram(binwidth = binwidth, 
-                                        color = color_col,
-                                        bins = bins,
-                                        breaks = histo_breaks) +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{x_col}})),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "solid") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
+                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, fill = {{ group_col }})) +
+                ggplot2::geom_histogram(
+                    binwidth = binwidth,
+                    color = color_col,
+                    bins = bins,
+                    breaks = breaks
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{x_col}})),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "solid"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + (
+                        2 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - (
+                        2 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + (
+                        3 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - (
+                        3 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
                 ggplot2::facet_grid(rows = "member_casual") +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
-                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle))
+                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                )
         }
         # non-grouped, non-faceted, non-density, histogram ----
         else if (isFALSE(is_colGroup) &&
@@ -309,47 +381,54 @@ plotter <- function(data,
             plot <- data |>
                 ggplot2::ggplot(ggplot2::aes(x = {{ x_col }})) +
                 ggplot2::geom_histogram(
-                    breaks = breaks,
                     show.legend = FALSE,
                     color = color_col,
+                    binwidth = binwidth,
                     ggplot2::aes(fill = ..count..)
-                ) +
-                ggplot2::scale_x_continuous(
-                    breaks = breaks,
-                    limits = limits,
-                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
-                ) +
+                )
+            if (!isFALSE(isTimeHist)) {
+                plot <- plot +
+                    ggplot2::scale_x_datetime(
+                        date_breaks = date_breaks,
+                        date_labels = date_labels,
+                        date_minor_breaks = date_minor_breaks,
+                        #oob = scales::squish(),
+                        guide =  ggplot2::guide_axis(n.dodge = n.dodge, angle = angle),
+                        sec.axis = ggplot2::sec_axis(
+                            ~ .,
+                            breaks = quartiles,
+                            labels = scales::date_format(qformat),
+                            guide =  ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                        )
+                    )
+            } else {
+                plot <- plot +
+                    ggplot2::scale_x_continuous(
+                        breaks = breaks,
+                        limits = limits,
+                        guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                    )
+            }
+            
+            plot <- plot +
                 ggplot2::scale_y_continuous() +
                 ggplot2::scale_fill_gradient(low = low, high = high) +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{x_col}})),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "solid") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed")
-            
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{x_col}})),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "solid"
+                ) +
+                ggplot2::geom_vline(
+                    data = data.frame(q = quartiles),
+                    ggplot2::aes(xintercept = q, color = factor(q)),
+                    linetype = "dashed",
+                    size = 1
+                ) +
+                ggplot2::scale_color_manual(
+                    values = c("red", "green", "blue"),
+                    labels = c("25th", "50th", "75th")
+                )
         }
         # non-grouped, non-faceted, density, histogram ----
         else if (isFALSE(is_colGroup) &&
@@ -357,103 +436,162 @@ plotter <- function(data,
                  !isFALSE(isDensity) &&
                  !isFALSE(isHistogram)) {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
-                                             y = ..density..)) +
-                ggplot2::geom_histogram(binwidth = binwidth, 
-                                        color = color_col,
+                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, y = ..density..)) +
+                ggplot2::geom_histogram(color = color_col,
                                         bins = bins,
-                                        breaks = histo_breaks) +
+                                        breaks = breaks) +
                 ggplot2::geom_density(color = density_color,
                                       fill = density_fill,
                                       alpha = density_alpha) +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }})),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "solid") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }})),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "solid"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + (
+                        2 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - (
+                        2 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + (
+                        3 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - (
+                        3 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
-                    guide = ggplot2::guide_axis(n.dodge = n.dodge, 
-                                                angle = angle))
+                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                )
         }
         # grouped, faceted, density, histogram ----
         else {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, 
-                                             #y = ..density.., 
+                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, #y = ..density..,
                                              fill = {{ group_col }})) +
-                ggplot2::geom_histogram(binwidth = binwidth, 
-                                        color = color_col,
-                                        bins = bins,
-                                        breaks = histo_breaks) +
+                ggplot2::geom_histogram(
+                    binwidth = binwidth,
+                    color = color_col,
+                    bins = bins,
+                    breaks = histo_breaks
+                ) +
                 ggplot2::geom_density(color = density_color,
                                       fill = density_fill,
                                       alpha = density_alpha) +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }})),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "solid") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (2 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} + (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
-                ggplot2::geom_vline(ggplot2::aes(xintercept = mean({{ x_col }} - (3 * sd({{ x_col }})))),
-                                    color = vline_color,
-                                    size = vline_size,
-                                    linetype = "dashed") +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }})),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "solid"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + (
+                        2 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - (
+                        2 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} + (
+                        3 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
+                ggplot2::geom_vline(
+                    ggplot2::aes(xintercept = mean({{ x_col }} - (
+                        3 * sd({{ x_col }})
+                    ))),
+                    color = vline_color,
+                    size = vline_size,
+                    linetype = "dashed"
+                ) +
                 ggplot2::facet_grid(rows = "member_casual") +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
-                    guide = ggplot2::guide_axis(n.dodge = n.dodge, 
-                                                angle = angle))
+                    guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                )
         }
-    # other misc plot types ----
+        # other misc plot types ----
     } else {
         # pROC objects ----
         if (!isFALSE(isROC)) {
             plot <- data |>
                 pROC::ggroc(aes = "linetype", color = roc_color)
+        }
+        # time-series data ----
+        # grouped, non-faceted, density, non-histogram
+        if (!isFALSE(isTime)) {
+            plot <- data |>
+                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, #    y = ggplot2::after_stat(density),
+                                             fill = {{ group_col }})) +
+                ggplot2::geom_density(alpha = density_alpha, color = color_col) +
+                ggplot2::scale_x_datetime(
+                    date_breaks = date_breaks,
+                    date_labels = date_labels,
+                    date_minor_breaks = date_minor_breaks,
+                    labels = labels,
+                    guide =  ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                ) +
+                ggplot2::scale_fill_brewer(palette = colGroup_palette, name = "")
         }
     }
     # For the rest of the otherwise likely duplicated plot settings ----
