@@ -93,7 +93,7 @@ rawPath <- "db/rawData.db"
 # Loading plot and table scripts while at it. 
 source("Scripts/tabler.R")
 source("Scripts/plotter.R")
-source("transformData.R")
+source("Scripts/TransformData.R")
 
 ```
 
@@ -1896,8 +1896,8 @@ isSummary = TRUE
 
 
 ```{r}
-#| label: mainHoursQuery
-#| code-summary: How I created the database table for the purpose of hours related EDA.  
+#| label: write hod to duckdb
+#| code-summary: Write hod.db to the database.
 #| tidy: true
   
 dplyr::tbl(dbconn, tblPath_fltrd) |>
@@ -1911,34 +1911,63 @@ format(lubridate::round_date(started_at, unit = "hour"), "%I %p")),
 hrMin = stringr::str_to_lower(
 format(lubridate::round_date(started_at, unit = "minute"), "%I:%M %p")),
 hrminSec = stringr::str_to_lower(
-format(lubridate::round_date(started_at, unit = "second"), "%r"))) |>
+format(lubridate::round_date(started_at, unit = "second"), "%r"))
+) |>
+dplyr::select(member_casual:hrminSec) |>
 duckdb::dbWriteTable(conn = dbconn,
-name = "db/base_hours.db",
+name = "db/hod.db",
 overwrite = TRUE)
 
 ```
 
+
 ```{r}
 #| label: tbl-dbHours
-#| code-summary: A kable output of the hours db table.
+#| code-summary: Output of hod.db.
 #| tidy: formatR
 
-dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::tbl(dbconn, "db/hod.db") |>
 dplyr::collect() |>
 head()
-#kableExtra::kable()
+kableExtra::kable()
 ```
 
+
+```{r}
+#| label: hod_n
+#| code-summary: Transform hod.db and write as hod_n.db to the databse.
+
+dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::collect() |>
+dplyr::add_count(started_at_time, member_casual) |>
+dplyr::arrange(started_at_time, hrminSec, member_casual) |>
+dplyr::distinct() |>
+duckdb::dbWriteTable(conn = dbconn, 
+name = "db/hod_n.db", 
+overwrite = TRUE)
+```
+
+
+```{r}
+#| label: tbl-nHours
+#| code-summary: Display hod_n.db.
+#| tidy: formatR
+
+dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::collect() |>
+head()
+kableExtra::kable()
+```
 
 ::: tableScroller
 ```{r}
 #| label: tbl-hourTotals
 #| tbl-cap: Total freqeuncy by the hour of day
 
-dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::group_by(hr) |>
+dplyr::summarize(n = sum(n)) |>
 dplyr::collect() |>
-dplyr::add_count(hr) |>
-dplyr::distinct(hr, n) |>
 tabler( 
 title = "Hours", 
 footnote = gt::md("The recorded observations."), 
@@ -1946,45 +1975,16 @@ location = n)
 ```
 :::
 
-
-::: tableScroller
-```{r}
-#| label: tbl-hourMembership
-#| tbl-cap: Frequencies for membership by hour.
-
-dplyr::tbl(dbconn, "db/base_hours.db") |>
-dplyr::collect() |>
-dplyr::group_by(hr, member_casual) |>
-dplyr::add_count(hr) |>
-dplyr::distinct(hr, member_casual, n) |>
-tabler(
-title = "Hours Membership Groups",
-source_note = gt::md("**Source:** `db/fltrd_db.db`"),
-footnote = "The recorded observations.",
-location = n,
-groupName = "member_casual",
-label_n = "n",
-label_member = " "
-)
-
-```
-
-:::
-
 ```{r}
 #| label: fig-hourTotals
-#| fig-cap: "Total frequency by hour of day."
+#| fig-cap: Total frequency by hour of day.
 #| fig-dpi: 600
 #| column: body-outset-right
 
-dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::group_by(hr) |>
+dplyr::summarize(n = sum(n)) |>
 dplyr::collect() |>
-dplyr::add_count(hr) |>
-dplyr::distinct(hr, n) |>
-dplyr::mutate(
-hr = stringr::str_to_lower(hr),
-hr = forcats::as_factor(hr)
-) |>
 plotter(
 x_col = hr, 
 y_col = n,
@@ -1994,117 +1994,28 @@ x_label = "Hour",
 y_label = "Trips",
 ) +
 ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
-
-gplot
 ```
 
-### Hour by Membership
 
+
+::: tableScroller
 ```{r}
-#| label: fig-hourDensity
-#| code-summary: "Seems like a more accurate hour query and density plot."
-#| fig-dpi: 600
-#| column: body-outset-right
+#| label: tbl-hourMembership
+#| tbl-cap: Frequencies for membership by hour.
 
-gplot <- dplyr::tbl(dbconn, "db/base_hours.db") |>
+dplyr::tbl(dbconn, "db/hod_n.db") |>
 dplyr::collect() |>
-plotter(
-title = "Hour Group Density",
-x_label = paste0("Hour of the Day"),
-x_col = started_at_time, 
-group_col = member_casual,
-geomType = "other",
-angle = 45,
-color_col = "black",
-density_alpha = 0.75,
-isTime = TRUE,
-date_breaks = "1 hour",
-date_labels = "%I %p",
-)
-
-gplot
-```
-
-
-```{r}
-#| label: hoursWeightedQuantiles
-#| code-summary: How I weighted the data by quartile for hours. 
-#| tidy: formatR
-
-transformData(
-conn = dbconn,
-path = "db/base_hours.db",
-select_cols = c("started_at_time", "member_casual"),
-group_cols = c("started_at_time", "member_casual"),
-binary_col = "member_casual",
-pred_col = "started_at_time",
-ntile_col = "quartile",
-zero_val = "casual",
-one_val = "member",
-qtile_levels = c("Q1 (00:04 - 12:46]", "Q2 (12:46 - 15:58]", "Q3 (15:58 - 19:56]", "Q4 (19:56 - 23:58]"),
-doQuantile = TRUE,
-doWeights = TRUE
-) |>
-duckdb::dbWriteTable(conn = dbconn, name = "db/hour_wtq.db", overwrite = TRUE)
-```
-```{r}
-#| label: tbl-hoursWTQ
-#| code-summary: A kable output of the hour's weighted quantile db table.
-#| tidy: formatR
-
-dplyr::tbl(dbconn, "db/hour_wtq.db") |>
-dplyr::collect() |>
-head() |>
-kableExtra::kable()
-```
-
-
-```{r}
-#| label: modelHourQ
-#| code-summary: Create model object for hour based on quartile range. 
-
-model <- 
-dplyr::tbl(dbconn, "db/hour_wtq.db") |>
-dplyr::collect() |> 
-glm(
-formula = member_casual ~ quartile, 
-family = binomial,
-weights = n)
-```
-
-```{r}
-#| label: tbl-modelHourQ
-#| code-summary: Model fitting results for hour's quartile ranges. 
-
-model |>
-gtsummary::tbl_regression(
-label = list(quartile = "Hour Ranges"), 
-conf.int = FALSE, 
-exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE)
-
+title = "Hours Membership Groups",
+source_note = gt::md("**Source:** `db/fltrd_db.db`"),
+footnote = "The recorded observations.",
+location = n,
+groupName = "member_casual",
+label_n = "n",
+label_member = " "
+)
 ```
-
-```{r}
-#| label: nHr
-#| code-summary: How to grouped n by hour and member was created.
-
-dplyr::tbl(dbconn, "db/base_hours.db") |>
-dplyr::collect() |>
-dplyr::mutate(
-hr = forcats::as_factor(hr),
-member_casual = forcats::fct(member_casual, levels = c("casual", "member"))
-) |>
-dplyr::add_count(member_casual, hr) |>
-dplyr::arrange(hr, member_casual) |>
-dplyr::distinct(member_casual, hr, n) |>
-duckdb::dbWriteTable(conn = dbconn, 
-name = "db/hour_nHr.db", 
-overwrite = TRUE)
-```
+:::
 
 
 ```{r}
@@ -2113,7 +2024,7 @@ overwrite = TRUE)
 #| fig-dpi: 600
 #| column: body-outset-right
 
-gplot <- dplyr::tbl(dbconn, "db/hour_nHr.db") |>
+gplot <- dplyr::tbl(dbconn, "db/hod_n.db") |>
 dplyr::collect() |>
 plotter(
 title = "Hour Groups",
@@ -2131,26 +2042,226 @@ ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 gplot
 ```
 
-### Predicting with Hour?
+
+
+```{r}
+#| label: fig-cHistogram
+#| code-summary: Casual histogram plot with quartile ranges. 
+
+source("Scripts/plotter.R")
+
+qdf <- dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::select(started_at_time, member_casual, n, isMidnight) |>
+dplyr::filter(
+member_casual == "casual",
+isMidnight != TRUE
+) |>
+dplyr::collect() |>
+tidyr::uncount(n, .remove = TRUE)
+
+
+quartiles <- quantile(qdf$started_at_time, probs = c(0.25, 0.5, 0.75))
+
+gplot <- dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::select(started_at_time, member_casual, n, isMidnight) |>
+dplyr::filter(
+member_casual == "casual",
+isMidnight != TRUE
+) |>
+dplyr::collect() |>
+tidyr::uncount(n, .remove = TRUE) |>
+plotter(
+title = "Hours - Casuals",
+x_label = "Hours (12-hour clock)",
+y_label = "Trips",
+x_col = started_at_time, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 hour", 
+date_labels = "%I %p", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles,
+qformat = "%I:%M %p"
+) 
+
+gplot
+
+```
+```{r}
+qdf |> dplyr::slice_head(n = 1)
+qdf |> dplyr::slice_tail(n = 1)
+```
+
+
+```{r}
+#| label: fig-mHistogram
+#| code-summary: Member histogram plot with quartile ranges. 
+
+source("Scripts/plotter.R")
+
+qdf <- dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::select(started_at_time, member_casual, n) |>
+dplyr::filter(member_casual == "member") |>
+dplyr::collect() |>
+tidyr::uncount(n, .remove = TRUE)
+
+quartiles <- quantile(qdf$started_at_time, probs = c(0.25, 0.5, 0.75))
+
+gplot <- dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::select(started_at_time, member_casual, n) |>
+dplyr::filter(member_casual == "member") |>
+dplyr::collect() |>
+tidyr::uncount(n, .remove = TRUE) |>
+plotter(
+title = "Hours - Members",
+x_label = "Hours (12-hour clock)",
+y_label = "n",
+x_col = started_at_time, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 hour", 
+date_labels = "%I %p", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles,
+qformat = "%I:%M %p"
+) 
+
+gplot
+
+
+```
+
+
+```{r}
+quantile(qdf$started_at_time)
+
+qdf$started_at_time[[1]]
+```
+
+
+```{r}
+#| label: fig-hourDensity
+#| code-summary: Query, load, and plot the grouped densities from hod.db. 
+#| fig-dpi: 600
+#| column: body-outset-right
+
+gplot <- 
+dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::collect() |>
+plotter(
+title = "Hour Group Density",
+x_label = paste0("Hours", "\n", "(12-hour clock)"),
+x_col = started_at_time, 
+group_col = member_casual,
+geomType = "other",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isTime = TRUE,
+date_breaks = "1 hour",
+date_labels = "%I %p",
+)
+
+gplot
+```
+
+
+```{r}
+#| label: hoursWeightedQuantiles
+#| code-summary: Query hod.db, transform and write weighted quartile data to hod_wq.db. 
+#| tidy: formatR
+
+transformData(
+conn = dbconn,
+path = "db/hod.db",
+select_cols = c("started_at_time", "member_casual"),
+group_cols = c("started_at_time", "member_casual"),
+binary_col = "member_casual",
+pred_col = "started_at_time",
+ntile_col = "quartile",
+zero_val = "casual",
+one_val = "member",
+qtile_levels = c("Q1 (00:04 - 12:46]", "Q2 (12:46 - 15:58]", "Q3 (15:58 - 19:56]", "Q4 (19:56 - 23:58]"),
+doQuantile = TRUE,
+doWeights = TRUE
+) |>
+duckdb::dbWriteTable(conn = dbconn, name = "db/hod_wq.db", overwrite = TRUE)
+```
+
+
+```{r}
+#| label: tbl-hoursWTQ
+#| code-summary: A kable output of the hour's weighted quantile db table.
+#| tidy: formatR
+
+dplyr::tbl(dbconn, "db/hod_wq.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+
+
+```{r}
+#| label: modelHourQ
+#| code-summary: Query hod_wq.db, process and create model R object for hour based on quartile range. 
+
+model <- 
+dplyr::tbl(dbconn, "db/hod_wq.db") |>
+dplyr::collect() |> 
+glm(
+formula = member_casual ~ quartile, 
+family = binomial,
+weights = n)
+```
+
+
+```{r}
+#| label: tbl-modelHourQ
+#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+
+model |>
+gtsummary::tbl_regression(
+label = list(quartile = "Hour Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE) |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Hour & Rider Type"),
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+isBinary = TRUE)
+```
+
+
 
 ```{r}
 #| label: tbl-chiHours
 #| tbl-cap: Chi-Squared for aggregated hours data to the level of rounded hours.
+#| code-summary: Query hod_n, then process and display Chi-Squared statistical summary.
 
-
-dplyr::tbl(dbconn, "db/hour_nHr.db") |>
+dplyr::tbl(dbconn, "db/hod_n.db") |>
 dplyr::collect() |>
 tidyr::uncount(n, .remove = TRUE) |>
 tabler(
 title = "Chi-Square: Hour & Rider Type",
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/hod_n.db`"),
 label = list(hr = "Hour"),
 by = member_casual,
 isSummary = TRUE
 )
 ```
-
-
 
 
 
@@ -2184,7 +2295,6 @@ title = "Distance",
 footnote = gt::md("The recorded observations."),
 location = n
 )
-
 ```
 
 ```{r}
@@ -2212,7 +2322,6 @@ y_label = "Trips")
 gplot +
 ggplot2::scale_x_discrete(
 guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
-
 ```
 
 ### Distance by Membership
@@ -2238,7 +2347,6 @@ groupName = "miles",
 label_n = "n",
 label_member = " "
 )
-
 ```
 
 ```{r}
