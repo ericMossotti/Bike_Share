@@ -46,10 +46,7 @@ funding: "The author(s) received no specific funding for this work."
 ```{r, include = FALSE}
 
 knitr::opts_chunk$set(message = FALSE, 
-                      warning = FALSE
-                      #cache.lazy = FALSE,
-                      #cache = TRUE
-                      )
+                      warning = FALSE)
 ```
 
 ------------------------------------------------------------------------
@@ -71,18 +68,16 @@ Import Processing Code
 ```{r}
 #| label: importOrConnect
 #| code-summary: First, we decide whether to download and do the necessary initial processing steps or skip that if we have already done this and are just tinkering around with the project. 
+#| tidy: true
 
 if(exists("dbconn") == FALSE &&
    dir.exists("db") == FALSE) {
-    # Script within if-else to simplify workflow
-    source("Scripts/import_clean_initial.R")
+  # Script within if-else to simplify workflow
+  source("Scripts/import_clean_initial.R")
 } else {
-    tblPath <- "db/data.db"
-    
-    dbconn <- DBI::dbConnect(
-        duckdb::duckdb(),
-        dbdir = tblPath,
-        read_only = FALSE)
+  tblPath <- "db/data.db"
+  
+  dbconn <- DBI::dbConnect(duckdb::duckdb(), dbdir = tblPath, read_only = FALSE)
 }
 
 # Paths one might still need if script doesn't need to execute.
@@ -94,7 +89,6 @@ rawPath <- "db/rawData.db"
 source("Scripts/tabler.R")
 source("Scripts/plotter.R")
 source("Scripts/TransformData.R")
-
 ```
 
 ```{r}
@@ -109,9 +103,7 @@ source("Scripts/TransformData.R")
 
 ## Stakeholders
 
-::: p-1
 The primary stakeholders in this analysis are Divvy, Lyft (the parent company of Divvy), and the City of Chicago Department of Transportation. The analysis aims to provide these stakeholders with data-driven insights to enhance the Divvy bike-sharing service, better serving the residents of Chicago and its users. The initial rationale behind Divvy's implementation included improving air quality, promoting economic recovery, and reducing traffic congestion within the city. [@aboutdi]
-:::
 
 ## Source
 
@@ -124,6 +116,7 @@ The raw 2023 dataset was imported from Divvy Data. [@divvyda]
 #| label: tbl-raw
 #| tbl-cap: Raw data
 #| cap-location: top
+#| tidy: true
 
 # List of column labels to feed tabler() and add_multiple_footnotes()
 location_list <- dplyr::tbl(dbconn, rawPath) |>
@@ -181,6 +174,7 @@ Glimpse
 ```{r}
 #| label: glimpseRaw
 #| code-summary: A quick overview of the raw data.
+#| tidy: true
 
 dplyr::tbl(dbconn, rawPath) |>
 dplyr::collect() |>
@@ -200,7 +194,6 @@ tibble::glimpse()
 
 ## Design
 
-::: p-1
 Another worthy objective of this analysis is to achieve reproducibility and efficiency. To facilitate future research and enable subsequent analyst teams to build upon this work, the project aimed to provide adequate code documentation and adhere to best practices regarding clean code and mod-ability.
 
 For instance, certain design decisions were incorporated to eliminate the need for re-downloading and re-processing data. For analysts conducting analysis over an extended period, such as days or months, on this dataset, it is now possible to simply reconnect to the single database file containing all the original data, including tables generated throughout the analysis process, following the initial download and subsequent processing.
@@ -208,7 +201,6 @@ For instance, certain design decisions were incorporated to eliminate the need f
 The underlying code incorporates an if-else decision, which includes a source code script responsible for handling the initial data processing and establishing the database filesystem. Opting for a persistent DuckDB filesystem (as opposed to a purely in-memory solution) appeared optimal in terms of simplicity, cost-effectiveness of SQL database queries, and retaining progress made over extended periods. [@whyduck]
 
 To streamline the process, reduce code duplication, and maintain consistent formatting throughout the project, reusable functions were developed for generating most of the tables and figures. These functions are located in the "Scripts" folder within the working directory. Their modular design not only simplifies the implementation of formatting changes but also facilitates the integration of additional code snippets when necessary. For instance, certain plots might require limiting the range of the axes, which can be achieved by combining these functions with appropriate code addendum. By leveraging these functions, the project benefits from reduced redundancy, improved efficiency, and cohesive formatting across all visualizations and data representations.
-:::
 
 ## Initial Database Table List
 
@@ -216,6 +208,7 @@ To streamline the process, reduce code duplication, and maintain consistent form
 #| label: tbl-dbList
 #| code-summary: "These are the starting tables contained in the data/data.db file. Noting this as we will be adding many more tables in the later stages."
 #| tbl-cap: "Initial DB Table List"
+#| tidy: true
 
 
 dbList <- duckdb::dbListTables(dbconn) |>
@@ -282,54 +275,49 @@ Code processing steps are accessible through embedded code icon links, like the 
 ::: {.h5 .offcanvas-title}
 Code to Remove Duplicates
 :::
-
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
 :::
-
 ::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: originalNobs
 #| code-summary: First, record original observations from the raw data.
+#| tidy: true
 
 # Need to save this count for the summary table later
 original_nobs <- dplyr::tbl(dbconn, rawPath) |>
 dplyr::collect() |>
 nrow()
-
 ```
 
 ```{r}
 #| label: duplicates_gt
 #| code-summary: Create a table containing the duplicated observations.
+#| tidy: true
 
-# This is a separate table used to analyze the observations 
-#  returned as not distinct (n > 1). 
-#   This adds an extra column, labeled "n".
-dupeTable <- dplyr::tbl(dbconn,
-                        tblPath) |>
-    dplyr::select(started_at:end_station_name) |>
+# This is a separate table used to analyze the observations
+# returned as not distinct (n > 1). This adds an extra column, labeled "n".
+dupeTable <- dplyr::tbl(dbconn, tblPath) |>
+dplyr::select(started_at:end_station_name) |>
 # Counts of unique rows added for column 'n'
-    dplyr::add_count(started_at,
-                     ended_at,
-                     start_station_name,
-                     end_station_name) |>
+dplyr::add_count(started_at, ended_at, start_station_name, end_station_name) |>
 # Only observations that have been duplicated 1 or more times are shown.
-    dplyr::filter(n > 1) |>
+dplyr::filter(n > 1) |>
 # To see all rows, not just one row for each obs.
-    dplyr::ungroup() |>
-    dplyr::arrange(started_at) |>
-    dplyr::collect()
+dplyr::ungroup() |>
+dplyr::arrange(started_at) |>
+dplyr::collect()
 ```
 
 ```{r}
 #| label: duplicateObs count
 #| code-summary: Record a count of distinct duplicates and total observations.
+#| tidy: true
 
 distinctCopiesCount <- dupeTable |>
-    dplyr::distinct(n) |>
-    as.integer() 
+dplyr::distinct(n) |>
+as.integer()
 
 duplicateObs <- length(dupeTable[[1]])
 ```
@@ -337,6 +325,7 @@ duplicateObs <- length(dupeTable[[1]])
 ```{r}
 #| label: undupedTable
 #| code-summary: Create a table of the now unduplicated observations seen earlier.
+#| tidy: true
 
 # The issue is, we need to get rid of not all of these rows, but just the extra duplicate observations.
 
@@ -352,51 +341,52 @@ end_station_name)
 ```{r}
 #| label: incorrect distinct obs count
 #| code-summary: Record a count of the incorrect observations.
+#| tidy: true
 
 # Run an incorrect count on how many rows or observations there are in the dataset.
-count_incorrectDists <- dplyr::tbl(dbconn,
-                                   tblPath) |>
-    dplyr::distinct(dplyr::pick("ride_id")) |>
-    dplyr::count(name = "Incorrect Distinct Observations") |>
-    dplyr::collect() |>
-    as.integer()
+count_incorrectDists <- dplyr::tbl(dbconn, tblPath) |>
+dplyr::distinct(dplyr::pick("ride_id")) |>
+dplyr::count(name = "Incorrect Distinct Observations") |>
+dplyr::collect() |>
+as.integer()
 ```
 
 ```{r}
 #| label: count_correctDists count
 #| code-summary: Record a count of the correct observations.
+#| tidy: true
 
 # For the correct count of obs
-count_correctDists <- dplyr::tbl(dbconn,
-                                 tblPath) |>
-    dplyr::distinct(
-        dplyr::pick(
-            "started_at",
-            "start_station_name",
-            "ended_at",
-            "end_station_name")) |>
-    dplyr::count() |>
-    dplyr::collect() |>
-    as.integer()
+count_correctDists <- dplyr::tbl(dbconn, tblPath) |>
+dplyr::distinct(dplyr::pick(
+"started_at",
+"start_station_name",
+"ended_at",
+"end_station_name"
+)) |>
+dplyr::count() |>
+dplyr::collect() |>
+as.integer()
 ```
 
 ```{r}
-#| label: overwrite file with correct obs
+#| label: writeUnduplicated
 #| code-summary: Lastly, write the unduplicated data to the database.
+#| tidy: true
 
-dplyr::tbl(dbconn,
-           tblPath) |>
-    dplyr::distinct(started_at,
-                    start_station_name,
-                    ended_at,
-                    end_station_name,
-                    .keep_all = TRUE) |>
-    dplyr::arrange(started_at) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = tblPath,
-                         overwrite = TRUE)
-
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/unduped.db"))) {
+dplyr::tbl(dbconn, tblPath) |>
+dplyr::distinct(started_at,
+start_station_name,
+ended_at,
+end_station_name,
+.keep_all = TRUE) |>
+dplyr::arrange(started_at) |>
+dplyr::collect() |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/data_unduped.db",
+overwrite = TRUE)
+}
 ```
 :::
 :::
@@ -412,11 +402,10 @@ While all values in the **ride_id** column were found to be unique, not all obse
 ```{r}
 #| label: tbl-duplicates
 #| tbl-cap: Duplicates Table
-#| eval: false
-#| include: false
+#| eval: true
+#| include: true
+#| tidy: true
 
-# Not using the tabler function for this one. Might figure out a way later
-# but just a lot of customization not used in other tables.
 gtDupes <- dupeTable |>
 dplyr::group_by(started_at) |>
 gt::gt(
@@ -468,8 +457,6 @@ In @tbl-duplicates, duplicate observations are listed and grouped by color for v
 ```{r}
 #| label: tbl-unduplicated
 #| tbl-cap: Un-duplicated Table
-#| eval: false
-#| include: false
 
 gt_undupes <- undupedTable |>
 dplyr::collect() |>
@@ -480,7 +467,6 @@ groupname_col = "started_at",
 row_group_as_column = TRUE
 ) |>
 gt::fmt_number(decimals = 0) |>
-
 gt::tab_style(
 style = list(
 gt::cell_text(weight = "bold", align = "center"),
@@ -512,20 +498,19 @@ table.font.size = gt::pct(75)
 )
 
 gt_undupes
+
 ```
 :::
 
-::: {.p-2 .mt-2}
+::: {.mb-2.mt-2}
 To ensure the accurate removal of duplicates, the count of distinct n-values (representing the number of occurrences) for the un-duplicated table was computed, confirming the expected 18 unique instances. Subsequently, the total number of observations in the dataset was recorded, initially standing at 4,331,707. After removing the identified duplicate observations, the correct count of observations was 4,331,689. In summary, 18 additional observations were successfully removed, aligning with the expected number of duplicates identified earlier. These steps are documented in @tbl-observationHistory for reference.
 
 By carefully analyzing the count of distinct n-values and the total observation count before and after reduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
 :::
 
 ::: {.d-flex .justify-content-center}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5rem; color: #00BFA5;"></i>
-```
+::: {.btn .btn-outline-light type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
+Record observations
 :::
 :::
 
@@ -536,35 +521,31 @@ By carefully analyzing the count of distinct n-values and the total observation 
 ::: {.h5 .offcanvas-title}
 Filter Database
 :::
-
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
 :::
-
 ::: offcanvas-body
 ::: flex-code
 ```{r}
-#| label: filtering db
-#| code-summary: First, if you happen to be re-using this code - this is so you do not have to re-download or re-filter after making further adjustments.
+#| label: filterDecisions
+#| code-summary: If you happen to be re-using this code - this is so you do not have to re-download or re-filter after making further adjustments.
+#| tidy: true
 
-#tblPath <- "db/data.db"
-#dupelessPath <- "db/dupeless.db"
 tblPath_fltrd <- "db/data_fltrd.db"
 
-if (exists("dbconn") == FALSE && dir.exists("db") == TRUE) {
-    dbconn <- DBI::dbConnect(
-        duckdb::duckdb(),
-        dbdir = tblPath,
-        read_only = FALSE)
+# Do we still need to filter the database?
+if (duckdb::dbExistsTable(dbconn, tblPath_fltrd) == FALSE) {
+source("Scripts/filterDatabase.R")
+filterDatabase(conxn = dbconn, oldPath = "db/data_unduped.db", newPath = tblPath_fltrd)
 }
-
-if (duckdb::dbExistsTable(dbconn,
-                          "tblPath_fltrd") == FALSE) {
-    source("Scripts/filterDatabase.R")
-    filterDatabase()
-}
-
-
+```
+:::
+::: {.flex-code}
+```{r}
+#| label: filterScript
+#| code-summary: This would execute if the if-else conditions were met to filter the db/data.db database table
+#| file: "Scripts/filterDatabase.R"
+#| eval: false
 ```
 :::
 :::
@@ -580,7 +561,7 @@ Consistent with the previous approach, an **if-else** decision was employed to f
 ```{r}
 #| label: countFiltered
 #| code-summary: "To get a count of the new total observations after filtering."
-#| tidy: formatR
+#| tidy: true
 
 count_filtered <- dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(ride_id) |>
@@ -596,7 +577,6 @@ as.integer()
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
-#| tidy: formatR
 
 # To see the history of obs in our dataset.
 summaryProcessTable <- tidyr::tribble(
@@ -654,418 +634,118 @@ summaryProcessTable
 ```
 :::
 
-::: {.d-flex max-width="auto"}
-::: {.p .note .note-primary}
-::: {#filterScript .flex-code}
-```{r}
-#| label: filterScript
-#| code-summary: This would execute if the if-else conditions were met to filter the db/data.db database table
-#| file: "Scripts/filterDatabase.R"
-#| eval: false
-```
-:::
-:::
-:::
+
 
 ::: {.d-flex .justify-content-center}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: 1.5em; color: #00BFA5;"></i>
-```
+::: {.btn .btn-outline-success type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
+Filter and write
 :::
 :::
 
 # Exploratory Analysis
 
-## Contingency Tables
-
-Contingency tables were created to gain quick insights into the data through a methodical, albeit simple, approach that facilitates understanding the bigger picture. Many of these tables are utilized in the tab-set section while some required further customization in the following section.
-
-::: {.d-flex .justify-content-center .mb-3}
-::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas10" aria-controls="offcanvas"}
-```{=html}
-<i class="bi bi-code-slash" style="font-size: .75em; color: #00BFA5;"></i>
-```
-:::
-:::
-
-::: {#offcanvas10 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
-::: {.h5 .offcanvas-title}
-Frequency Tables (other code)
-:::
-
-::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
-:::
-:::
-
-::: offcanvas-body
-::: flex-code
-```{r}
-#| label: frequencyWrites_totals
-#| code-summary: First, write the totals frequency tables to database.
-
-# For the membership frequency
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(member_casual) |>
-    dplyr::group_by(member_casual) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_member.db",
-                         overwrite = TRUE)
-
-# For the rideable types.
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(rideable_type) |>
-    dplyr::group_by(rideable_type) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_rTypes.db",
-                         overwrite = TRUE)
-
-# For the miles
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(miles) |>
-    dplyr::collect() |>
-    dplyr::mutate(miles = dplyr::case_when(
-        miles >= 1 ~ round(miles,
-                           digits = 0),
-        miles < 1 ~ round(signif(miles, 3),
-                          digits = 1)
-    )) |>
-    dplyr::group_by(miles) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(miles) |>
-    duckdb::dbWriteTable(
-        conn = dbconn,
-        name = "db/freq_miles.db",
-        overwrite = TRUE)
-
-# For the mph
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(mph) |>
-    dplyr::mutate(mph = round(mph, digits = 0)) |>
-    dplyr::group_by(mph) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
-    dplyr::arrange(mph) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_mph.db",
-                         overwrite = TRUE)
-
-# For the days of the week
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(started_at) |>
-    dplyr::mutate(wkday = lubridate::wday(started_at)) |>
-    dplyr::group_by(wkday) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(wkday) |>
-    dplyr::collect() |>
-    dplyr::mutate(wkday = c("Sun",
-                            "Mon",
-                            "Tue",
-                            "Wed",
-                            "Thu",
-                            "Fri",
-                            "Sat"),
-                  wkday = forcats::as_factor(wkday),
-                  wkday = forcats::fct_inorder(wkday)) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_wkDay.db",
-                         overwrite = TRUE)
-
-# For the months.
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(started_at) |>
-    dplyr::mutate(months = lubridate::month(started_at,
-                                            label = FALSE,
-                                            abbr = TRUE
-                                            )) |>
-    dplyr::group_by(months) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
-    dplyr::arrange(months) |>
-    dplyr::mutate(months = c(month.abb),
-                  months = forcats::as_factor(months),
-                  months = forcats::fct_inorder(months)) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_month.db",
-                         overwrite = TRUE)
-
-# For the trip times.
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::mutate(trip_time = round(trip_time,
-                                    digits = 0)) |>
-    dplyr::group_by(trip_time) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(trip_time) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_tripTime.db",
-                         overwrite = TRUE)
-
-# For the start station names
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(start_station_name) |>
-    dplyr::group_by(start_station_name) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(start_station_name) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_startNames.db",
-                         overwrite = TRUE)
-
-
-# For the station name pairs.
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(start_station_name,
-                  end_station_name) |>
-    dplyr::group_by(start_station_name,
-                    end_station_name) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(start_station_name) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_pairStations.db",
-                         overwrite = TRUE)
-
-# for the hours
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(started_at) |>
-    dplyr::mutate("hour" = lubridate::hour(started_at)) |>
-    dplyr::group_by(hour) |>
-    dplyr::summarise("Total_Riders" = dplyr::n()) |>
-    dplyr::arrange(hour) |>
-    dplyr::collect() |>
-    dplyr::mutate("hour" = hms::hms(hours = hour),
-                  "hour" = format(strptime(hour, format = "%H"), "%r"),
-                  "index" = seq(1:24)) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freq_hours.db",
-                         overwrite = TRUE)
-
-```
-
-```{r}
-#| label: frequencyWrites_comparisons
-#| code-summary: Then, write all of the frequency comparison tables to the database.
-
-# For the rideable type comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(member_casual,
-                  rideable_type) |>
-    dplyr::group_by(rideable_type,
-                    member_casual) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freqCompare_rType.db",
-                         overwrite = TRUE)
-
-# For the miles comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(member_casual,
-                  miles) |>
-    dplyr::collect() |>
-    dplyr::mutate(miles = dplyr::case_when(
-        miles >= 1 ~ round(miles,
-                           digits = 0),
-        miles < 1 ~ round(signif(miles, 3),
-                          digits = 1)
-    )) |>
-    dplyr::group_by(miles,
-                    member_casual) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(miles) |>
-    duckdb::dbWriteTable(
-        conn = dbconn,
-        name = "db/freqCompare_miles.db",
-        overwrite = TRUE)
-
-# For the mph comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(mph,
-                  member_casual) |>
-    dplyr::mutate(mph = round(mph, digits = 0)) |>
-    dplyr::group_by(member_casual,
-                    mph) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
-    dplyr::arrange(mph) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freqCompare_mph.db",
-                         overwrite = TRUE)
-
-# For the week days comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(member_casual,
-                  started_at) |>
-    dplyr::mutate(wkday = lubridate::wday(started_at)) |>
-    dplyr::group_by(member_casual,
-                    wkday) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(wkday) |>
-    dplyr::collect() |>
-    dplyr::mutate(wkday = c("Sun",
-                            "Mon",
-                            "Tue",
-                            "Wed",
-                            "Thu",
-                            "Fri",
-                            "Sat"),
-                  wkday = forcats::as_factor(wkday),
-                  wkday = forcats::fct_inorder(wkday)) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freqCompare_wkDay.db",
-                         overwrite = TRUE)
-
-# For the months comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(member_casual,
-                  started_at) |>
-    dplyr::mutate(months = lubridate::month(started_at,
-                                            label = FALSE,
-                                            abbr = TRUE)) |>
-    dplyr::group_by(member_casual,
-                    months) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::collect() |>
-    dplyr::arrange(months) |>
-    dplyr::mutate(months = c(month.abb),
-                  months = forcats::as_factor(months),
-                  months = forcats::fct_inorder(months)) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freqCompare_month.db",
-                         overwrite = TRUE)
-
-
-# For the trip times comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(member_casual,
-                  trip_time) |>
-    dplyr::mutate(trip_time = round(trip_time,
-                                    digits = 0)) |>
-    dplyr::group_by(member_casual,
-                    trip_time) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(trip_time) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freqCompare_tripTime.db",
-                         overwrite = TRUE)
-
-# For the start station names comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(member_casual,
-                  start_station_name) |>
-    dplyr::group_by(member_casual,
-                    start_station_name) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(start_station_name) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freqCompare_startNames.db",
-                         overwrite = TRUE)
-
-# For the station name pairs comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(member_casual,
-                  start_station_name,
-                  end_station_name) |>
-    dplyr::group_by(start_station_name,
-                    end_station_name,
-                    member_casual) |>
-    dplyr::summarize(n = dplyr::n()) |>
-    dplyr::arrange(start_station_name,
-                   end_station_name) |>
-    dplyr::collect() |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freqCompare_pairStations.db",
-                         overwrite = TRUE)
-# For the hours comparison
-dplyr::tbl(dbconn,
-           tblPath_fltrd) |>
-    dplyr::select(started_at, member_casual) |>
-    dplyr::mutate("hour" = lubridate::hour(started_at)) |>
-    dplyr::group_by(member_casual, hour) |>
-    dplyr::summarize("Total_Riders" = dplyr::n()) |>
-    dplyr::arrange(hour, member_casual) |>
-    dplyr::collect() |>
-    dplyr::mutate("hour" = hms::hms(hours = hour),
-                  "hour" = format(strptime(hour, format = "%H"), "%r"),
-                  "index" = seq(1:24)) |>
-    duckdb::dbWriteTable(conn = dbconn,
-                         name = "db/freqCompare_hours.db",
-                         overwrite = TRUE)
-```
-:::
-:::
-:::
-
-
 ## Membership
 
 ::: {.callout-important icon="false"}
 <!-- -->
-
 -   @tbl-memberTotals displays the total trip count for annual members and casual riders.
-
--   The remaining tabs in this section provide total counts as well as group-wise counts based on membership status.
 :::
 
-### Counting Members
+::: {#offcanvas33243 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {.h5 .offcanvas-title}
+Membership Tables
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
+```{r}
+#| label: writeMembership
+#| code-summary: Write ... to db/... .db
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/membership.db"))) {
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(member_casual) |>
+dplyr::arrange(member_casual) |>
+dplyr::collect() |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/membership.db",
+overwrite = TRUE)
+}
+```
+
+```{r}
+#| label: tbl-kableMembership
+#| tbl-cap: Kable output
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/membership.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+::: {.btn .btn-outline-danger type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33243" aria-controls="offcanvas"}
+Write, then preview tables for this section
+:::
+:::
+
+::: panel-tabset
+### [Totals]{.panel-tabset-label}
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ```{r}
 #| label: tbl-memberTotals
 #| tbl-cap: Total Member Frequency
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/freq_member.db") |>
+dplyr::tbl(dbconn, "db/membership.db") |>
+dplyr::select(member_casual) |>
+dplyr::group_by(member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
 tabler (
 title = "Membership", 
-source_note = gt::md("**Source**: `db/freq_member.db`"),
+source_note = gt::md("**Source**: `db/membership.db`"),
 footnote = gt::md("The recorded observations."),
 location = n
 ) |>
-gt::cols_label(n = "Trips", member_casual = " ")
+gt::cols_label(member_casual = "Membership")
 ```
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-page-inset-right
 ```{r}
 #| label: fig-totalmemberFrequency
 #| fig-cap: Total Member Frequency
+#| tidy: true
+#| fig-dpi: 150
 
-
-gplot <- dplyr::tbl(dbconn, "db/freq_member.db") |>
+gplot <- 
+dplyr::tbl(dbconn, "db/membership.db") |>
+dplyr::select(member_casual) |>
+dplyr::group_by(member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
 plotter(
 x_col = member_casual, 
 y_col = n, 
 geomType = "column", 
 title = "Membership Types", 
 x_label = "Rider Types", 
-y_label = "Trips")
+y_label = "n")
 
 gplot
 ```
-
+:::
+:::
+:::
 
 ## Cycle Types
 
@@ -1073,32 +753,129 @@ gplot
 <!-- -->
 
 -   @tbl-ctypeTotals and @fig-ctypeTotals compare the total trips taken on conventional and electric bicycles, clearly showing that electric bikes are not utilized as much as conventional ones.
-
--   @tbl-ctypeCompare and @fig-ctypeCompare further break down the trip frequency by membership status, revealing a substantial disparity not only in the overall trip count between annual members and casual riders but also within the annual member group itself. While casual riders exhibit a small difference in trip counts between conventional and electric bikes, this difference is more pronounced among annual members.
-
--   With $p < 0.05$ in @tbl-chiTypes, there appears to be a strong association between membership status (annual member or casual rider) and the type of bicycle preferred, suggesting that these factors are not independent.
 :::
 
-### Counting Bicycles
+::: {#offcanvas48 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {.h5 .offcanvas-title}
+Bicycle Type Tables
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
+```{r}
+#| label: write bType to duckdb
+#| code-summary: Write bType.db to the database.
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/bType.db"))) {
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(rideable_type, member_casual) |>
+dplyr::arrange(rideable_type, member_casual) |>
+dplyr::collect() |>
+dplyr::mutate(rideable_type = forcats::as_factor(rideable_type)) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/bType.db",
+overwrite = TRUE)
+}
+```
 
 ```{r}
-#| label: tbl-ctypeTotals
-#| tbl-cap: Cycle Type Total Frequency
+#| label: btypeTransform
+#| code-summary: Transform and write ... for modeling.
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/bType_w.db"))) {
+transformData(
+conn = dbconn,
+path = "db/bType.db",
+select_cols = c("rideable_type", "member_casual"),
+group_cols = c("rideable_type", "member_casual"),
+binary_col = "member_casual",
+zero_val = "casual",
+one_val = "member",
+doWeights = TRUE
+) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/bType_w.db",
+overwrite = TRUE)
+}
+```
+
+::: {layout="[[1,2]]"}
+```{r}
+#| label: tbl-kableBtype
+#| tbl-cap: Kable output
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/bType.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+
+```{r}
+#| label: tbl-kableBtypeW
+#| tbl-cap: Kable output
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/bType_w.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+:::
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+:::mb-5
+::: {.btn .btn-outline-danger type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas48" aria-controls="offcanvas"}
+Write, then preview tables for this section
+:::
+:::
+:::
+
+::: panel-tabset
+### [Overall Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
+
+```{r}
+#| label: tbl-btypeTotal
+#| tbl-cap: Cycle Type Total Frequency
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/bType.db") |>
+dplyr::select(rideable_type) |>
+dplyr::group_by(rideable_type) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 tabler( 
 title = "Bicycles", 
 footnote = gt::md("The recorded observations."),
 location = n
 )
-
 ```
 
-```{r}
-#| label: fig-ctypeTotals
-#| fig-cap: Cycle Type Total Frequency 
+#### [Plot]{.panel-tabset-label}
 
-gplot <- dplyr::tbl(dbconn, "db/freq_rTypes.db") |>
+::: column-body-outset-right
+```{r}
+#| label: fig-btypeTotal
+#| fig-cap: Cycle Type Total Frequency 
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+dplyr::tbl(dbconn, "db/bType.db") |>
+dplyr::select(rideable_type) |>
+dplyr::group_by(rideable_type) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 plotter(
 x_col = rideable_type, 
 y_col = n, 
@@ -1109,15 +886,23 @@ y_label = "Trips")
 
 gplot
 ```
+:::
+:::
 
-### Bicycle by Membership
+### [Comparative Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ```{r}
-#| label: tbl-ctypeCompare
+#| label: tbl-btypeGroups
 #| tbl-cap: Cycle Type Group Frequency
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
-dplyr::arrange(rideable_type, member_casual) |>
+dplyr::tbl(dbconn, "db/bType.db") |>
+dplyr::select(rideable_type, member_casual) |>
+dplyr::group_by(rideable_type, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
 dplyr::collect() |>
 tabler(
 title = "Bicycle Type to Membership", 
@@ -1130,12 +915,21 @@ label_member = " "
 ) 
 ```
 
-```{r}
-#| label: fig-ctypeCompare
-#| fig-cap: Cycle Type Group Frequency
+#### [Plot]{.panel-tabset-label}
 
-source("Scripts/plotter.R")
-gplot <- dplyr::tbl(dbconn, "db/freqCompare_rType.db") |>
+::: column-body-outset-right
+```{r}
+#| label: fig-btypeGroups
+#| fig-cap: Bicycle to Membership Freq
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+dplyr::tbl(dbconn, "db/bType.db") |>
+dplyr::select(rideable_type, member_casual) |>
+dplyr::group_by(rideable_type, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 plotter(
 title = "Bicycle Groups",
 x_label = "Type",
@@ -1152,58 +946,48 @@ colGroup_palette = "Paired"
 
 gplot
 ```
+:::
 
-### Testing the association between membership and bicycle type
+#### [Chi-Square]{.panel-tabset-label}
 
 ```{r}
-#| label: tbl-chiTypes
+#| label: tbl-btypeChiSquare
+#| tidy: true
 
-dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::tbl(dbconn, "db/bType.db") |>
 dplyr::select(rideable_type, member_casual) |>
 dplyr::collect() |>
 tabler(
-title = "Chi-Square: Bicycles & Rider Type",
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+title = "Chi-Square: Bicycle Type & Membership",
+source_note = gt::md("**Source**: `db/bType.db`"),
 label = list(
 rideable_type = "Bicycle Type", 
 member_casual = "Membership"),
 by = member_casual,
 isSummary = TRUE
 )
-
 ```
 
-```{r}
-#| label: query cycle type with weights
-#| code-summary: "Return aggregated distinct rows utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
+#### [Density]{.panel-tabset-label}
 
-source("Scripts/transformData.R")
+::: column-body-outset-right
+:::
 
-weighted_data <- transformData(
-dbconn,
-tblPath_fltrd,
-select_cols = c("rideable_type", "member_casual"),
-group_cols = c("rideable_type", "member_casual"),
-#pred_col = "rideable_type",
-binary_col = "member_casual",
-zero_val = "casual",
-one_val = "member",
-doWeights = TRUE
-)
-
-```
+#### [Binary Logistic Regression]{.panel-tabset-label}
 
 ```{r}
-#| label: cycle type modeling
-#| code-summary: "Predicting the log-odds of being a member versus being a casual user based on the particular bicycle type."
+#| label: btypeModel
+#| code-summary: Predicting the log-odds of being a member versus being a casual user based on ...
+#| tidy: true
 
-# 23% less likely for members to ride an electric bike  
-model <- weighted_data |>
+model <- 
+dplyr::tbl(dbconn, "db/bType_w.db") |>
 glm(formula = member_casual ~ rideable_type, weights = n, family = binomial)
 ```
 
 ```{r}
-#| label: tbl-ctypeModel
+#| label: tbl-btypeModel
+#| tidy: true
 
 regression_tbl <- model |>
 gtsummary::tbl_regression(
@@ -1214,366 +998,388 @@ tabler(
 title = gt::md("Binary Logistic Regression: <br> Cycle Type to Membership"),
 source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE)
-
 ```
 
+#### [Histogram Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+:::
+
+#### [Summary Stats]{.panel-tabset-label}
+
+#### [AUC]{.panel-tabset-label}
+
+::: column-body-outset-right
+:::
+:::
+:::
 
 ## Duration
 
 ::: {.callout-important icon="false"}
 <!-- -->
-
--   As evident from @tbl-triptimeTotals2 and @fig-triptimeTotals2, the duration of most trips falls within the range of 5 to 15 minutes.
-
--   The group comparison in @tbl-triptimeCompare2 and @fig-triptimeCompare2 reveals that both casual riders and members largely follow the overall pattern observed in the totals. However, beyond the 42-minute mark, the count of casual riders exceeds that of members. While members ride more frequently overall, casual riders are more likely to undertake longer trips.
-
--   Given that $\beta_1 < 0$ (@tbl-logTimes2), the results indicate that members are more likely to take shorter trips in terms of duration compared to casual riders.
 :::
 
-### Counting Duration
+::: {#offcanvas68 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {.h5 .offcanvas-title}
+Bicycle Type Tables
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
+```{r}
+#| label: write duration to duckdb
+#| code-summary: Write ... to the database.
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/duration.db"))) {
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(trip_time, member_casual) |>
+dplyr::arrange(trip_time, member_casual) |>
+dplyr::collect() |>
+dplyr::mutate(
+trip_time = round(trip_time, digits = 2),
+mins = round(trip_time, digits = 0),
+mins = forcats::as_factor(mins)
+) |>
+dplyr::arrange(trip_time, member_casual) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/duration.db",
+overwrite = TRUE)
+}
+```
+
+```{r}
+#| label: durationWeightedQuantiles
+#| code-summary: Query ... .db, transform and write weighted quartile data to ... _wq.db. 
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/duration_wq.db"))) {
+transformData(
+conn = dbconn,
+path = "db/duration.db",
+select_cols = c("trip_time", "member_casual"),
+group_cols = c("trip_time", "member_casual"),
+binary_col = "member_casual",
+pred_col = "trip_time",
+ntile_col = "quartile",
+zero_val = "casual",
+one_val = "member",
+qtile_levels = c(
+"Q1 (1.02 - 5.73]",
+"Q2 (5.73 - 9.55]",
+"Q3 (9.55 - 16.13]",
+"Q4 (16.13 - 475.22]"
+),
+doQuantile = TRUE,
+doWeights = TRUE
+) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/duration_wq.db",
+overwrite = TRUE)
+}
+```
+
+::: {layout="[[1,2]]"}
+```{r}
+#| label: tbl-kableDuration
+#| tbl-cap: Kable output
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+
+```{r}
+#| label: tbl-kableDurationWQ
+#| tbl-cap: Kable output
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/duration_wq.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+:::
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+:::m-3
+::: {.btn .btn-outline-danger type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas68" aria-controls="offcanvas"}
+Write, then preview tables for this section
+:::
+:::
+:::
+
+::: panel-tabset
+### [Overall Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ::: tableScroller
 ```{r}
 #| label: tbl-triptimeTotals
 #| tbl-cap: Trip-Time Totals
+#| tidy: true
 
-
-dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
-dplyr::arrange(trip_time) |>
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::group_by(mins) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 tabler( 
 title = "Duration", 
 footnote = gt::md("The recorded observations."),
 location = n
 ) |>
-gt::cols_align(columns = "trip_time", align = "left")
+gt::cols_align(columns = "mins", align = "left")
 ```
 :::
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-page-inset-right
 ```{r}
 #| label: fig-triptimeTotals
-#| fig-cap: Trip-Time Totals
-#| fig-dpi: 600
-#| column: body-outset-right
+#| fig-cap: Trip Duration Totals
+#| fig-dpi: 150
+#| tidy: true
 
-gplot <- dplyr::tbl(dbconn, "db/freq_tripTime.db") |>
-dplyr::filter(trip_time <= 100) |>
+gplot <- 
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::select(mins) |>
+dplyr::filter(as.integer(mins) <= 100) |>
+dplyr::group_by(mins) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 plotter(
-x_col = trip_time, 
+x_col = as.integer(mins), 
 y_col = n,
 geomType = "column", 
 title = "Duration", 
 x_label = "Minutes", 
 y_label = "Overall Trips",
-color_col = "black") 
+color_col = "black") +
+ggplot2::scale_x_continuous(
+limits = c(0, 100),
+breaks = seq(0, 100, by = 5),
+guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)
+)
 
 gplot
 ```
+:::
+:::
 
-### Duration by Membership
+### [Comparative Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ::: tableScroller
 ```{r}
 #| label: tbl-triptimeCompare
 #| tbl-cap: Trip Time Comparison
+#| tidy: true
 
-
-dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::select(mins, member_casual) |>
+dplyr::filter(as.integer(mins) <= 100) |>
+dplyr::group_by(mins, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::arrange(mins, member_casual) |>
 dplyr::collect() |>
-dplyr::arrange(trip_time, member_casual) |>
 tabler(
 title = "Duration Compare",
 source_note = gt::md("**Source:** `db/freqCompare_tripTime.db`"),
 footnote = "The recorded observations.",
 location = n,
-groupName = "trip_time",
+groupName = "mins",
 label_n = "n",
 label_member = " "
 )
-
 ```
 :::
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-page-inset-right
 ```{r}
 #| label: fig-triptimeCompare
 #| fig-cap: Trip-Time Group Frequency
-#| fig-dpi: 600
-#| column: body-outset-right
+#| fig-dpi: 150
+#| tidy: true
 
-gplot <- dplyr::tbl(dbconn, "db/freqCompare_tripTime.db") |>
-dplyr::arrange(trip_time, member_casual) |>
-dplyr::filter(trip_time <= 100) |>
+gplot <- 
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::select(mins, member_casual) |>
+dplyr::filter(as.integer(mins) <= 100) |>
+dplyr::group_by(mins, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::arrange(mins, member_casual) |>
 dplyr::collect() |>
 plotter(
 title = "Duration Groups",
 x_label = "Minutes",
 y_label = "Trips",
-x_col = trip_time, 
+x_col = mins, 
 y_col = n, 
 group_col = member_casual,
 geomType = "column",
 is_colGroup = TRUE,
 colPosition = ggplot2::position_stack(reverse = TRUE),
 color_col = "black"
+) +
+ggplot2::scale_x_discrete(
+guide = ggplot2::guide_axis(n.dodge = 1, angle = 45), 
+breaks = forcats::as_factor(seq(0, 100, by = 5)))
+
+gplot
+```
+:::
+
+#### [Chi-Square]{.panel-tabset-label}
+
+#### [Density]{.panel-tabset-label}
+
+::: column-page-inset-right
+```{r}
+#| label: fig-durationDensity
+#| code-summary: Density plot for duration by membership.
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::select(trip_time, member_casual) |>
+dplyr::arrange(trip_time, member_casual) |>
+dplyr::collect() |>
+plotter(
+title = "Duration Group Density",
+x_label = paste0("Minutes"),
+x_col = trip_time, 
+group_col = member_casual,
+geomType = "column",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isDensity = TRUE,
+is_colGroup = TRUE,
+breaks = seq(0, 100, by = 5),
+limits = c(0, 100)
 )
 
 gplot
 ```
+:::
 
-### Predicting with Duration?
+#### [Binary Logistic Regression]{.panel-tabset-label}
 
 ```{r}
-#| label: fig-durationModeling
-#| fig-dpi: 600
-#| column: body-outset-right
+#| label: modeldurationQ
+#| code-summary: Query ..._wq.db, process and create model R object for hour based on quartile range. 
 
-# The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems.
-
-dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(trip_time, member_casual) |>
-dplyr::mutate(trip_time = round(trip_time, digits = 0)) |>
-dplyr::collect() |>
-duckdb::dbWriteTable(
-conn = dbconn,
-name = "db/rounded_trip_time.db",
-overwrite = TRUE)
-
-source("Scripts/transformData.R")
-
-weighted_data <- transformData(
-dbconn, 
-"db/rounded_trip_time.db", 
-select_cols = c("trip_time", "member_casual"), 
-group_cols = c("trip_time", "member_casual"), 
-binary_col = "member_casual", 
-ntile_col = "ntile_col", 
-pred_col = "trip_time", 
-zero_val = "casual", 
-one_val = "member",
-qtile_levels = c(
-"[1 : 6]", "(6 : 10]", "(10 : 16]", "(16 : 475]"),
-doWeights = TRUE,
-doQuantile = TRUE)
-
-expanded_data <- weighted_data |>
-tidyr::uncount(n, .remove = FALSE) |>
-dplyr::select(trip_time, member_casual)
-
-model <- weighted_data |> 
+model <- 
+dplyr::tbl(dbconn, "db/duration_wq.db") |>
+dplyr::collect() |> 
 glm(
-formula = member_casual ~ ntile_col, 
-weights = n, 
-family = binomial)
+formula = member_casual ~ quartile, 
+family = binomial,
+weights = n)
+```
 
-regression_tbl <- model |>
+```{r}
+#| label: tbl-modeldurationQ
+#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+
+model |>
 gtsummary::tbl_regression(
-label = list(ntile_col = "Duration Ranges"), 
+label = list(quartile = "Duration Ranges"), 
 conf.int = FALSE, 
-exponentiate = TRUE)
-
-regression_tbl |>
+exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Duration & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+title = gt::md("Binary Logistic Regression: <br> Duration & Membership"),
+source_note = gt::md("**Source**: `db/duration_wq.db`"),
 isBinary = TRUE)
 ```
 
-```{r}
-#| label: axis breaks for casuals' duration
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "casual", trip_time <= 100) |>
-calcBreaks()
-```
+#### [Histogram Plot]{.panel-tabset-label}
 
 ```{r}
-#| label: fig-cDurationHistogram
-#| fig-cap: "Casuals Duration Histogram"
-#| fig-dpi: 600
-#| column: body-outset-right
+#| label: durationQuantile
+#| code-summary: Create a data frame, then extract the desired quartile info to supplement histogram visualization for ... data.
+#| tidy: true
 
-# histogram IQR viz for the duration metric
-#gplot <- duration_factored |>
-gplot <- expanded_data |>
-dplyr::filter(member_casual == "casual") |>
+qdf <- dplyr::tbl(dbconn, "db/duration.db") |>
 dplyr::select(trip_time) |>
-plotter(
-title = "Duration - Casuals",
-x_label = "Duration (minutes)",
-y_label = "Trips",
-x_col = trip_time, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(0, 100),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
+dplyr::collect()
 
-gplot
-
+quartiles <- quantile(qdf$trip_time, probs = c(0.25, 0.5, 0.75))
 ```
 
+::: column-page-inset-right
 ```{r}
-#| label: axis breaks for members' duration
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
+#| label: fig-durationHistogram
+#| tidy: true
+#| fig-dpi: 150
 
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "member", trip_time <= 100) |>
-calcBreaks()
-```
-
-```{r}
-#| label: fig-mDurationHistogram
-#| fig-dpi: 600
-#| column: body-outset-right
-
-# histogram IQR viz for the duration metric
-gplot <- expanded_data |>
-dplyr::filter(member_casual == "member") |>
-dplyr::select(trip_time) |>
-plotter(
-title = "Duration - Members",
-x_label = "Duration (minutes)",
-y_label = "Trips",
-x_col = trip_time, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(0, 100),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
-
-gplot
-
-```
-
-68.26% of the data points are located between -1 and +1 standard deviations (34.13% in either direction). 95.44% of the data points are located between -2 and +2 standard deviations (47.72% in either direction). 99.72% of the data points are located between -3 and +3 standard deviations (49.86% in either direction)
-
-```{r}
-#| label: transformDuration
-
-source("Scripts/transformData.R")
-
-unrounded_data <- transformData(
-dbconn, 
-tblPath_fltrd, 
-select_cols = c("trip_time", "member_casual"), 
-binary_col = "member_casual", 
-zero_val = "casual", 
-one_val = "member"
-)
-```
-
-```{r}
-#| label: fig-durationDensity
-#| fig-dpi: 600
-#| column: body-outset-right
-
-source("Scripts/plotter.R")
-
-# density viz for the duration metric
 gplot <- 
-unrounded_data |>
+qdf |>
 plotter(
-title = "Trip Duration Group Density",
-x_label = paste0("Duration", "\n", "(minutes)"),
+title = "Duration",
+x_label = "Duration",
 y_label = "Trips",
 x_col = trip_time, 
-#y_col = n,
-group_col = member_casual,
 geomType = "column", 
-#isFaceted = TRUE,
-isDensity = TRUE,
-#isHistogram = TRUE,
-is_colGroup = TRUE,
-limits = c(0, 100),
+isHistogram = TRUE,
 angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 1,
-density_color = "gray",
-density_fill = "transparent",
-#alpha = 0.75,
-#vline_color = "lightyellow",
-#vline_size = 0.5,
-density_alpha = 0.6,
+color_col = "transparent",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "red",
+high = "blue",
+limits = c(0,100),
+breaks = seq(0, 100, by = 5),
+binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles
 )
 
 gplot
 ```
+:::
+
+#### [AUC]{.panel-tabset-label}
 
 ```{r}
-#| label: tbl-durationSummary
+#| label: durationROC
+#| code-summary: Generate the ROC Curve
 
-source("Scripts/tabler.R")
+roc_duration <- 
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::collect() |>
+pROC::roc(member_casual, trip_time, levels = c("casual", "member"))
 
-unrounded_data |>
-gtsummary::tbl_summary(
-by = member_casual,
-type = trip_time ~ "continuous2",
-label = list(trip_time ~ "Duration (minutes)"),
-digits = list(
-trip_time ~ c(2, 2)),
-statistic = 
-gtsummary::all_continuous() ~ c(
-"{median} ({p25}, {p75})", 
-"{mean} ({sd})", 
-"{min}, {max}")
-) |>
-gtsummary::italicize_levels() |>
-tabler(
-title = gt::md("Summary Statistics: <br> Duration - Membership"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE,
-)
 
 ```
 
+```{r}
+#| label: durationAUC
+#| code-summary: Find the area under the curve value (AUC), round to 4 decimals.
+
+auc_duration <- round(pROC::auc(roc_duration), 4)
+```
+
+::: column-page-inset-right
 ```{r}
 #| label: fig-rocDuration
-#| fig-dpi: 600
-#| column: body-outset-right
-
-source("Scripts/plotter.R")
-
-# Generate ROC curve
-roc_duration <- pROC::roc(
-unrounded_data$member_casual, unrounded_data$trip_time, levels = c("casual", "member"))
-
-# Find the area under the curve value
-auc_duration <- round(pROC::auc(roc_duration), 4)
+#| fig-dpi: 150
+#| tidy: true
 
 gplot <- roc_duration |>
 plotter(
@@ -1586,46 +1392,155 @@ x_label = paste0("Specificity", "\n", "(False Positive Rate)"),
 y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
 roc_color = "red")
 
-# false positive rate = x-axis; true positive rate = y-axis
 gplot
 ```
-
+:::
+:::
+:::
 
 ## Month
 
 ::: {.callout-important icon="false"}
 <!-- -->
-
--   Examining the monthly totals in @tbl-monthTotals and @fig-monthTotals, it is evident that warmer months coincide with higher overall trip frequency.
-
--   The comparison between subscriber and casual rider groups in @tbl-monthCompare and @fig-monthCompare reveals that both groups exhibit seasonal variations in trip frequency. However, the fluctuations appear to be less pronounced for subscribers compared to casual riders. The disparity in the extent of frequency changes is more apparent when contrasting winter and summer months between the two groups.
-
--   With $p < 0.05$, (@tbl-chiMonths), there is strong evidence to suggest that membership status is associated with an individual's usage of the service during a particular month or season.
 :::
 
-### Counting Months
+::: {#offcanvas78 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {.h5 .offcanvas-title}
+Months of the Year
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
+```{r}
+#| label: writeMonths
+#| code-summary: Write moy.db to the database.
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/moy.db"))) {
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(started_at, member_casual) |>
+dplyr::arrange(started_at) |>
+dplyr::collect() |>
+dplyr::mutate(
+member_casual = factor(member_casual, levels = c("casual", "member")),
+abbMonths = lubridate::month(started_at, label = TRUE, abbr = TRUE),
+abbMonths = forcats::as_factor(abbMonths)
+) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/moy.db",
+overwrite = TRUE)
+}
+```
+
+```{r}
+#| label: monthsWeightedQuantiles
+#| code-summary: Query ..., transform, and write weighted quartile data to ..._wq.db.
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/moy_wq.db"))) {
+transformData(
+conn = dbconn,
+path = "db/moy.db",
+select_cols = c("started_at", "member_casual"),
+group_cols = c("started_at", "member_casual"),
+binary_col = "member_casual",
+pred_col = "started_at",
+ntile_col = "quartile",
+zero_val = "casual",
+one_val = "member",
+qtile_levels = c(
+"Q1 (Jan 01 - May 20]",
+"Q2 (May 20 - Jul 21]",
+"Q3 (Jul 21 - Sep 18]",
+"Q4 (Sep 18 - Dec 31]"
+),
+doQuantile = TRUE,
+doWeights = TRUE
+) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/moy_wq.db",
+overwrite = TRUE)
+}
+
+```
+
+::: {layout="[[1,2]]"}
+```{r}
+#| label: tbl-kableMoy
+#| tbl-cap: Kable output for months of the year
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+
+```{r}
+#| label: tbl-kableMoy
+#| tbl-cap: Kable output for weighted months of the year.
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/moy_wq.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+:::
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+:::mb-5
+::: {.btn .btn-outline-danger type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas78" aria-controls="offcanvas"}
+Write, then preview the tables for this section
+:::
+:::
+:::
+
+::: panel-tabset
+### [Overall Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ```{r}
 #| label: tbl-monthTotals
 #| tbl-cap: Month Total Frequency
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/freq_month.db") |>
+dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(abbMonths) |>
+dplyr::group_by(abbMonths) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 tabler(
 title = "Months",
-source_note = gt::md("**Source:** `db/freq_month.db`"),
+source_note = gt::md("**Source:** `db/moy.db`"),
 footnote = "The recorded observations.",
 location = n
 )
-
 ```
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
 #| label: fig-monthTotals
 #| fig-cap: Month Total Frequency
+#| fig-dpi: 150
+#| tidy: true
 
-gplot <- dplyr::tbl(dbconn, "db/freq_month.db") |>
+gplot <- dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(abbMonths) |>
+dplyr::group_by(abbMonths) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 plotter(
-x_col = months, 
+x_col = abbMonths, 
 y_col = n, 
 geomType = "column", 
 title = "Months", 
@@ -1633,40 +1548,61 @@ x_label = "Months",
 y_label = "Trips")
 
 gplot
-
 ```
+:::
+:::
 
-### Month by Membership
+### [Comparative Frequency Analysis]{.panel-tabset-label}
 
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
+
+::: tableScroller
 ```{r}
 #| label: tbl-monthCompare
 #| tbl-cap: Month Group Frequency
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
-dplyr::arrange(months, member_casual) |>
+dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(abbMonths, member_casual) |>
+dplyr::group_by(abbMonths, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
+dplyr::arrange(abbMonths, member_casual) |>
 dplyr::collect() |>
 tabler(
 title = "Months",
-source_note = gt::md("**Source:** `db/freqCompare_month.db`"),
+source_note = gt::md("**Source:** `db/moy.db`"),
 footnote = "The recorded observations.",
 location = n,
-groupName = "months",
+groupName = "abbMonths",
 label_n = "n",
 label_member = " "
 )
-
 ```
+:::
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
 #| label: fig-monthCompare
 #| fig-cap: Month Group Frequency
+#| fig-dpi: 150
+#| tidy: true
 
-gplot <- dplyr::tbl(dbconn, "db/freqCompare_month.db") |>
+gplot <- dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(abbMonths, member_casual) |>
+dplyr::group_by(abbMonths, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
+dplyr::arrange(abbMonths, member_casual) |>
+dplyr::collect() |>
 plotter(
 title = "Month Groups",
 x_label = "Months",
 y_label = "Trips",
-x_col = months, 
+x_col = abbMonths, 
 y_col = n, 
 group_col = member_casual,
 geomType = "column", 
@@ -1675,51 +1611,43 @@ is_colGroup = TRUE
 )
 
 gplot
-
 ```
+:::
 
-### Testing the association between membership and month
+#### [Chi-Square]{.panel-tabset-label}
 
 ```{r}
 #| label: tbl-chiMonths
+#| tidy: true
 
-# For finding chi-square p-value in a nicely formatted table
-month_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(member_casual, started_at) |>
-dplyr::arrange(started_at) |>
-dplyr::mutate(months = lubridate::month(started_at, label = TRUE, abbr = TRUE)) |>
+dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(abbMonths, member_casual) |>
+dplyr::arrange(abbMonths, member_casual) |>
 dplyr::collect() |>
-dplyr::mutate(
-months = forcats::as_factor(months))
-
-month_tbl |>
-dplyr::select(member_casual, months) |>
 tabler(
-title = "Chi-Square: Month & Rider Type",
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+title = "Chi-Square: Month & Membership",
+source_note = gt::md("**Source**: `db/moy.db`"),
 label = list(
 months = "Month"),
 by = member_casual,
 isSummary = TRUE
 )
-
 ```
 
+#### [Density]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
-#| label: accurate simple month density query and plot 
+#| label: fig-monthDensity
+#| fig-dpi: 150
+#| tidy: true
 
-compare_months <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(started_at, member_casual) |>
-dplyr::arrange(started_at) |>
+gplot <- 
+dplyr::tbl(dbconn, "db/moy.db") |>
 dplyr::collect() |>
-dplyr::mutate(
-member_casual = factor(member_casual, levels = c("casual", "member")))
-
-
-gplot <- compare_months |>
 plotter(
 title = "Month Group Density",
-x_label = paste0("Month"),
+x_label = paste0("Months"),
 x_col = started_at, 
 group_col = member_casual,
 geomType = "other",
@@ -1728,92 +1656,263 @@ color_col = "black",
 density_alpha = 0.75,
 isTime = TRUE,
 date_breaks = "1 month",
-date_labels = "%b")
+date_labels = "%b",
+)
 
 gplot
+```
+:::
 
+#### [Binary Logistic Regression]{.panel-tabset-label}
+
+```{r}
+#| label: modelMonthsQ
+#| code-summary: Query ..._wq.db, process and create model R object for hour based on quartile range. 
+
+model <- 
+dplyr::tbl(dbconn, "db/moy_wq.db") |>
+dplyr::collect() |> 
+glm(
+formula = member_casual ~ quartile, 
+family = binomial,
+weights = n)
 ```
 
+```{r}
+#| label: tbl-modelMonthsQ
+#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tidy: true
+
+model |>
+gtsummary::tbl_regression(
+label = list(quartile = "Months Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE) |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Months & Membership"),
+source_note = gt::md("**Source**: `db/moy.db`"),
+isBinary = TRUE)
+```
+
+#### [Histogram Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-monthHistogram
+#| fig-dpi: 150
+#| tidy: true
+
+qdf <- dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(started_at) |>
+dplyr::collect()
+
+quartiles <- quantile(qdf$started_at, probs = c(0.25, 0.5, 0.75))
+
+gplot <- dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(started_at) |>
+dplyr::collect() |>
+plotter(
+title = "Months",
+x_label = "Months",
+y_label = "Trips",
+x_col = started_at, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 month", 
+date_labels = "%b", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles,
+qformat = "%b-%d"
+)
+
+gplot
+```
+:::
+
+#### [AUC]{.panel-tabset-label}
+
+::: column-screen-inset-right
+:::
+:::
+:::
 
 ## Day
 
 ::: {.callout-important icon="false"}
 <!-- -->
-
--   @tbl-wkdayTotals and @fig-wkdayTotals indicate a higher total number of trips taken between Tuesday and Saturday compared to Sunday and Monday.
-
--   The trend becomes more intricate in @tbl-wkdayCompare and @fig-wkdayCompare, which compare trip frequencies across weekdays for annual members and casual riders separately. Casual riders exhibit an increase in trips towards the weekend, with a dip on weekdays when annual members are more active. Conversely, when annual members are less active, casual riders tend to be more active.
-
--   As $p < 0.05$ in @tbl-chiDays, there appears to be a significant association between membership status and the likelihood of using the service on a particular day of the week, suggesting that these factors are not independent.
 :::
 
-### Counting Days
+
+::: {#offcanvas98 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {.h5 .offcanvas-title}
+Months of the Year
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
+```{r}
+#| label: writeDow
+#| code-summary: Write dow.db to the database.
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/dow.db"))) {
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(started_at, member_casual) |>
+dplyr::arrange(started_at) |>
+dplyr::collect() |>
+dplyr::mutate(
+wkdays = lubridate::wday(started_at, week_start = 7),
+member_casual = factor(member_casual, levels = c("casual", "member")),
+started_at = update(
+started_at,
+year = 2024,
+month = 9,
+day = wkdays
+),
+abbDays = lubridate::wday(started_at, label = TRUE, abbr = TRUE),
+abbDays = forcats::as_factor(abbDays)
+) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/dow.db",
+overwrite = TRUE)
+}
+
+```
+
+::: {layout="[[1]]"}
+```{r}
+#| label: tbl-kableDay
+#| tbl-cap: Kable output: days of the week.
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+:::
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+:::mb-5
+::: {.btn .btn-outline-danger type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas98" aria-controls="offcanvas"}
+Write, then preview the tables for this section
+:::
+:::
+:::
+
+
+
+::: panel-tabset
+### [Overall Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ```{r}
 #| label: tbl-wkdayTotals
 #| tbl-cap: Weekday Total Frequency
 
-dplyr::tbl(dbconn, "db/freq_wkday.db") |>
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(abbDays) |>
+dplyr::group_by(abbDays) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 tabler( 
 title = "Days", 
 footnote = gt::md("The recorded observations."),
 location = n
 )
-
 ```
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
 #| label: fig-wkdayTotals
 #| fig-cap: Weekday Totals Frequency
+#| fig-dpi: 150
+#| tidy: true
 
-gplot <- dplyr::tbl(dbconn, "db/freq_wkday.db") |>
+gplot <- dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(abbDays) |>
+dplyr::group_by(abbDays) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
 plotter(
-x_col = wkday, 
+x_col = abbDays, 
 y_col = n, 
 geomType = "column", 
 title = "Days for all Riders", 
-x_label = "Days of the Week", 
-y_label = "Trips") +
-# To zoom the data a bit
+x_label = "Days of the Week",
+y_label = "Trips"
+) +
 ggplot2::coord_cartesian(ylim = c(4.5 * 10^5, NA))
+# To zoom the data a bit
 
 gplot
-
 ```
+:::
+:::
 
-### Day by Membership
+### [Comparative Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ```{r}
 #| label: tbl-wkdayCompare
 #| tbl-cap: Weekday Group Frequency
+#| tidy: true
 
-
-dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(abbDays, member_casual) |>
+dplyr::group_by(abbDays, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
 dplyr::collect() |>
-dplyr::arrange(wkday, member_casual) |>
+dplyr::arrange(abbDays, member_casual) |>
 tabler(
 title = "Weekday Compare",
-source_note = gt::md("**Source:** `db/freqCompare_wkday.db`"),
+source_note = gt::md("**Source:** `db/dow.db`"),
 footnote = "The recorded observations.",
 location = n,
-groupName = "wkday",
+groupName = "abbDays",
 label_n = "n",
 label_member = " "
 )
-
 ```
 
+#### [Plot]{.panel-tabset-label}
+::: column-body-outset-right
 ```{r}
 #| label: fig-wkdayCompare
 #| fig-cap: Weekday Group Frequency
+#| fig-dpi: 150
+#| tidy: true
 
-
-gplot <- dplyr::tbl(dbconn, "db/freqCompare_wkday.db") |>
+gplot <- 
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(abbDays, member_casual) |>
+dplyr::group_by(abbDays, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::collect() |>
+dplyr::arrange(abbDays, member_casual) |>
 plotter(
 title = "Day Groups",
 x_label = "Days",
 y_label = "Trips",
-x_col = wkday, 
+x_col = abbDays, 
 y_col = n, 
 group_col = member_casual,
 geomType = "column", 
@@ -1822,34 +1921,42 @@ is_colGroup = TRUE
 )
 
 gplot
-
 ```
+:::
 
-### Testing the association between day and membership
+#### [Chi-Square]{.panel-tabset-label}
 
 ```{r}
-#| label: accurate wkday query and density plot
+#| label: tbl-chiDays
 
-compare_wkdays <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(started_at, member_casual) |>
-dplyr::arrange(started_at) |>
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(abbDays, member_casual) |>
 dplyr::collect() |>
-dplyr::mutate(
-wkdays = lubridate::wday(started_at, week_start = 7),
-member_casual = factor(member_casual, levels = c("casual", "member")))
+dplyr::arrange(abbDays, member_casual) |>
+tabler(
+title = "Chi-Square: Day & Rider Type",
+source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+label = list(abbDays = "Day"),
+by = member_casual,
+isSummary = TRUE
+)
+```
 
-compare_wkdays$started_at <- update(
-compare_wkdays$started_at, 
-year = 2024, 
-month = 9, 
-day = compare_wkdays$wkdays)
+#### [Density]{.panel-tabset-label}
+::: column-body-outset-right
+```{r}
+#| label: fig-dayDensity
+#| code-summary: Density by day of the week.
+#| fig-dpi: 150
+#| tidy: true
 
-
-gplot <- compare_wkdays |>
+gplot <- 
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(started_at, member_casual) |>
+dplyr::collect() |>
 plotter(
 title = "Weekday Group Density",
 x_label = paste0("Day"),
-#y_label = "Trips",
 x_col = started_at, 
 group_col = member_casual,
 geomType = "other",
@@ -1862,107 +1969,247 @@ date_labels = "%a")
 
 gplot
 ```
+:::
+
+#### [Binary Logistic Regression]{.panel-tabset-label}
+
+#### [Histogram Plot]{.panel-tabset-label}
+::: column-body-outset-right
+```{r}
+#| label: fig-Hdays
+#| fig-dpi: 150
+#| tidy: true
+
+qdf <- dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(started_at) |>
+dplyr::collect()
+
+quartiles <- quantile(qdf$started_at, probs = c(0.25, 0.5, 0.75))
+
+gplot <- qdf |>
+plotter(
+title = "Days",
+x_label = "Days",
+y_label = "n",
+x_col = started_at, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 day", 
+date_labels = "%a", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles,
+qformat = "%a %I %p"
+) 
+
+gplot
+```
+:::
+
+#### [Summary Stats]{.panel-tabset-label}
 
 ```{r}
-#| label: accurate day of week chi-square query and table 
+#| label: tbl-daySummary
+#| code-summary: Taking a shot at summary stats with datetime data. Seems to work, but a little confusing. 
+#| tidy: true
 
-compare_wkdays |>
-dplyr::select(member_casual, started_at) |>
-dplyr::arrange(started_at) |>
-dplyr::mutate(
-wday_abb = lubridate::wday(started_at, label = TRUE, abbr = TRUE)) |>
-tabler(
-title = "Chi-Square: Day & Rider Type",
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-label = list(wday_abb = "Day"),
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(started_at, abbDays, member_casual) |>
+dplyr::collect() |>
+gtsummary::tbl_summary(
 by = member_casual,
-isSummary = TRUE
-)
-
+type = started_at ~ "continuous2",
+label = list(started_at ~ "Day"),
+statistic = 
+gtsummary::all_continuous2() ~ c(
+"{median} ({p25}, {p75})", 
+"{mean} ({sd})", 
+"{min}, {max}")
+) |>
+tabler(
+title = gt::md("Summary: <br> Days - Membership"),
+source_note = gt::md("**Source**: `db/dow.db`"),
+isBinary = TRUE)
 ```
 
+#### [AUC]{.panel-tabset-label}
+
+::: column-body-outset-right
+:::
+:::
+:::
 
 ## Hour
 
 ::: {.callout-important icon="false"}
 <!-- -->
-
--   The overall trend follows the typical work day cycle where one would expect to see with spikes in the mornings and evenings. See @tbl-hourTotals and @fig-hourTotals.
-
--   There is a noted discrepancy between member and casual use during peak commute hours. Members have more notable spike during morning commute hours than casuals, which appears more flat throughout the day. See @tbl-hourCompare and @fig-hourCompare.
-
--   Given, $p < 0.05$, members and casuals tend to take trips at different hours of the day. @tbl-chiHours
 :::
 
 
+::: {#offcanvas108 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {.h5 .offcanvas-title}
+Hour of the Day
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
 ```{r}
-#| label: write hod to duckdb
-#| code-summary: Write hod.db to the database.
+#| label: writeHod
+#| code-summary: Write ... to the database.
 #| tidy: true
-  
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/hod.db"))) {
 dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(started_at, member_casual) |>
 dplyr::arrange(started_at) |>
 dplyr::collect() |>
 dplyr::mutate(
-started_at_time = update(started_at, year = 2023, month = 1, day = 1),
-hr = stringr::str_to_lower(
-format(lubridate::round_date(started_at, unit = "hour"), "%I %p")),
-hrMin = stringr::str_to_lower(
-format(lubridate::round_date(started_at, unit = "minute"), "%I:%M %p")),
-hrminSec = stringr::str_to_lower(
-format(lubridate::round_date(started_at, unit = "second"), "%r"))
+started_at_time = update(
+started_at,
+year = 2023,
+month = 1,
+day = 1
+),
+hr = stringr::str_to_lower(format(
+lubridate::round_date(started_at, unit = "hour"), "%I %p"
+)),
+hrMin = stringr::str_to_lower(format(
+lubridate::round_date(started_at, unit = "minute"),
+"%I:%M %p"
+)),
+hrminSec = stringr::str_to_lower(format(
+lubridate::round_date(started_at, unit = "second"), "%r"
+))
 ) |>
 dplyr::select(member_casual:hrminSec) |>
 duckdb::dbWriteTable(conn = dbconn,
 name = "db/hod.db",
 overwrite = TRUE)
+}
 
 ```
-
-
-```{r}
-#| label: tbl-dbHours
-#| code-summary: Output of hod.db.
-#| tidy: formatR
-
-dplyr::tbl(dbconn, "db/hod.db") |>
-dplyr::collect() |>
-head()
-kableExtra::kable()
-```
-
 
 ```{r}
 #| label: hod_n
 #| code-summary: Transform hod.db and write as hod_n.db to the databse.
 
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/hod_n.db"))) {
 dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::arrange(started_at_time, member_casual) |>
 dplyr::collect() |>
 dplyr::add_count(started_at_time, member_casual) |>
-dplyr::arrange(started_at_time, hrminSec, member_casual) |>
+dplyr::arrange(started_at_time, member_casual) |>
 dplyr::distinct() |>
+dplyr::mutate(
+hr = forcats::as_factor(hr),
+hrMin = forcats::as_factor(hrMin)) |>
 duckdb::dbWriteTable(conn = dbconn, 
 name = "db/hod_n.db", 
 overwrite = TRUE)
+}
+
 ```
 
+```{r}
+#| label: hoursWeightedQuantiles
+#| code-summary: Query ..., transform and write weighted quartile data to hod_wq.db.
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/hod_wq.db"))) {
+transformData(
+conn = dbconn,
+path = "db/hod.db",
+select_cols = c("started_at_time", "member_casual"),
+group_cols = c("started_at_time", "member_casual"),
+binary_col = "member_casual",
+pred_col = "started_at_time",
+ntile_col = "quartile",
+zero_val = "casual",
+one_val = "member",
+qtile_levels = c(
+"Q1 (12:00 am - 10:59 am]",
+"Q2 (10:59 am - 03:24 pm]",
+"Q3 (03:24 pm - 06:05 pm]",
+"Q4 (06:05 pm - 11:59 pm]"
+),
+doQuantile = TRUE,
+doWeights = TRUE
+) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/hod_wq.db",
+overwrite = TRUE)
+}
+
+```
+
+::: {layout="[[1,2],[3]]"}
+```{r}
+#| label: tbl-dbhod
+#| tbl-cap: Kable output of hod.db
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
 
 ```{r}
 #| label: tbl-nHours
-#| code-summary: Display hod_n.db.
-#| tidy: formatR
+#| tbl-cap: Kable output of hod_n.db
+#| tidy: true
 
 dplyr::tbl(dbconn, "db/hod_n.db") |>
 dplyr::collect() |>
-head()
+head() |>
 kableExtra::kable()
 ```
+
+```{r}
+#| label: tbl-hoursWQ
+#| tbl-cap: Kable output of hod_wq.db
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/hod_wq.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+:::
+:::
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+:::mb-5
+::: {.btn .btn-outline-danger type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas108" aria-controls="offcanvas"}
+Write, then preview the tables for this section
+:::
+:::
+:::
+
+
+
+::: panel-tabset
+### [Overall Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ::: tableScroller
 ```{r}
 #| label: tbl-hourTotals
 #| tbl-cap: Total freqeuncy by the hour of day
+#| tidy: true
 
 dplyr::tbl(dbconn, "db/hod_n.db") |>
 dplyr::group_by(hr) |>
@@ -1975,11 +2222,14 @@ location = n)
 ```
 :::
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
 #| label: fig-hourTotals
 #| fig-cap: Total frequency by hour of day.
-#| fig-dpi: 600
-#| column: body-outset-right
+#| fig-dpi: 150
+#| tidy: true
 
 dplyr::tbl(dbconn, "db/hod_n.db") |>
 dplyr::group_by(hr) |>
@@ -1995,36 +2245,51 @@ y_label = "Trips",
 ) +
 ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 ```
+:::
+:::
 
+### [Comparative Frequency Analysis]{.panel-tabset-label}
 
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
 
 ::: tableScroller
 ```{r}
 #| label: tbl-hourMembership
 #| tbl-cap: Frequencies for membership by hour.
+#| tidy: true
 
 dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::group_by(hr, member_casual) |>
+dplyr::summarize(n = sum(n)) |>
+dplyr::arrange(hr, member_casual) |>
 dplyr::collect() |>
 tabler(
 title = "Hours Membership Groups",
-source_note = gt::md("**Source:** `db/fltrd_db.db`"),
+source_note = gt::md("**Source:** `db/hod_n.db`"),
 footnote = "The recorded observations.",
 location = n,
-groupName = "member_casual",
+groupName = "hr",
 label_n = "n",
 label_member = " "
 )
 ```
 :::
 
+#### [Plot]{.panel-tabset-label}
 
+::: column-body-outset-right
 ```{r}
 #| label: fig-hourCompare
 #| fig-cap: Grouped hour frequency
-#| fig-dpi: 600
-#| column: body-outset-right
+#| fig-dpi: 150
+#| tidy: true
 
-gplot <- dplyr::tbl(dbconn, "db/hod_n.db") |>
+gplot <- 
+dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::group_by(hr, member_casual) |>
+dplyr::summarize(n = sum(n)) |>
+dplyr::arrange(hr, member_casual) |>
 dplyr::collect() |>
 plotter(
 title = "Hour Groups",
@@ -2041,123 +2306,38 @@ ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 gplot
 ```
+:::
 
-
-
-```{r}
-#| label: fig-cHistogram
-#| code-summary: Casual histogram plot with quartile ranges. 
-
-source("Scripts/plotter.R")
-
-qdf <- dplyr::tbl(dbconn, "db/hod_n.db") |>
-dplyr::select(started_at_time, member_casual, n, isMidnight) |>
-dplyr::filter(
-member_casual == "casual",
-isMidnight != TRUE
-) |>
-dplyr::collect() |>
-tidyr::uncount(n, .remove = TRUE)
-
-
-quartiles <- quantile(qdf$started_at_time, probs = c(0.25, 0.5, 0.75))
-
-gplot <- dplyr::tbl(dbconn, "db/hod_n.db") |>
-dplyr::select(started_at_time, member_casual, n, isMidnight) |>
-dplyr::filter(
-member_casual == "casual",
-isMidnight != TRUE
-) |>
-dplyr::collect() |>
-tidyr::uncount(n, .remove = TRUE) |>
-plotter(
-title = "Hours - Casuals",
-x_label = "Hours (12-hour clock)",
-y_label = "Trips",
-x_col = started_at_time, 
-geomType = "column", 
-isHistogram = TRUE,
-isTimeHist = TRUE,
-date_breaks = "1 hour", 
-date_labels = "%I %p", 
-angle = 45,
-color_col = "black",
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red",
-binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
-quartiles = quartiles,
-qformat = "%I:%M %p"
-) 
-
-gplot
-
-```
-```{r}
-qdf |> dplyr::slice_head(n = 1)
-qdf |> dplyr::slice_tail(n = 1)
-```
-
+#### [Chi-Square]{.panel-tabset-label}
 
 ```{r}
-#| label: fig-mHistogram
-#| code-summary: Member histogram plot with quartile ranges. 
+#| label: tbl-chiHours
+#| tbl-cap: Chi-Squared for aggregated hours data to the level of rounded hours.
+#| code-summary: Query hod_n, then process and display Chi-Squared statistical summary.
+#| tidy: true
 
-source("Scripts/plotter.R")
-
-qdf <- dplyr::tbl(dbconn, "db/hod_n.db") |>
-dplyr::select(started_at_time, member_casual, n) |>
-dplyr::filter(member_casual == "member") |>
+dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::select(started_at_time, hr, member_casual) |>
+dplyr::arrange(started_at_time) |>
 dplyr::collect() |>
-tidyr::uncount(n, .remove = TRUE)
-
-quartiles <- quantile(qdf$started_at_time, probs = c(0.25, 0.5, 0.75))
-
-gplot <- dplyr::tbl(dbconn, "db/hod_n.db") |>
-dplyr::select(started_at_time, member_casual, n) |>
-dplyr::filter(member_casual == "member") |>
-dplyr::collect() |>
-tidyr::uncount(n, .remove = TRUE) |>
-plotter(
-title = "Hours - Members",
-x_label = "Hours (12-hour clock)",
-y_label = "n",
-x_col = started_at_time, 
-geomType = "column", 
-isHistogram = TRUE,
-isTimeHist = TRUE,
-date_breaks = "1 hour", 
-date_labels = "%I %p", 
-angle = 45,
-color_col = "black",
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red",
-binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
-quartiles = quartiles,
-qformat = "%I:%M %p"
-) 
-
-gplot
-
-
+dplyr::mutate(hr = forcats::as_factor(hr)) |>
+tabler(
+title = "Chi-Square: Hour & Rider Type",
+source_note = gt::md("**Source**: `db/hod.db`"),
+label = list(hr = "Hour"),
+by = member_casual,
+isSummary = TRUE
+)
 ```
 
+#### [Density]{.panel-tabset-label}
 
-```{r}
-quantile(qdf$started_at_time)
-
-qdf$started_at_time[[1]]
-```
-
-
+::: column-body-outset-right
 ```{r}
 #| label: fig-hourDensity
-#| code-summary: Query, load, and plot the grouped densities from hod.db. 
-#| fig-dpi: 600
-#| column: body-outset-right
+#| fig-cap: Query, load, and plot the grouped densities 
+#| fig-dpi: 150
+#| tidy: true
 
 gplot <- 
 dplyr::tbl(dbconn, "db/hod.db") |>
@@ -2178,46 +2358,14 @@ date_labels = "%I %p",
 
 gplot
 ```
+:::
 
-
-```{r}
-#| label: hoursWeightedQuantiles
-#| code-summary: Query hod.db, transform and write weighted quartile data to hod_wq.db. 
-#| tidy: formatR
-
-transformData(
-conn = dbconn,
-path = "db/hod.db",
-select_cols = c("started_at_time", "member_casual"),
-group_cols = c("started_at_time", "member_casual"),
-binary_col = "member_casual",
-pred_col = "started_at_time",
-ntile_col = "quartile",
-zero_val = "casual",
-one_val = "member",
-qtile_levels = c("Q1 (00:04 - 12:46]", "Q2 (12:46 - 15:58]", "Q3 (15:58 - 19:56]", "Q4 (19:56 - 23:58]"),
-doQuantile = TRUE,
-doWeights = TRUE
-) |>
-duckdb::dbWriteTable(conn = dbconn, name = "db/hod_wq.db", overwrite = TRUE)
-```
-
-
-```{r}
-#| label: tbl-hoursWTQ
-#| code-summary: A kable output of the hour's weighted quantile db table.
-#| tidy: formatR
-
-dplyr::tbl(dbconn, "db/hod_wq.db") |>
-dplyr::collect() |>
-head() |>
-kableExtra::kable()
-```
-
+#### [Binary Logistic Regression]{.panel-tabset-label}
 
 ```{r}
 #| label: modelHourQ
 #| code-summary: Query hod_wq.db, process and create model R object for hour based on quartile range. 
+#| tidy: true
 
 model <- 
 dplyr::tbl(dbconn, "db/hod_wq.db") |>
@@ -2228,10 +2376,10 @@ family = binomial,
 weights = n)
 ```
 
-
 ```{r}
 #| label: tbl-modelHourQ
 #| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tidy: true
 
 model |>
 gtsummary::tbl_regression(
@@ -2244,73 +2392,229 @@ source_note = gt::md("**Source**: `db/fltrd_data.db`"),
 isBinary = TRUE)
 ```
 
+#### [Histogram Plot]{.panel-tabset-label}
 
+::: column-body-outset-right
+```{r}
+#| label: fig-Histogram
+#| code-summary: Member histogram plot with quartile ranges. 
+#| fig-dpi: 150
+#| tidy: true
+
+qdf <- dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::select(started_at_time, n) |>
+dplyr::collect() |>
+tidyr::uncount(n, .remove = TRUE)
+
+quartiles <- quantile(qdf$started_at_time, probs = c(0.25, 0.5, 0.75))
+
+gplot <- qdf |>
+plotter(
+title = "Hours",
+x_label = "Hours (12-hour clock)",
+y_label = "n",
+x_col = started_at_time, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 hour", 
+date_labels = "%I %p", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles,
+qformat = "%I:%M %p"
+) 
+
+gplot
+```
+:::
+
+#### [Summary Stats]{.panel-tabset-label}
 
 ```{r}
-#| label: tbl-chiHours
-#| tbl-cap: Chi-Squared for aggregated hours data to the level of rounded hours.
-#| code-summary: Query hod_n, then process and display Chi-Squared statistical summary.
+#| label: tbl-hourSummaryStats
+#| code-summary: Taking a shot at summary stats with datetime data. Seems to work, but a little confusing. 
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/hod_n.db") |>
+dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::select(started_at_time, hr, member_casual) |>
+dplyr::arrange(started_at_time) |>
 dplyr::collect() |>
-tidyr::uncount(n, .remove = TRUE) |>
-tabler(
-title = "Chi-Square: Hour & Rider Type",
-source_note = gt::md("**Source**: `db/hod_n.db`"),
-label = list(hr = "Hour"),
+dplyr::mutate(hr = forcats::as_factor(hr)) |>
+gtsummary::tbl_summary(
 by = member_casual,
-isSummary = TRUE
+type = started_at_time ~ "continuous2",
+label = list(started_at_time ~ "Hour"),
+statistic = 
+gtsummary::all_continuous2() ~ c(
+"{median} ({p25}, {p75})", 
+"{mean} ({sd})", 
+"{min}, {max}")
+) |>
+gtsummary::italicize_levels() |>
+tabler(
+title = gt::md("Summary Statistics: <br> Hour - Membership"),
+source_note = gt::md("**Source**: `db/hod.db`"),
+isBinary = TRUE
 )
 ```
 
+#### [AUC]{.panel-tabset-label}
 
+::: column-body-outset-right
+:::
+:::
+:::
 
 ## Distance
 
 ::: {.callout-important icon="false"}
 <!-- -->
-
--   The distance of most observed trips in @tbl-milesTotals and @fig-milesTotals fall in between 0.3 to 3 miles.
-
--   The groups comparison seen in @tbl-milesCompare and @fig-milesCompare show the same pattern. The casual and member differ mainly in overall scale of trips taken between the 0.3 and 3 mile trip distances.
-
--   $\beta_1 < 0$, members are less likely to ride as distance traveled in a given trip increases. So, members tend to take shorter trips compared to casual users. @tbl-logMiles
 :::
 
-
-### Counting Distance
-
+::: {#offcanvas118 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {.h5 .offcanvas-title}
+Distance
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
 ```{r}
-#| label: tbl-milesTotals
-#| tbl-cap: Miles Total Frequency
+#| label: writeDistance
+#| code-summary: Write distance.db to the database.
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/freq_miles.db") |>
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/distance.db"))) {
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(miles, member_casual) |>
 dplyr::arrange(miles) |>
 dplyr::collect() |>
 dplyr::mutate(
-miles = forcats::as_factor(miles),
+miles = dplyr::case_when(
+miles >= 1 ~ round(miles, digits = 0),
+miles < 1 ~ round(signif(miles, 3), digits = 1)
+),
+miles = forcats::as_factor(miles)
 ) |>
+dplyr::arrange(miles, member_casual) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/distance.db",
+overwrite = TRUE)
+}
+
+```
+
+```{r}
+#| label: distanceWeightedQuantiles
+#| code-summary: Query ... .db, transform and write weighted quartile data to ... _wq.db. 
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/distance_wq.db"))) {
+transformData(
+conn = dbconn,
+path = "db/distance.db",
+select_cols = c("miles", "member_casual"),
+group_cols = c("miles", "member_casual"),
+binary_col = "member_casual",
+pred_col = "miles",
+ntile_col = "quartile",
+zero_val = "casual",
+one_val = "member",
+qtile_levels = c("Q1 (0.1 - 0.6]", "Q2 (0.6 - 1.0]", "Q3 (1.0 - 2.0]", "Q4 (2.0 - 21.0]"),
+doQuantile = TRUE,
+doWeights = TRUE
+) |>
+duckdb::dbWriteTable(conn = dbconn,
+name = "db/distance_wq.db",
+overwrite = TRUE)
+}
+
+```
+
+::: {layout="[[1,2]]"}
+```{r}
+#| label: tbl-dbhod
+#| tbl-cap: Kable output: Distance
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+
+```{r}
+#| label: tbl-hoursWQ
+#| tbl-cap: Kable output: Distance, Weighted Quantiles
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/distance_wq.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+:::
+:::
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+:::mb-5
+::: {.btn .btn-outline-danger type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas118" aria-controls="offcanvas"}
+Write, then preview the tables for this section
+:::
+:::
+:::
+
+
+
+
+::: panel-tabset
+### [Overall Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
+
+::: tableScroller
+```{r}
+#| label: tbl-milesTotals
+#| tbl-cap: Miles Total Frequency
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::select(miles) |>
+dplyr::group_by(miles) |>
+dplyr::summarize(n = dplyr::n()) |>
 tabler( 
 title = "Distance", 
 footnote = gt::md("The recorded observations."),
 location = n
 )
 ```
+:::
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
 #| label: fig-milesTotals
 #| fig-cap: Miles Total Frequency
+#| fig-dpi: 150
+#| tidy: true
 
-miles_tbl <- dplyr::tbl(dbconn, "db/freq_miles.db") |>
-dplyr::filter(miles <= 11) |>
-dplyr::collect() |>
-dplyr::mutate(
-miles = forcats::as_factor(miles),
-miles = forcats::fct_inorder(miles)
-)
-
-
-gplot <- miles_tbl |>
+gplot <- 
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::select(miles) |>
+dplyr::group_by(miles) |>
+dplyr::summarize(n = dplyr::n()) |>
 plotter(
 x_col = miles, 
 y_col = n,
@@ -2320,24 +2624,25 @@ x_label = "Miles",
 y_label = "Trips") 
 
 gplot +
-ggplot2::scale_x_discrete(
-guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 ```
+:::
+:::
 
-### Distance by Membership
-
+### [Comparative Frequency Analysis]{.panel-tabset-label}
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
+::: tableScroller
 ```{r}
 #| label: tbl-milesCompare
 #| tbl-cap: Miles Group Frequency
+#| tidy: true
 
-miles_compTbl <- dplyr::tbl(dbconn, "db/freqCompare_miles.db") |>
-dplyr::collect()
-
-dir.create("tables")
-
-miles_compTbl |> data.table::fwrite("tables\\mile_groups.csv")
-
-miles_compTbl |>
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::select(miles, member_casual) |>
+dplyr::group_by(miles, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::arrange(miles, member_casual) |>
 tabler(
 title = "Distance Groups",
 source_note = gt::md("**Source:** `db/freqCompare_miles.db`"),
@@ -2348,35 +2653,25 @@ label_n = "n",
 label_member = " "
 )
 ```
+:::
 
+#### [Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
-#| label: fig-milesCompare
-#| fig-cap: Miles Group Frequency
+#| label: fig-membershipMiles
+#| fig-cap: Distance by membership.
+#| fig-dpi: 150
+#| tidy: true
 
-# For the miles group frequency membership comparison
-milesCompare_tbl <- dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(member_casual, miles) |>
-dplyr::collect() |>
-dplyr::mutate(miles = dplyr::case_when(
-miles >= 1 ~ round(miles, digits = 0),
-miles < 1 ~ round(signif(miles, 3), digits = 1)
-)) |>
-dplyr::arrange(miles) |>
-dplyr::filter(miles <= 11) |>
-dplyr::mutate(
-miles = forcats::as_factor(miles))
-```
-
-```{r}
-#| label: compareMiles
-#| code-summary: plot of miles
-
-gplot <- milesCompare_tbl |>
+gplot <- 
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::select(miles, member_casual) |>
 dplyr::group_by(miles, member_casual) |>
 dplyr::summarize(n = dplyr::n()) |>
-dplyr::ungroup() |>
+dplyr::arrange(miles, member_casual) |>
 plotter(
-title = "Distance Groups (Aggregated)",
+title = "Distance Groups",
 x_label = "Miles",
 y_label = "Trips",
 x_col = miles, 
@@ -2387,233 +2682,126 @@ isFaceted = TRUE,
 is_colGroup = TRUE
 )
 
-gplot
+gplot +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 ```
+:::
 
-### Trip distance has weak predictive value on membership status
+#### [Chi-Square]{.panel-tabset-label}
 
+#### [Density]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
-#| label: distance weighted stats modeling
-#| code-summary: "The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
+#| label: fig-distanceDensity
+#| fig-cap: Densities of miles to membership.
+#| fig-dpi: 150
+#| tidy: true
 
-
+gplot <- 
 dplyr::tbl(dbconn, tblPath_fltrd) |>
 dplyr::select(miles, member_casual) |>
-dplyr::mutate(miles = round(miles, digits = 1)) |>
+dplyr::arrange(miles, member_casual) |>
 dplyr::collect() |>
-duckdb::dbWriteTable(
-conn = dbconn,
-name = "db/rounded_miles.db",
-overwrite = TRUE)
-
-
-source("Scripts/transformData.R")
-
-
-weighted_data <- transformData(
-  conn = dbconn, 
-  path = "db/rounded_miles.db", 
-  select_cols = c("miles", "member_casual"), 
-  group_cols = c("miles", "member_casual"), 
-  binary_col = "member_casual", 
-  ntile_col = "ntile_col", 
-  pred_col = "miles", 
-  zero_val = "casual", 
-  one_val = "member",
-  qtile_levels = c(
-  "[0.10 : 0.60]", "(0.60 : 1.00]", "(1.00 : 1.80]", "(1.80 : 20.5]"),
-  doQuantile = TRUE,
-  doWeights = TRUE
-)
-
-
-expanded_data <- weighted_data |>
-tidyr::uncount(n, .remove = FALSE) |>
-dplyr::select(miles, member_casual)
-
-
-model <- weighted_data |> 
-glm(
-formula = member_casual ~ ntile_col, 
-weights = n, 
-family = binomial)
-
-
-regression_tbl <- model |>
-gtsummary::tbl_regression(
-label = list(ntile_col = "Mile Ranges"), 
-conf.int = FALSE, 
-exponentiate = TRUE)
-
-
-regression_tbl |>
-tabler(
-title = gt::md("Binary Logistic Regression: <br> Distance & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE)
-
-# 
-# members are about 2.1 times to fall into Q1 as casuals
-# 11% less likely Q2 as Q1
-# 61% less likely Q3 as Q1
-# 78% less likely Q4 as Q1
-# 
-
-#     25%     ,   25%  ,    25%        25%
-# 0.1<=x<=0.6, 0.6<x<=1, 1<x<=1.8, 1.8<x<=20.5
-
-```
-
-```{r}
-#| label: axis breaks for casuals' distance 
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "casual", miles <= 10) |>
-calcBreaks()
-
-plotBreaks
-```
-
-```{r}
-
-source("Scripts/plotter.R")
-
-# histogram IQR viz for the distance metric
-#gplot <- distance_factored |>
-gplot <- expanded_data |>
-#tidyr::uncount(n, .remove = FALSE) |>
-#dplyr::select(miles, member_casual) |>
-dplyr::filter(member_casual == "casual") |>
-dplyr::select(miles) |>
-plotter(
-title = "Distance - Casuals",
-x_label = "Distance (miles)",
-y_label = "Trips",
-x_col = miles, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(0, 10),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
-
-gplot
-
-```
-
-```{r}
-#| label: axis breaks for members' distance 
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "member", miles <= 10) |>
-calcBreaks()
-```
-
-```{r}
-
-source("Scripts/plotter.R")
-
-# histogram IQR viz for the distance metric
-gplot <- expanded_data |>
-dplyr::filter(member_casual == "member") |>
-dplyr::select(miles) |>
-plotter(
-title = "Distance - Members",
-x_label = "Distance (miles)",
-y_label = "Trips",
-x_col = miles, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(0, 10),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
-
-gplot
-```
-
-```{r}
-#| label: axis breaks for all distance 
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(miles <= 10) |>
-calcBreaks()
-```
-
-```{r}
-
-source("Scripts/plotter.R")
-
-# density viz for the miles metric
-gplot <- expanded_data |>
 plotter(
 title = "Distance Group Density",
-x_label = paste0("Distance", "\n", "(miles)"),
-y_label = "Trips",
+x_label = "Miles",
 x_col = miles, 
-#y_col = n,
 group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-isDensity = TRUE,
-#isHistogram = TRUE,
-is_colGroup = TRUE,
-limits = c(0, 10),
+geomType = "column",
 angle = 45,
-breaks = plotBreaks,
 color_col = "black",
-#binwidth = 1,
-#density_color = "gray",
-#density_fill = "transparent",
-#alpha = 0.75,
-#vline_color = "lightyellow",
-#vline_size = 0.5,
-density_alpha = 0.7
+density_alpha = 0.75,
+isDensity = TRUE,
+is_colGroup = TRUE,
+breaks = seq(0, 11, by = 1),
+limits = c(0.1, 11)
 )
 
 gplot
 ```
+:::
+
+#### [Binary Logistic Regression]{.panel-tabset-label}
 
 ```{r}
+#| label: modeldistanceQ
+#| code-summary: Query ..._wq.db, process and create model R object for hour based on quartile range. 
+#| tidy: true
 
-expanded_data |>
+model <- 
+dplyr::tbl(dbconn, "db/distance_wq.db") |>
+dplyr::collect() |> 
+glm(
+formula = member_casual ~ quartile, 
+family = binomial,
+weights = n)
+```
+
+```{r}
+#| label: tbl-modeldistanceQ
+#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tidy: true
+
+model |>
+gtsummary::tbl_regression(
+label = list(quartile = "Duration Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE) |>
+tabler(
+title = gt::md("Binary Logistic Regression: <br> Duration & Membership"),
+source_note = gt::md("**Source**: `db/duration_wq.db`"),
+isBinary = TRUE)
+```
+
+#### [Histogram Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-distanceHistogram
+#| fig-dpi: 150
+#| tidy: true
+
+qdf <-
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(miles) |>
+dplyr::arrange(miles) |>
+dplyr::collect()
+
+quartiles <- quantile(qdf$miles, probs = c(0.25, 0.5, 0.75))
+
+gplot <- qdf |>
+plotter(
+title = "Distance",
+x_label = "Miles",
+y_label = "Trips",
+x_col = miles, 
+geomType = "column", 
+isHistogram = TRUE,
+angle = 45,
+color_col = "transparent",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+limits = c(0.1, 5),
+breaks = seq(1, 5, by = 1),
+quartiles = quartiles) 
+
+gplot
+```
+:::
+
+#### [Summary Stats]{.panel-tabset-label}
+
+```{r}
+#| label: tbl-distanceSummary
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::mutate(miles = as.numeric(miles)) |>
+dplyr::collect() |>
 gtsummary::tbl_summary(
 by = member_casual,
 type = miles ~ "continuous2",
@@ -2629,404 +2817,396 @@ gtsummary::all_continuous() ~ c(
 gtsummary::italicize_levels() |>
 tabler(
 title = gt::md("Summary Statistics: <br> Distance - Membership"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+source_note = gt::md("**Source**: `db/distance.db`"),
 isBinary = TRUE
 )
-
 ```
 
+#### [AUC]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
-#| label: fig-rocMiles
+#| label: fig-rocDistance
+#| fig-dpi: 150
+#| tidy: true
 
 # Generate ROC curve
-roc_miles <- pROC::roc(
-expanded_data$member_casual, expanded_data$miles, levels = c("casual", "member"))
+roc_distance <- 
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::collect() |>
+dplyr::mutate(miles = as.numeric(miles)) |>
+pROC::roc(member_casual, miles, levels = c("casual", "member"))
 
 # Find the area under the curve value
-auc_miles <- round(pROC::auc(roc_miles), 4)
+auc_distance <- round(pROC::auc(roc_distance), 4)
 
-gplot <- roc_miles |>
+gplot <- roc_distance |>
 plotter(
 x_col = NULL, 
 y_col = NULL, 
 isROC = TRUE,
 geomType = "ROC",
-title = paste0(
-"ROC Curve for Distance", 
-" (AUC = ", 
-auc_miles, 
-")"),
+title = paste0("ROC Curve for Duration", " (AUC = ", auc_distance, ")"),
 x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
 y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
-roc_color = "red"
-)
+roc_color = "red")
 
 # false positive rate = x-axis; true positive rate = y-axis
 gplot
 ```
+:::
+:::
+:::
 
 ## Speed
 
 ::: {.callout-important icon="false"}
 <!-- -->
-
--   This information, derived from @tbl-mphTotals and @fig-mphTotals, indicates that most riders (both casual and member) travel at speeds between 2 and 12 mph. This range likely represents typical urban cycling speeds, accounting for factors like traffic, road conditions, and rider fitness.
-
--   The information, shown in @tbl-mphCompare and @fig-mphCompare, suggests that members tend to ride at higher speeds compared to casual riders
-
--   Applying the binary logistic regression model, where $\beta_1 > 0$, members tend to have a slightly higher estimated average speed for the duration of their trips compared to casuals. @tbl-logMph
 :::
 
-### Counting Speed
 
+::: {#offcanvas128 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: offcanvas-header
+::: {.h5 .offcanvas-title}
+Speed
+:::
+::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
+:::
+:::
+::: offcanvas-body
+::: flex-code
 ```{r}
-#| label: tbl-mphTotals
-#| tbl-cap: Mph Total Frequency
+#| label: writeSpeed
+#| code-summary: Write ... to the database.
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/freq_mph.db") |>
-dplyr::arrange(mph) |>
-tabler(
-title = "Speed",
-note_list = list("miles per hour"),
-location_list = list("mph")
-) |>
-gt::cols_label(mph = "Mph") |>
-gt::cols_align(mph, align = "left")
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/speed.db"))) {
+dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(mph, member_casual) |>
+dplyr::collect() |>
+dplyr::mutate(
+mphR = round(mph, digits = 0)) |>
+dplyr::arrange(mph, member_casual) |>
+duckdb::dbWriteTable(
+conn = dbconn,
+name = "db/speed.db",
+overwrite = TRUE)
+}
 ```
 
 ```{r}
+#| label: speedWeightedQuantiles
+#| code-summary: Query ... .db, transform and write weighted quartile data to ... _wq.db. 
+#| tidy: true
+
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/speed_wq.db"))) {
+transformData(
+conn = dbconn,
+path = "db/speed.db",
+select_cols = c("mph", "member_casual"),
+group_cols = c("mph", "member_casual"),
+binary_col = "member_casual",
+pred_col = "mph",
+ntile_col = "quartile",
+zero_val = "casual",
+one_val = "member",
+qtile_levels = c("Q1 (1.0 - 5.4]", "Q2 (5.4 - 7.0]", "Q3 (7.0 - 8.6]", "Q4 (8.6 - 20]"),
+doQuantile = TRUE,
+doWeights = TRUE
+) |>
+duckdb::dbWriteTable(conn = dbconn, name = "db/speed_wq.db", overwrite = TRUE)
+}
+```
+
+::: {layout="[[1,2]]"}
+```{r}
+#| label: tbl-kableSpeed
+#| tbl-cap: Speed
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+
+```{r}
+#| label: tbl-kableSpeedWQ
+#| tbl-cap: Speed with weighted quartile groups.
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/speed_wq.db") |>
+dplyr::collect() |>
+head() |>
+kableExtra::kable()
+```
+:::
+:::
+:::
+:::
+:::
+::: {.d-flex .justify-content-center}
+:::mb-5
+::: {.btn .btn-outline-danger type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas128" aria-controls="offcanvas"}
+Write, then preview the tables for this section
+:::
+:::
+:::
+
+::: panel-tabset
+### [Overall Frequency Analysis]{.panel-tabset-label}
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
+::: tableScroller
+```{r}
+#| label: tbl-mphTotals
+#| tbl-cap: Mph Total Frequency
+#| tidy: true
+
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::select(mphR) |>
+dplyr::group_by(mphR) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::arrange(mphR) |>
+tabler(
+title = "Speed",
+note_list = list("miles per hour"),
+location_list = list("mphR")
+) |>
+gt::cols_label(mphR = "Mph") |>
+gt::cols_align(mphR, align = "left")
+```
+:::
+
+#### [Plot]{.panel-tabset-label}
+::: column-body-outset-right
+```{r}
 #| label: fig-mphTotals
 #| fig-cap: Mph Total Frequency
+#| tidy: true
+#| fig-dpi: 150
 
-gplot <- dplyr::tbl(dbconn, "db/freq_mph.db") |>
+gplot <- 
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::select(mphR) |>
+dplyr::group_by(mphR) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::arrange(mphR) |>
 plotter(
-x_col = mph, 
+x_col = mphR, 
 y_col = n,
 geomType = "column", 
 title = "Speed", 
 x_label = "Miles per Hour", 
-y_label = "Trips")
+y_label = "n")
 
 gplot
 ```
+:::
+:::
 
-### Speed by Membership
-
+### [Comparative Frequency Analysis]{.panel-tabset-label}
+::: panel-tabset
+#### [Table]{.panel-tabset-label}
+::: tableScroller
 ```{r}
 #| label: tbl-mphCompare
 #| tbl-cap: Mph Group Frequency
+#| tidy: true
 
-dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::select(mphR, member_casual) |>
+dplyr::group_by(mphR, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::arrange(mphR, member_casual) |>
 dplyr::collect() |>
-dplyr::arrange(mph, member_casual) |>
 tabler(
-title = "Mph Groups",
-source_note = gt::md("**Source:** `db/freqCompare_mph.db`"),
+title = "MPH Groups",
+source_note = gt::md("**Source:** `db/speed.db`"),
 footnote = "The recorded observations.",
 location = n,
-groupName = "mph",
-label_n = "n",
-label_member = " "
-)
+groupName = "mphR"
+) |> 
+gt::cols_label(n = "n", member_casual = " ") |>
+gt::tab_stubhead("MPH")
 ```
+:::
 
+#### [Plot]{.panel-tabset-label}
+::: column-body-outset-right
 ```{r}
 #| label: fig-mphCompare
 #| fig-cap: Mph Group Frequency
+#| tidy: true
+#| fig-dpi: 150
 
-gplot <- dplyr::tbl(dbconn, "db/freqCompare_mph.db") |>
-dplyr::arrange(mph, member_casual) |>
+gplot <- 
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::select(mphR, member_casual) |>
+dplyr::group_by(mphR, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::arrange(mphR, member_casual) |>
 dplyr::collect() |>
 plotter(
 title = "Speed Groups (Aggregated)",
 x_label = "Miles per Hour",
 y_label = "Trips",
-x_col = mph, 
+x_col = mphR, 
 y_col = n, 
 color_col = member_casual,
 geomType = "column",
-#is_lineGroup = TRUE,
 is_colGroup = TRUE,
 isFaceted = TRUE
 )
 
 gplot
-
 ```
+:::
 
-### Speed has weak predictive value on membership status
+#### [Chi-Square]{.panel-tabset-label}
+
+#### [Density]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-speedDensity
+#| fig-cap: Density plot for speed by membership.
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::select(mph, member_casual) |>
+dplyr::group_by(mph, member_casual) |>
+dplyr::summarize(n = dplyr::n()) |>
+dplyr::arrange(mph, member_casual) |>
+dplyr::collect() |>
+plotter(
+title = "Speed Group Density",
+x_label = "MPH",
+x_col = mph, 
+group_col = member_casual,
+geomType = "column",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isDensity = TRUE,
+is_colGroup = TRUE,
+breaks = seq(1, 20, by = 1),
+limits = c(1, 20)
+)
+
+gplot
+```
+:::
+
+#### [Binary Logistic Regression]{.panel-tabset-label}
 
 ```{r}
-#| label: tbl-mphModel
-#| code-summary: "The basic query for running stats on the various parameters. This version returns aggregated distinct rows for running models that utilize weights. Aggregated rows allows the models to run faster and requires less memory, it seems."
+#| label: modelspeedQ
+#| code-summary: Query ..._wq.db, process and create model R object for hour based on quartile range. 
+#| tidy: true
 
-dplyr::tbl(dbconn, tblPath_fltrd) |>
-dplyr::select(mph, member_casual) |>
-dplyr::mutate(mph = round(mph, digits = 0)) |>
-dplyr::collect() |>
-duckdb::dbWriteTable(
-conn = dbconn,
-name = "db/rounded_mph.db",
-overwrite = TRUE)
-
-source("Scripts/transformData.R")
-
-weighted_data <- transformData(
-dbconn, 
-"db/rounded_mph.db", 
-select_cols = c("mph", "member_casual"), 
-group_cols = c("mph", "member_casual"), 
-binary_col = "member_casual", 
-ntile_col = "ntile_col", 
-pred_col = "mph", 
-zero_val = "casual", 
-one_val = "member",
-qtile_levels = c(
-"[1 : 5]", "(5 : 7]", "(7 : 9]", "(9 : 20]"),
-doQuantile = TRUE,
-doWeights = TRUE)
-
-expanded_data <- weighted_data |>
-tidyr::uncount(n, .remove = FALSE) |>
-dplyr::select(mph, member_casual)
-
-model <- weighted_data |> 
+model <- 
+dplyr::tbl(dbconn, "db/speed_wq.db") |>
+dplyr::collect() |> 
 glm(
-formula = member_casual ~ ntile_col, 
-weights = n, 
-family = binomial)
+formula = member_casual ~ quartile, 
+family = binomial,
+weights = n)
+```
 
-regression_tbl <- model |>
+```{r}
+#| label: tbl-modelspeedQ
+#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tidy: true
+
+model |>
 gtsummary::tbl_regression(
-label = list(ntile_col = "Range (mph)"), 
+label = list(quartile = "Speed Ranges"), 
 conf.int = FALSE, 
-exponentiate = TRUE)
-
-regression_tbl |>
+exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Speed & Rider Type"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
+title = gt::md("Binary Logistic Regression: <br> Speed & Membership"),
+source_note = gt::md("**Source**: `db/speed_wq.db`"),
 isBinary = TRUE)
 ```
 
+#### [Histogram Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
-#| label: axis breaks for speed
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics for casuals.
+#| label: fig-speedHistogram
+#| tidy: true
+#| fig-dpi: 150
 
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "casual") |>
-calcBreaks()
-```
-
-```{r}
-
-source("Scripts/plotter.R")
-
-# histogram IQR viz for the speed metric
-gplot <- expanded_data |>
-dplyr::filter(member_casual == "casual") |>
+qdf <-
+dplyr::tbl(dbconn, "db/speed.db") |>
 dplyr::select(mph) |>
+dplyr::arrange(mph) |>
+dplyr::collect()
+
+quartiles <- quantile(qdf$mph, probs = c(0.25, 0.5, 0.75))
+
+gplot <- qdf |>
 plotter(
-title = "Speed - Casuals",
-x_label = paste0("Speed", "\n", "(miles per hour)"),
+title = "Estimated Average Trip Speed",
+x_label = "MPH",
 y_label = "Trips",
 x_col = mph, 
-#y_col = n, 
-#group_col = member_casual,
 geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
 isHistogram = TRUE,
-#is_colGroup = TRUE,
-limits = c(1, 20),
 angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
+color_col = "transparent",
 vline_color = "lightyellow",
 vline_size = 0.5,
 low = "blue",
-high = "red"
-) 
-
-gplot
-```
-
-```{r}
-#| label: axis breaks for members' speed
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- expanded_data |>
-dplyr::filter(member_casual == "member") |>
-calcBreaks()
-```
-
-```{r}
-
-source("Scripts/plotter.R")
-
-# histogram IQR viz for the speed metric
-gplot <- expanded_data |>
-dplyr::filter(member_casual == "member") |>
-dplyr::select(mph) |>
-plotter(
-title = "Speed - Member",
-x_label = paste0("Speed", "\n", "(miles per hour)"),
-y_label = "Trips",
-x_col = mph, 
-#y_col = n, 
-#group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-#isDensity = TRUE,
-isHistogram = TRUE,
-#is_colGroup = TRUE,
+high = "red",
+binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+breaks = seq(1, 20, by = 1),
 limits = c(1, 20),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 4,
-#density_color = "black",
-#density_fill = "red",
-#alpha = 0.75,
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red"
-) 
-
-gplot
-
-```
-
-```{r}
-
-source("Scripts/transformData.R")
-
-unrounded_data <- transformData(
-dbconn, 
-tblPath_fltrd, 
-select_cols = c("mph", "member_casual"), 
-binary_col = "member_casual", 
-zero_val = "casual", 
-one_val = "member"
-)
-
-```
-
-```{r}
-#| label: axis breaks for all speed
-#| code-summary: Determining optimal breaks in the duration charts based on the x-axis metrics.
-
-source("Scripts/calcBreaks.R")
-
-plotBreaks <- unrounded_data |>
-#dplyr::mutate(
-#mph = round(mph, digits = 0)) |>
-#dplyr::filter(member_casual == "member") |>
-calcBreaks()
-```
-
-```{r}
-#| label: fig-densityMPH
-
-source("Scripts/plotter.R")
-
-# density viz for the mph metric
-gplot <- 
-unrounded_data |>
-#dplyr::mutate(
-#mph = round(mph, digits = 2)) |>
-plotter(
-title = "Trip Speed Group Density",
-x_label = paste0("Speed", "\n", "(miles per hour)"),
-y_label = "Trips",
-x_col = mph, 
-#y_col = n,
-group_col = member_casual,
-geomType = "column", 
-#isFaceted = TRUE,
-isDensity = TRUE,
-#isHistogram = TRUE,
-is_colGroup = TRUE,
-#limits = c(1, 20),
-angle = 45,
-breaks = plotBreaks,
-color_col = "black",
-#binwidth = 1,
-#density_color = "gray",
-#density_fill = "transparent",
-#alpha = 0.75,
-#vline_color = "lightyellow",
-#vline_size = 0.5,
-density_alpha = 0.7,
-)
+quartiles = quartiles) 
 
 gplot
 ```
+:::
 
+#### [Summary Stats]{.panel-tabset-label}
+
+#### [AUC]{.panel-tabset-label}
+
+::: column-body-outset-right
 ```{r}
-#| label: tbl-mphSummary
-
-source("Scripts/tabler.R")
-
-unrounded_data |>
-gtsummary::tbl_summary(
-by = member_casual,
-type = mph ~ "continuous2",
-label = list(mph ~ "Speed (miles per hour)"),
-digits = list(
-mph ~ c(2, 2)),
-statistic = 
-gtsummary::all_continuous() ~ c(
-"{median} ({p25}, {p75})", 
-"{mean} ({sd})", 
-"{min}, {max}")
-) |>
-gtsummary::italicize_levels() |>
-tabler(
-title = gt::md("Summary Statistics: <br> Speed - Membership"),
-source_note = gt::md("**Source**: `db/fltrd_data.db`"),
-isBinary = TRUE
-)
-
-```
-
-```{r}
-#| label: fig-rocMph
-
-source("Scripts/plotter.R")
+#| label: fig-rocSpeed
+#| fig-dpi: 150
+#| tidy: true
 
 # Generate ROC curve
-roc_mph <- pROC::roc(
-expanded_data$member_casual, expanded_data$mph, levels = c("casual", "member"))
+roc_speed <- 
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::collect() |>
+pROC::roc(member_casual, mph, levels = c("casual", "member"))
 
 # Find the area under the curve value
-auc_mph <- round(pROC::auc(roc_mph), 4)
+auc_speed <- round(pROC::auc(roc_speed), 4)
 
-gplot <- roc_mph |>
+gplot <- roc_speed |>
 plotter(
 x_col = NULL, 
 y_col = NULL, 
 isROC = TRUE,
 geomType = "ROC",
-title = paste0("ROC Curve for Speed", " (AUC = ", auc_mph, ")"),
+title = paste0("ROC Curve for Speed", " (AUC = ", auc_speed, ")"),
 x_label = paste0("Specificity", "\n", "(False Positive Rate)"), 
 y_label = paste0("Sensitivity", "\n", "(True Positive Rate)"),
-roc_color = "red"
-)
+roc_color = "red")
 
 # false positive rate = x-axis; true positive rate = y-axis
 gplot
-
 ```
+:::
+:::
+:::
 
 ## Interpretation of EDA
 
@@ -3065,72 +3245,65 @@ Creating an EpiFlow
 ```{r}
 #| label: createFlows dataframe
 #| code-summary: First, creates the frequency of trips taken to and from pairs of stations. We are only going to look deeper into the top 50 most traveled pairs.
+#| tidy: true
 
-flowData <- dplyr::tbl(dbconn,
-                       tblPath_fltrd) |>
-    dplyr::select(start_station_name,
-                  end_station_name) |>
-    dplyr::group_by(start_station_name,
-                    end_station_name) |>
-    dplyr::summarize(n = n()) |>
-    dplyr::ungroup() |>
-    dplyr::arrange(desc(n)) |>
-    dplyr::rename("from_station" = start_station_name,
-                  "to_station" = end_station_name) |>
-    dplyr::collect() |>
-    dplyr::slice_head(n = 50)
+flowData <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(start_station_name, end_station_name) |>
+dplyr::group_by(start_station_name, end_station_name) |>
+dplyr::summarize(n = n()) |>
+dplyr::ungroup() |>
+dplyr::arrange(desc(n)) |>
+dplyr::rename("from_station" = start_station_name, "to_station" = end_station_name) |>
+dplyr::collect() |>
+dplyr::slice_head(n = 50)
 ```
 
 ```{r}
 #| label: location stats
 #| code-summary: Second, we need statistics but also to combine the statistics for every unique station name. 
+#| tidy: true
 
-locationData <- dplyr::tbl(dbconn,
-                           tblPath_fltrd) |>
-    dplyr::select(start_station_name,
-                  end_station_name,
-                  started_at,
-                  ended_at,
-                  trip_time) |>
-    dplyr::group_by(start_station_name,
-                    end_station_name
-                ) |>
-    dplyr::mutate("trip_time" = round(trip_time,
-                                      digits = 0)) |>
-    dplyr::summarize(
-        "trip_count" = dplyr::n(),
-        "first_date" = min(started_at),
-        "last_date" = max(ended_at),
-    ) |>
-    dplyr::ungroup() |>
-    dplyr::rename("from_station" = start_station_name,
-                  "to_station" = end_station_name
-               ) |>
-    dplyr::arrange(desc(trip_count)) |>
-    dplyr::collect()
+locationData <- dplyr::tbl(dbconn, tblPath_fltrd) |>
+dplyr::select(start_station_name,
+end_station_name,
+started_at,
+ended_at,
+trip_time) |>
+dplyr::group_by(start_station_name, end_station_name) |>
+dplyr::mutate("trip_time" = round(trip_time, digits = 0)) |>
+dplyr::summarize(
+"trip_count" = dplyr::n(),
+"first_date" = min(started_at),
+"last_date" = max(ended_at),
+) |>
+dplyr::ungroup() |>
+dplyr::rename("from_station" = start_station_name, "to_station" = end_station_name) |>
+dplyr::arrange(desc(trip_count)) |>
+dplyr::collect()
 
-# Need to combine all names to single column and recalculate 
+# Need to combine all names to single column and recalculate
 # or retain other stats.
 locationData_pivoted <- locationData |>
-    tidyr::pivot_longer(cols = 1:2, 
-                        values_to = "allNames") |>
-    dplyr::group_by(allNames) |>
-    dplyr::summarize("trips_toAndfrom" = sum(trip_count),
-                     first_date = min(first_date),
-                     last_date = max(last_date),
-                     ) |>
-    dplyr::arrange(trips_toAndfrom)
-
+tidyr::pivot_longer(cols = 1:2, values_to = "allNames") |>
+dplyr::group_by(allNames) |>
+dplyr::summarize(
+"trips_toAndfrom" = sum(trip_count),
+first_date = min(first_date),
+last_date = max(last_date),
+) |>
+dplyr::arrange(trips_toAndfrom)
 ```
 
 ```{r}
 #| label: MakeEpiflows
-#| code-summary: Third, creates epiflow objects, which take in a pair of dataframes and creates the flows between them. 
+#| code-summary: Third, creates epiflow objects, which take in a pair of dataframes and creates the flows between them.
+#| tidy: true
 
 # for all the pairs
 ef_test <- epiflows::make_epiflows(flows = flowData,
-                                   locations = locationData_pivoted,
-                                   num_cases = "trips_toAndfrom")
+locations = locationData_pivoted,
+num_cases = "trips_toAndfrom")
+
 ```
 :::
 :::
@@ -3152,6 +3325,7 @@ Tables
 #| label: summaryFlowData
 #| code-summary: First, just a quick view of the flow data table we made earlier.
 #| title: Flow Data View
+#| tidy: true
 
 flowData
 ```
@@ -3160,9 +3334,11 @@ flowData
 #| label: pivotedLocations
 #| code-summary: Second, another quick view, but for thethe location data we pivoted earlier.
 #| title: Pivoted Location Data
+#| tidy: true
 
 locationData_pivoted |>
-    dplyr::arrange(desc(trips_toAndfrom))
+dplyr::arrange(desc(trips_toAndfrom))
+
 ```
 :::
 :::
@@ -3215,43 +3391,39 @@ Code for Mapping
 ```{r}
 #| label: mapData
 #| code-summary: "Processing 'flowData' created earlier to include geolocation data for mapview plots."
+#| tidy: true
 
 # All distinct stations in one column
 names <- flowData |>
-    dplyr::select(from_station,
-                  to_station) |>
-    tidyr::pivot_longer(cols = 1:2,
-                        names_to = NULL,
-                        values_to = "station_names") |>
-    dplyr::distinct()
+dplyr::select(from_station, to_station) |>
+tidyr::pivot_longer(cols = 1:2,
+names_to = NULL,
+values_to = "station_names") |>
+dplyr::distinct()
 
 
 # The important geo-coordinates corresponding to station names
-mapData <- dplyr::tbl(dbconn,
-                      tblPath_fltrd,
-                      check_from = FALSE) |>
-    dplyr::select(start_station_name,
-                  start_lat,
-                  start_lng,
-                  end_station_name,
-                  end_lat,
-                  end_lng)
+mapData <- dplyr::tbl(dbconn, tblPath_fltrd, check_from = FALSE) |>
+dplyr::select(start_station_name,
+start_lat,
+start_lng,
+end_station_name,
+end_lat,
+end_lng)
 
 # Filter to include all observations that match the station names listed in 'names'. We need the geo-coordinates alongside the names.
 mapData1 <- mapData |>
-    dplyr::collect() |>
+dplyr::collect() |>
 # Filter, but through a vector of conditions.
-    dplyr::filter(start_station_name %in% names[[1]],
-                  end_station_name %in% names[[1]]) |>
-    dplyr::select(start_station_name:start_lng)
+dplyr::filter(start_station_name %in% names[[1]], end_station_name %in% names[[1]]) |>
+dplyr::select(start_station_name:start_lng)
 
 
 # Had to split 'mapData' into two and pivot into a single table.
 mapData2 <- mapData |>
-    dplyr::collect() |>
-    dplyr::filter(start_station_name %in% names[[1]],
-                  end_station_name %in% names[[1]]) |>
-    dplyr::select(end_station_name:end_lng)
+dplyr::collect() |>
+dplyr::filter(start_station_name %in% names[[1]], end_station_name %in% names[[1]]) |>
+dplyr::select(end_station_name:end_lng)
 
 # Nice grouping
 stations_groupMap <- dplyr::bind_rows(mapData1, mapData2) |>
@@ -3267,13 +3439,15 @@ set.seed(113)
 
 # Taking 10 random samples from each station_name group
 sampled_stations <- stations_groupMap |>
-    dplyr::slice_sample(n = 10) |>
-    tidyr::drop_na()
+dplyr::slice_sample(n = 10) |>
+tidyr::drop_na()
+
 ```
 
 ```{r}
 #| label: mapColors
 #| code-summary: "Creates a map coloring palette excluding grays."
+#| tidy: true
 
 # All of the r-colors
 allPalette <- colors()
@@ -3288,6 +3462,7 @@ n_colors <- 10
 ```{r}
 #| label: mapViewer
 #| code-summary: First, sourcing the script needed to generate the maps and creating the list of vectors used as input. These vectors are the slices of the top most traveled stations.
+#| tidy: true
 
 slicerVector <- list(c(1:9), c(10:18), c(19:27), c(28:34))
 source("Scripts/mapViewer.R")
@@ -3298,6 +3473,7 @@ source("Scripts/mapViewer.R")
 #| eval: false
 #| code-summary: "The script used to generate the maps."
 #| label: mapViewerScript
+
 ```
 :::
 :::
@@ -3316,11 +3492,11 @@ Benson Ave & Church St ... Ellis Ave & 60th St
 ```{r}
 #| label: fig-map1
 #| fig-cap: "Benson Ave & Church St - Ellis Ave & 60th St"
+#| tidy: true
 
 set.seed(240)
 randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[1]])
-
 ```
 :::
 :::
@@ -3339,11 +3515,11 @@ Greenview Ave & Fullteron Ave ... Loomis Ave & Lexington St
 #| label: fig-map2
 #| echo: false
 #| fig-cap: "Greenview Ave & Fullteron Ave - Loomis Ave & Lexington St"
+#| tidy: true
 
 set.seed(241)
 randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[2]])
-
 ```
 :::
 :::
@@ -3362,11 +3538,11 @@ Michigan Ave & Oak St ... State St & 33rd St
 #| label: fig-map3
 #| echo: false
 #| fig-cap: "Michigan Ave & Oak St - State St & 33rd St"
+#| tidy: true
 
 set.seed(242)
 randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[3]])
-
 ```
 :::
 :::
@@ -3384,6 +3560,7 @@ Street Dr & Grand Ave ... Woodlawn Ave & 55th St
 ```{r}
 #| label: fig-map4
 #| fig-cap: "Street Dr & Grand Ave - Woodlawn Ave & 55th St"
+#| tidy: true
 
 set.seed(243)
 randomColors <- sample(colorfulPal, n_colors)
@@ -3410,6 +3587,7 @@ To improve membership, addressing factors deterring individuals from becoming an
 #| label: tbl-dbList2
 #| code-summary: "Revisiting the list of db tables, with many more tables added. All of these tables are stored within the data/data.db file."
 #| tbl-cap: "Database Table List: Post-Exploratory Analysis"
+#| tidy: true
 
 dbList2 <- duckdb::dbListTables(dbconn) |>
 as.data.frame() |>
@@ -3423,9 +3601,7 @@ location_list = list("duckdb::dbListTables(dbconn)")
 gt::cols_label("duckdb::dbListTables(dbconn)" = "Table Paths") |>
 gt::tab_style(
 gt::cell_text(align = "center", stretch = "semi-expanded"),
-locations = list(
-gt::cells_column_labels(columns = gt::everything())
-)
+locations = list(gt::cells_column_labels(columns = gt::everything()))
 )
 
 dbList2
