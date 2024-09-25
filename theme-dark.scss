@@ -2,9 +2,9 @@
 $theme: "darkly" !default;
 
 // Base document colors
-$body-bg: #222 !default; //212529 181818
+$body-bg: #222 !default;
 $body-color: SeaShell !default;
-$btn-border-width: 0px !default;
+//$btn-border-width: 0px !default;
 $btn-close-color: #3366ff !default;
 
 $heading-1: #E0E0E0;
@@ -25,18 +25,49 @@ $link-hover: #FF9800;
 }
 
 #TOC > ul > li > a {
-  color: $heading-2 !important; /* First level */
+  color: $heading-2 !important; /* First sub-level */
 }
 
 #TOC > ul > li > ul > li > a {
-  color: $heading-3 !important; /* Second level */
+  color: $heading-3 !important; /* Second sub-level */
 }
 
 #TOC > ul > li > ul > li > ul > li > a {
-  color: $heading-4 !important; /* Third level */
+  color: $heading-4 !important; /* Third sub-level */
 }
 
+
 /*-- scss:classes --*/
+
+// Custom styles for Quarto tab sets
+.panel-tabset {
+  .nav-tabs {
+    .nav-link {
+      // Styles for inactive tabs
+      color: #6c757d !important;  // Inactive text color
+    //  background-color: #f8f9fa;  // Inactive background color
+    //  border: 1px solid #dee2e6;
+      
+      // Styles for hover state
+      &:hover {
+        color: #495057 !important;  // Hover text color
+        //background-color: #e9ecef;  // Hover background color
+      }
+      
+      // Styles for active tab
+      &.active {
+        color: #007bff !important;  // Active text color
+      //  background-color: #fff;  // Active background color
+      //  border-bottom-color: transparent;
+        
+        &:hover {
+          color: #0056b3 !important;  // Active hover text color
+        }
+      }
+    }
+  }
+}
+
 
 .header-container {
   display: flex;
@@ -110,6 +141,7 @@ a {
 .tableScroller {
     max-height: 60vh !important;
     overflow-y: auto !important;
+    //max-width: auto !important;
 }
 
 
@@ -128,9 +160,6 @@ canvas {
     margin: 2% !important;
 } 
 
-p, .p {
-   max-width: 45vw !important;
-}
 
 .dropdown {
     color: white !important;
@@ -199,23 +228,27 @@ pre code {
 }
 
 
-.btn, .btn-secondary {
-    box-shadow: none !important;
-    background-color: $body-bg !important;
-    color: rgba(255, 255, 255, 0.75) !important;
-    margin: 0 !important;
-    border: none !important;
-    --bs-btn-disabled-opacity: 0.35 !important;
+.btn > p {
+  margin-block-start: 0em !important;
+  margin-block-end: 0em !important;
+    //box-shadow: none !important;
+    //background-color: $body-bg !important;
+    //color: rgba(255, 255, 255, 0.75) !important;
+    //margin: 0 !important;
+    //border: none !important;
+    //--bs-btn-disabled-opacity: 0.35 !important;
+//    text-align: center !important;
     
 }
+//}
 
 
-.btn-group {
-    background-color: $body-bg !important;
-    border: none !important;
-    color: rgba(255, 255, 255, 0.75);
-    box-shadow: none !important;
-}
+//.btn-group {
+//    background-color: $body-bg !important;
+//    border: none !important;
+//    color: rgba(255, 255, 255, 0.75);
+//    box-shadow: none !important;
+//}
 
 .code-fold {
     background-color: transparent !important;
@@ -248,7 +281,7 @@ details>summary {
     color: #efc776 !important;
     font: 1.1em "Cascadia Mono SemiLight" !important;
     background-color: transparent !important;
-    max-width: 35vw !important;
+    //max-width: 35vw !important;
 }
 
 
@@ -281,4 +314,10 @@ a {
   &:active {
     color: $link-hover;
   }
+}
+
+/*-- scss:roots --*/
+:root {
+  //--mermaid-bg-color: #{$mermaid-bg-color};
+ // --bs-body-text-align: center;
 }
