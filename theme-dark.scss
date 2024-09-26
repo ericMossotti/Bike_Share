@@ -17,6 +17,8 @@ $link-unvisited: #4CAF50;
 $link-visited: Salmon;
 $link-hover: #FF9800;
 
+$box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
+
 
 /*-- scss:ids --*/
 
@@ -41,6 +43,9 @@ $link-hover: #FF9800;
 
 // Custom styles for Quarto tab sets
 .panel-tabset {
+  
+  box-shadow: $box-shadow-sm !important;
+  
   .nav-tabs {
     .nav-link {
       // Styles for inactive tabs
@@ -86,27 +91,13 @@ $link-hover: #FF9800;
   text-align: center;
 }
 
-
-.calloutTip {
-  background-color: transparent !important;
+.callout {
+  background-color: rgba(0,0,0,.05) !important;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 3px 6px 0 rgba(0, 0, 0, 0.19) !important;
 }
 
-.calloutWarning {
-  background-color: #2e2005 !important;
-}
-
-
-.callout-warning .callout-body {
-  background-color: #2e2005 !important;
-  color: #FFE57F !important;
-  
-}
-
-.callout-tip {
-  background-color: transparent !important;
-  color: ivory;
-  border-left-color: rgba(255,255,255,0.2) !important;
-
+.btn {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.75), 0 3px 6px 0 rgba(0, 0, 0, 0.55) !important;
 }
 
 .h* {
@@ -231,6 +222,7 @@ pre code {
 .btn > p {
   margin-block-start: 0em !important;
   margin-block-end: 0em !important;
+  //text-shadow: 1px 2px 4px rgba(0,0,0,0.75) !important;
     //box-shadow: none !important;
     //background-color: $body-bg !important;
     //color: rgba(255, 255, 255, 0.75) !important;
