@@ -186,7 +186,7 @@ tibble::glimpse()
 :::
 
 ::: {.d-flex .justify-content-center .mb-3 .mt-3}
-::: {.btn .btn-outline-warning type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas100" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas100" aria-controls="offcanvas"}
 R console output of the raw data
 :::
 :::
@@ -254,12 +254,11 @@ dbList
 The starting observation count was 5,719,877. Then 1,388,170 incomplete observations were then removed by the initial processing script.
 :::
 
+:::{.d-grid .gap-0}
 ::: {.callout-warning icon="false" width="auto"}
-Code processing steps are accessible via links like the one below. Drop-down code summaries provide context on data processing rationale and methodology at various analysis stages, enhancing reader understanding.
+Code processing steps are accessible via buttons like the one below. Drop-down code summaries and tables therein add context and transparency regarding the presented findings to enhance the reader's understanding.
 :::
-
-::: {.d-flex .justify-content-center .mb-3 .mt-3}
-::: {.btn .btn-outline-info type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
+::: {.btn .btn-dark .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
 Data processing documentation
 :::
 :::
@@ -504,7 +503,8 @@ To ensure the accurate removal of duplicates, the count of distinct n-values (re
 By carefully analyzing the count of distinct n-values and the total observation count before and after reduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
 :::
 
-::: {.d-flex .justify-content-center .mt-3 .mb-3}
+
+::: {.d-flex .justify-content-center .mt-4 .mb-3}
 ::: {.btn .btn-outline-info type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 Duplicate processing steps
 :::
@@ -635,7 +635,7 @@ summaryProcessTable
 
 ::: {.d-flex .justify-content-center .mb-3}
 ::: {.btn .btn-outline-success type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
-Filter and write
+Additional transformations
 :::
 :::
 
@@ -713,10 +713,13 @@ kableExtra::kable()
 #| fig-dpi: 150
 
 gplot <- 
-dplyr::tbl(dbconn, "db/membership.db") |>
-dplyr::select(member_casual) |>
-dplyr::group_by(member_casual) |>
-dplyr::summarize(n = dplyr::n()) |>
+transformData(
+conn = dbconn, 
+path = "db/membership.db", 
+select_cols = "member_casual",
+group_cols = "member_casual", 
+doWeights = TRUE
+) |>
 plotter(
 x_col = member_casual, 
 y_col = n, 
@@ -736,26 +739,18 @@ gplot
 #| tbl-cap: Total Member Frequency
 #| tidy: true
 
-location_list <- dplyr::tbl(dbconn, "db/membership.db") |>
-dplyr::select(member_casual) |>
-dplyr::group_by(member_casual) |>
-dplyr::summarize(n = dplyr::n()) |>
-colnames() |>
-as.list()
-
-note_list <- list(
-"membership status",
-"observation count"
-)
-
-dplyr::tbl(dbconn, "db/membership.db") |>
-dplyr::select(member_casual) |>
-dplyr::group_by(member_casual) |>
-dplyr::summarize(n = dplyr::n()) |>
+transformData(
+conn = dbconn, 
+path = "db/membership.db", 
+select_cols = "member_casual",
+group_cols = "member_casual", 
+doWeights = TRUE
+) |>
 tabler (
 title = "Membership",
-note_list = note_list,
-location_list = location_list,
+note_list = list(
+"membership status", "observation count"),
+location_list = c("member_casual", "n"),
 source_note = gt::md("**Source**: `db/membership.db`"),
 noteColumns = TRUE
 ) |>
@@ -765,7 +760,6 @@ gt::cols_align(columns = member_casual, align = "left") |>
 gt::tab_options(
 footnotes.multiline = FALSE
 )
-
 
 ```
 :::
@@ -834,10 +828,10 @@ overwrite = TRUE)
 ::: flex-code
 ```{r}
 #| label: btypeTransform
-#| code-summary: Transform and write ... for modeling.
+#| code-summary: Transform and write as a weighted binary table for modeling.
 #| tidy: true
 
-if (isFALSE(duckdb::dbExistsTable(dbconn, "db/bType_w.db"))) {
+if (isFALSE(duckdb::dbExistsTable(dbconn, "db/bType_wb.db"))) {
 transformData(
 conn = dbconn,
 path = "db/bType.db",
@@ -849,7 +843,7 @@ one_val = "member",
 doWeights = TRUE
 ) |>
 duckdb::dbWriteTable(conn = dbconn,
-name = "db/bType_w.db",
+name = "db/bType_wb.db",
 overwrite = TRUE)
 }
 ```
@@ -872,7 +866,7 @@ kableExtra::kable()
 #| tbl-cap: Kable output
 #| tidy: true
 
-dplyr::tbl(dbconn, "db/bType_w.db") |>
+dplyr::tbl(dbconn, "db/bType_wb.db") |>
 dplyr::collect() |>
 head() |>
 kableExtra::kable()
@@ -892,30 +886,19 @@ kableExtra::kable()
 #| tbl-cap: Cycle Type Total Frequency
 #| tidy: true
 
-
-location_list <- dplyr::tbl(dbconn, "db/bType.db") |>
-dplyr::select(rideable_type) |>
-dplyr::group_by(rideable_type) |>
-dplyr::summarize(n = dplyr::n()) |>
-colnames() |>
-as.list()
-
-note_list <- list(
-"bicycle type",
-"observation count"
-)
-
-dplyr::tbl(dbconn, "db/bType.db") |>
-dplyr::select(rideable_type) |>
-dplyr::group_by(rideable_type) |>
-dplyr::summarize(n = dplyr::n()) |>
-dplyr::collect() |>
+transformData(
+conn = dbconn, 
+path = "db/bType.db", 
+select_cols = "rideable_type",
+group_cols = "rideable_type", 
+doWeights = TRUE
+) |>
 tabler( 
 title = "Bicycle Types", 
-note_list = note_list,
-location_list = location_list,
+note_list = list("bicycle type","observation count"),
+location_list = list("rideable_type", "n"),
 source_note = gt::md("**Source**: `db/bType.db`"),
-noteColumns = TRUE,
+noteColumns = TRUE
 ) |>
 gt::cols_label(rideable_type = "Type") |>
 gt::cols_align(columns = n, align = "right") |>
@@ -933,11 +916,13 @@ gt::cols_align(columns = rideable_type, align = "left")
 #| fig-dpi: 150
 
 gplot <- 
-dplyr::tbl(dbconn, "db/bType.db") |>
-dplyr::select(rideable_type) |>
-dplyr::group_by(rideable_type) |>
-dplyr::summarize(n = dplyr::n()) |>
-dplyr::collect() |>
+transformData(
+conn = dbconn, 
+path = "db/bType.db", 
+select_cols = "rideable_type",
+group_cols = "rideable_type", 
+doWeights = TRUE
+) |>
 plotter(
 x_col = rideable_type, 
 y_col = n, 
@@ -961,21 +946,39 @@ gplot
 #| tbl-cap: Bicycle type membership frequencies
 #| tidy: true
 
-dplyr::tbl(dbconn, "db/bType.db") |>
-dplyr::select(rideable_type, member_casual) |>
-dplyr::group_by(rideable_type, member_casual) |>
-dplyr::summarize(n = dplyr::n()) |>
-dplyr::collect() |>
-tabler(
-title = "Bicycle Type to Membership", 
-groupName = "rideable_type", 
-footnote = "The recorded observations.", 
-location = n,
-source_note = gt::md("**Source**: `db/freqCompare_rType`"),
-label_n = "n",
-label_member = " "
+
+location_list <- list("member_casual", "n")
+
+note_list <- list(
+"membership status",
+"observation count"
+)
+
+transformData(
+conn = dbconn, 
+path = "db/bType.db", 
+select_cols = c("rideable_type", "member_casual"),
+group_cols = c("rideable_type", "member_casual"),
+doWeights = TRUE
 ) |>
-gt::cols_label(member_casual = " ", rideable_type = "Bicycle Type")
+tabler(
+title = "Bicycle Type - Membership", 
+groupName = "rideable_type", 
+location = n,
+label_n = "n",
+note_list = note_list,
+location_list = location_list,
+source_note = gt::md("**Source**: `db/bType.db`"),
+noteColumns = TRUE,
+isStub = TRUE,
+stub_label = "Type",
+stub_note = "bicycle type"
+) |>       
+gt::cols_label(member_casual = "Membership", rideable_type = "Bicycle Type") |>
+gt::cols_label(rideable_type = "Type") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = member_casual, align = "left") 
+
 ```
 
 #### [Plot]{.panel-tabset-label}
@@ -988,11 +991,13 @@ gt::cols_label(member_casual = " ", rideable_type = "Bicycle Type")
 #| fig-dpi: 150
 
 gplot <- 
-dplyr::tbl(dbconn, "db/bType.db") |>
-dplyr::select(rideable_type, member_casual) |>
-dplyr::group_by(rideable_type, member_casual) |>
-dplyr::summarize(n = dplyr::n()) |>
-dplyr::collect() |>
+transformData(
+conn = dbconn, 
+path = "db/bType.db", 
+select_cols = c("rideable_type", "member_casual"),
+group_cols = c("rideable_type", "member_casual"),
+doWeights = TRUE
+) |>
 plotter(
 title = "Bicycle Groups",
 x_label = "Type",
@@ -1014,6 +1019,14 @@ gplot
 #### [Chi-Square]{.panel-tabset-label}
 
 ```{r}
+#| label: chisquareScriptCycles
+#| code-summary: The script I used to process the Chi-Squared test result. This code is reposted with all the chi-square tables in this report.  
+#| file: "Scripts/chisqTest.R"
+#| eval: false 
+```
+
+
+```{r}
 #| label: bikesChiResult
 
 data_tibble <- 
@@ -1028,7 +1041,6 @@ chiResult <- chisqTest(data = data_tibble, variable = "rideable_type", by = "mem
 #| label: tbl-btypeChiSquare
 #| tbl-cap: Bicycle type membership distributions
 #| tidy: true
-
 
 chi_table <- tabler(
 title = "Chi-Squared: Bicycle Type",
@@ -1054,7 +1066,7 @@ chi_table
 #| tidy: true
 
 model <- 
-dplyr::tbl(dbconn, "db/bType_w.db") |>
+dplyr::tbl(dbconn, "db/bType_wb.db") |>
 glm(formula = member_casual ~ rideable_type, weights = n, family = binomial)
 
 ```
@@ -1070,7 +1082,7 @@ label = list(rideable_type = "Cycle Type"), conf.int = FALSE, exponentiate = TRU
 regression_tbl |>
 tabler(
 title = gt::md("Binary Logistic Regression: <br> Bicycle Type"),
-source_note = gt::md("**Source**: `db/bType.db`"),
+source_note = gt::md("**Source**: `db/bType_wb.db`"),
 isBinary = TRUE)
 
 ```
@@ -1228,25 +1240,17 @@ kableExtra::kable()
 #| tbl-cap: Trip-Time Totals
 #| tidy: true
 
-location_list <- dplyr::tbl(dbconn, "db/duration.db") |>
-dplyr::group_by(mins) |>
-dplyr::summarize(n = dplyr::n()) |>
-colnames() |>
-as.list()
-
-note_list <- list(
-"trip duration",
-"observation count"
-)
-
-dplyr::tbl(dbconn, "db/duration.db") |>
-dplyr::group_by(mins) |>
-dplyr::summarize(n = dplyr::n()) |>
-dplyr::collect() |>
+transformData(
+conn = dbconn, 
+path = "db/duration.db", 
+select_cols = "mins",
+group_cols = "mins", 
+doWeights = TRUE
+) |>
 tabler( 
 title = "Duration", 
-note_list = note_list,
-location_list = location_list,
+note_list = list("trip duration", "observation count"),
+location_list = list("mins", "n"),
 source_note = gt::md("**Source**: `db/duration.db`"),
 noteColumns = TRUE
 ) |>
@@ -1267,12 +1271,13 @@ gt::cols_align(columns = mins, align = "left")
 #| tidy: true
 
 gplot <- 
-dplyr::tbl(dbconn, "db/duration.db") |>
-dplyr::select(mins) |>
-dplyr::filter(as.integer(mins) <= 100) |>
-dplyr::group_by(mins) |>
-dplyr::summarize(n = dplyr::n()) |>
-dplyr::collect() |>
+transformData(
+conn = dbconn, 
+path = "db/duration.db", 
+select_cols = "mins",
+group_cols = "mins", 
+doWeights = TRUE
+) |>
 plotter(
 x_col = as.integer(mins), 
 y_col = n,
@@ -1304,23 +1309,29 @@ gplot
 #| tbl-cap: Trip Time Comparison
 #| tidy: true
 
-dplyr::tbl(dbconn, "db/duration.db") |>
-dplyr::select(mins, member_casual) |>
-dplyr::filter(as.integer(mins) <= 100) |>
-dplyr::group_by(mins, member_casual) |>
-dplyr::summarize(n = dplyr::n()) |>
-dplyr::arrange(mins, member_casual) |>
-dplyr::collect() |>
-tabler(
-title = "Duration Compare",
-source_note = gt::md("**Source:** `db/duration.db`"),
-footnote = "The recorded observations.",
-location = n,
-groupName = "mins",
-label_n = "n",
-label_member = " "
+transformData(
+conn = dbconn, 
+path = "db/duration.db", 
+select_cols = c("mins", "member_casual"),
+group_cols = c("mins", "member_casual"), 
+doWeights = TRUE
 ) |>
-gt::cols_label(mins = "Minutes", member_casual = " ")
+tabler(
+title = "Duration - Membership", 
+groupName = "mins", 
+location = n,
+label_n = "n",
+note_list = list("membership status","observation count"),
+location_list = list("member_casual", "n"),
+source_note = gt::md("**Source**: `db/duration.db`"),
+noteColumns = TRUE,
+isStub = TRUE,
+stub_label = "Trip Time",
+stub_note = "trip duration (minutes)"
+) |>
+gt::cols_label(member_casual = "Membership") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = member_casual, align = "left")
 
 ```
 :::
@@ -1338,10 +1349,15 @@ gplot <-
 dplyr::tbl(dbconn, "db/duration.db") |>
 dplyr::select(mins, member_casual) |>
 dplyr::filter(as.integer(mins) <= 100) |>
-dplyr::group_by(mins, member_casual) |>
-dplyr::summarize(n = dplyr::n()) |>
-dplyr::arrange(mins, member_casual) |>
 dplyr::collect() |>
+transformData(
+conn = NULL, 
+path = NULL,
+select_cols = c("mins", "member_casual"),
+group_cols = c("mins", "member_casual"), 
+doWeights = TRUE,
+isDF = TRUE
+) |>
 plotter(
 title = "Duration Groups",
 x_label = "Minutes",
@@ -1369,7 +1385,7 @@ gplot
 #| tidy: true
 
 
-gTable <- dplyr::tbl(dbconn, "db/duration.db") |>
+gtTable <- dplyr::tbl(dbconn, "db/duration.db") |>
 dplyr::select(mins, member_casual) |>
 dplyr::mutate(
 mins = as.numeric(mins)
@@ -1394,7 +1410,7 @@ source_note = gt::md("**Source**: `db/duration.db`"),
 isBinary = TRUE
 )
 
-gTable
+gtTable
 ```
 
 #### [Density]{.panel-tabset-label}
@@ -1407,10 +1423,10 @@ gTable
 #| fig-dpi: 150
 
 gplot <- 
-dplyr::tbl(dbconn, "db/duration.db") |>
-dplyr::select(trip_time, member_casual) |>
-dplyr::arrange(trip_time, member_casual) |>
-dplyr::collect() |>
+transformData(
+conn = dbconn, 
+path = "db/duration.db",
+select_cols = c("trip_time", "member_casual")) |>
 plotter(
 title = "Duration Group Density",
 x_label = paste0("Minutes"),
@@ -1497,7 +1513,7 @@ low = "blue",
 high = "red",
 limits = c(0,100),
 breaks = seq(0, 100, by = 5),
-binwidth = function(x) 2 * IQR(x) / (length(x)^(1/3)),
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
 quartiles = quartiles
 )
 
@@ -1711,23 +1727,35 @@ gplot
 #| tbl-cap: Month Group Frequency
 #| tidy: true
 
+location_list <- list("member_casual", "n")
+
+note_list <- list(
+"membership status",
+"observation count"
+)
+
 dplyr::tbl(dbconn, "db/moy.db") |>
 dplyr::select(abbMonths, member_casual) |>
 dplyr::group_by(abbMonths, member_casual) |>
 dplyr::summarize(n = dplyr::n()) |>
 dplyr::collect() |>
 dplyr::arrange(abbMonths, member_casual) |>
-dplyr::collect() |>
 tabler(
-title = "Months",
-source_note = gt::md("**Source:** `db/moy.db`"),
-footnote = "The recorded observations.",
+title = "Months - Membership", 
+groupName = "abbMonths", 
 location = n,
-groupName = "abbMonths",
 label_n = "n",
-label_member = " "
+note_list = note_list,
+location_list = location_list,
+source_note = gt::md("**Source**: `db/moy.db`"),
+noteColumns = TRUE,
+isStub = TRUE,
+stub_label = "Months",
+stub_note = "months of the year (abbreviated)"
 ) |>
-gt::cols_label(abbMonths = "Months of the Year", member_casual = " ")
+gt::cols_label(member_casual = "Membership") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = member_casual, align = "left") 
 
 ```
 :::
@@ -1765,6 +1793,14 @@ gplot
 :::
 
 #### [Chi-Square]{.panel-tabset-label}
+
+```{r}
+#| label: chisquareScriptMonths
+#| code-summary: The script I used to process the Chi-Squared test result. This code is reposted with all the chi-square tables in this report.  
+#| file: "Scripts/chisqTest.R"
+#| eval: false 
+```
+
 
 ```{r}
 #| label: monthsChiResult
@@ -2103,6 +2139,13 @@ gplot
 #| tbl-cap: Weekday Group Frequency
 #| tidy: true
 
+location_list <- list("member_casual", "n")
+
+note_list <- list(
+"membership status",
+"observation count"
+)
+
 dplyr::tbl(dbconn, "db/dow.db") |>
 dplyr::select(abbDays, member_casual) |>
 dplyr::group_by(abbDays, member_casual) |>
@@ -2110,15 +2153,21 @@ dplyr::summarize(n = dplyr::n()) |>
 dplyr::collect() |>
 dplyr::arrange(abbDays, member_casual) |>
 tabler(
-title = "Weekday Compare",
-source_note = gt::md("**Source:** `db/dow.db`"),
-footnote = "The recorded observations.",
+title = "Days - Membership", 
+groupName = "abbDays", 
 location = n,
-groupName = "abbDays",
 label_n = "n",
-label_member = " "
+note_list = note_list,
+location_list = location_list,
+source_note = gt::md("**Source**: `db/dow.db`"),
+noteColumns = TRUE,
+isStub = TRUE,
+stub_label = "Day",
+stub_note = "days of the week (abbreviated)"
 ) |>
-gt::cols_label(abbDays = "Days of the Week", member_casual = " ")
+gt::cols_label(member_casual = "Membership") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = member_casual, align = "left") 
 
 ```
 
@@ -2155,6 +2204,14 @@ gplot
 :::
 
 #### [Chi-Square]{.panel-tabset-label}
+
+```{r}
+#| label: chisquareScriptDays
+#| code-summary: The script I used to process the Chi-Squared test result. This code is reposted with all the chi-square tables in this report.  
+#| file: "Scripts/chisqTest.R"
+#| eval: false 
+```
+
 
 ```{r}
 #| label: daysChiResult
@@ -2546,21 +2603,34 @@ ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 #| tbl-cap: Frequencies for membership by hour.
 #| tidy: true
 
+location_list <- list("member_casual", "n")
+
+note_list <- list(
+"membership status",
+"observation count"
+)
+
 dplyr::tbl(dbconn, "db/hod_n.db") |>
 dplyr::group_by(hr, member_casual) |>
 dplyr::summarize(n = sum(n)) |>
 dplyr::arrange(hr, member_casual) |>
 dplyr::collect() |>
 tabler(
-title = "Hours Membership Groups",
-source_note = gt::md("**Source:** `db/hod_n.db`"),
-footnote = "The recorded observations.",
+title = "Hour - Membership", 
+groupName = "hr", 
 location = n,
-groupName = "hr",
 label_n = "n",
-label_member = " "
+note_list = note_list,
+location_list = location_list,
+source_note = gt::md("**Source**: `db/hod_n.db`"),
+noteColumns = TRUE,
+isStub = TRUE,
+stub_label = "Day",
+stub_note = "hour of the day (12-hour clock)"
 ) |>
-gt::cols_label(hr = "Hour of the Day", member_casual = " ")
+gt::cols_label(member_casual = "Membership") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = member_casual, align = "left") 
 
 ```
 :::
@@ -2598,6 +2668,14 @@ gplot
 :::
 
 #### [Chi-Squared]{.panel-tabset-label}
+
+```{r}
+#| label: chisquareScriptHours
+#| code-summary: The script I used to process the Chi-Squared test result. This code is reposted with all the chi-square tables in this report.  
+#| file: "Scripts/chisqTest.R"
+#| eval: false 
+```
+
 
 ```{r}
 #| label: hoursChiResult
@@ -2945,21 +3023,34 @@ ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 #| tbl-cap: Miles Group Frequency
 #| tidy: true
 
+location_list <- list("member_casual", "n")
+
+note_list <- list(
+"membership status",
+"observation count"
+)
+
 dplyr::tbl(dbconn, "db/distance.db") |>
 dplyr::select(milesR, member_casual) |>
 dplyr::group_by(milesR, member_casual) |>
 dplyr::summarize(n = dplyr::n()) |>
 dplyr::arrange(milesR, member_casual) |>
 tabler(
-title = "Distance Groups",
-source_note = gt::md("**Source:** `db/distance.db`"),
-footnote = "The recorded observations.",
+title = "Distance - Membership", 
+groupName = "milesR", 
 location = n,
-groupName = "milesR",
 label_n = "n",
-label_member = " "
+note_list = note_list,
+location_list = location_list,
+source_note = gt::md("**Source**: `db/distance.db`"),
+noteColumns = TRUE,
+isStub = TRUE,
+stub_label = "Trip distance",
+stub_note = "miles traveled per trip"
 ) |>
-gt::cols_label(milesR = "Miles", member_casual = " ")
+gt::cols_label(member_casual = "Membership") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = member_casual, align = "left") 
 
 ```
 :::
@@ -3335,6 +3426,13 @@ gplot
 #| tbl-cap: Mph Group Frequency
 #| tidy: true
 
+location_list <- list("member_casual", "n")
+
+note_list <- list(
+"membership status",
+"observation count"
+)
+
 dplyr::tbl(dbconn, "db/speed.db") |>
 dplyr::select(mphR, member_casual) |>
 dplyr::group_by(mphR, member_casual) |>
@@ -3342,14 +3440,21 @@ dplyr::summarize(n = dplyr::n()) |>
 dplyr::arrange(mphR, member_casual) |>
 dplyr::collect() |>
 tabler(
-title = "MPH Groups",
-source_note = gt::md("**Source:** `db/speed.db`"),
-footnote = "The recorded observations.",
+title = "Speed - Membership", 
+groupName = "mphR", 
 location = n,
-groupName = "mphR"
-) |> 
-gt::cols_label(member_casual = " ") |>
-gt::tab_stubhead("Miles per Hour")
+label_n = "n",
+note_list = note_list,
+location_list = location_list,
+source_note = gt::md("**Source**: `db/speed.db`"),
+noteColumns = TRUE,
+isStub = TRUE,
+stub_label = "Trip Speed",
+stub_note = "estimated average speed traveled per trip (mph)"
+) |>
+gt::cols_label(member_casual = "Membership") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = member_casual, align = "left") 
 
 ```
 :::
