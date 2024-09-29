@@ -1,7 +1,11 @@
-# I needed the stations groups' burst buttons to fit
-# the viewing window in my document and the only way I could think of is to 
-#   split the stations into multiple maps. This reduces duplicate code.
-
+# ----
+# Author: Eric Mossotti
+# CC BY-SA
+# ----
+# I needed the stations groups' burst buttons to fit the viewing window in my 
+# document and the only way I could think of is to split the stations into 
+# multiple maps. This reduces duplicate code.
+# ----
 mapViewer <- function(x) {
     
     nameSlice <- sampled_stations |>
