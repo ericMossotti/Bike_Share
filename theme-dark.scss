@@ -41,9 +41,26 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
 
 /*-- scss:classes --*/
 
+.gt_sourcenote > code {
+  background-color: #BEBEBE !important;
+}
+
+.gt_footnote > code {
+  background-color: #BEBEBE !important;
+}
+
+.btn-group {
+  margin-bottom: 2rem !important;
+}
+
+.gt_footnote, .gt_sourcenote {
+  text-align: left !important;
+}
+
+
 // Custom styles for Quarto tab sets
 .panel-tabset {
-  
+
   box-shadow: $box-shadow-sm !important;
   
   .nav-tabs {
@@ -61,12 +78,12 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
       
       // Styles for active tab
       &.active {
-        color: #007bff !important;  // Active text color
+        color: #ff6666 !important;  // Active text color
       //  background-color: #fff;  // Active background color
       //  border-bottom-color: transparent;
         
         &:hover {
-          color: #0056b3 !important;  // Active hover text color
+          color: #ff668c !important;  // Active hover text color
         }
       }
     }
@@ -222,25 +239,8 @@ pre code {
 .btn > p {
   margin-block-start: 0em !important;
   margin-block-end: 0em !important;
-  //text-shadow: 1px 2px 4px rgba(0,0,0,0.75) !important;
-    //box-shadow: none !important;
-    //background-color: $body-bg !important;
-    //color: rgba(255, 255, 255, 0.75) !important;
-    //margin: 0 !important;
-    //border: none !important;
-    //--bs-btn-disabled-opacity: 0.35 !important;
-//    text-align: center !important;
-    
 }
-//}
 
-
-//.btn-group {
-//    background-color: $body-bg !important;
-//    border: none !important;
-//    color: rgba(255, 255, 255, 0.75);
-//    box-shadow: none !important;
-//}
 
 .code-fold {
     background-color: transparent !important;
@@ -286,6 +286,8 @@ details>summary {
     scrollbar-width: thin !important;
     scrollbar-color: #33ccff transparent !important;
     background-color: transparent !important;
+    margin-bottom: 0.5rem !important;
+    margin-top: 0.5rem !important;
 }
 
 /*-- scss:selectors --*/
@@ -310,6 +312,4 @@ a {
 
 /*-- scss:roots --*/
 :root {
-  //--mermaid-bg-color: #{$mermaid-bg-color};
- // --bs-body-text-align: center;
 }
