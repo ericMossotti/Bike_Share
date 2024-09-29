@@ -1,14 +1,9 @@
-# Header ----
+# ----
 # Author: Eric Mossotti
-# Date: `r paste(Sys.Date())`
-# Copyright (c) Eric Mossotti, `r paste(format(Sys.Date(), "%Y"))`
-# Email: ecmossotti@gmail.com 
-#
-# Description ----
-# 
-# Reduces duplicate code. This is geared towards gt tables for now
-# 
-# tabler() ----
+# CC BY-SA
+# ----
+# Reduces duplicate code for generating publication ready tables.
+# ----
 tabler <- function(tbl_name,
                    source_note = NULL,
                    title = NULL,
@@ -20,6 +15,7 @@ tabler <- function(tbl_name,
                    label_member = "member_casual",
                    location = NULL,
                    footnote = NULL,
+                   footer_column = NULL,
                    value_columns = gt::everything(),
                    decimals = 0,
                    font_color = "seashell",
@@ -35,7 +31,11 @@ tabler <- function(tbl_name,
                    noteRows = FALSE,
                    chi_result = NULL,
                    chiVar = NULL,
-                   chiBy = NULL) {
+                   chiBy = NULL,
+                   stub_label = NULL, 
+                   stub_note = NULL,
+                   stubName = NULL,
+                   isStub = FALSE) {
     
     # Need to account for grouped tables and non-grouped tables
     # Grouped ----
@@ -44,16 +44,17 @@ tabler <- function(tbl_name,
                       groupname_col = groupName,
                       row_group_as_column = TRUE) |>
             gt::tab_header(title = title, subtitle = subtitle) |>
+            gt::tab_stubhead(label = stub_label) |>
             gt::fmt_number(decimals = decimals, columns = value_columns) |>
             gt::tab_options(
                 table.background.color = bg_color,
                 table.font.color = font_color,
                 table_body.vlines.color = vline_color,
                 table_body.hlines.color = hline_color,
-                column_labels.hidden = hide_column_labels,
                 row.striping.include_table_body = TRUE,
                 row.striping.background_color = "gray10",
-                column_labels.font.weight = "bold"
+                column_labels.font.weight = "bold",
+                column_labels.border.bottom.color = hline_color
             ) |>
             gt::tab_source_note(source_note = {{ source_note }})
     }
@@ -102,7 +103,7 @@ tabler <- function(tbl_name,
                 column_labels.hidden = hide_column_labels,
                 row.striping.include_table_body = TRUE,
                 row.striping.background_color = "gray10",
-                column_labels.font.weight = "bold"
+                column_labels.font.weight = "bold",
             ) |>
             gt::tab_source_note(source_note = source_note)
     }
@@ -139,10 +140,9 @@ tabler <- function(tbl_name,
                 table.font.color = font_color,
                 table_body.vlines.color = vline_color,
                 table_body.hlines.color = hline_color,
-                #  column_labels.hidden = hide_column_labels,
                 row.striping.include_table_body = TRUE,
                 row.striping.background_color = "gray10",
-                column_labels.font.weight = "bold"
+                column_labels.font.weight = "bold",
             ) |>
             gt::tab_source_note(source_note = source_note)
     }
@@ -185,7 +185,6 @@ tabler <- function(tbl_name,
                 heading.border.lr.color = "transparent",
                 table.border.bottom.color = "transparent",
                 table.border.top.color = "transparent",
-                #column_labels.hidden = hide_column_labels,
                 row.striping.include_table_body = TRUE,
                 row.striping.background_color = "gray10",
                 column_labels.font.weight = "bold"
@@ -196,6 +195,15 @@ tabler <- function(tbl_name,
     if (!is.null(note_list) && !is.null(location_list)) {
         tbl <- tbl |>
             add_multiple_footnotes(note_list, location_list, noteColumns, noteRows)
+    }
+    
+    if (isTRUE(isStub)) {
+        tbl <- tbl |>
+            gt::tab_stubhead(label = stub_label) |>
+            gt::cols_align(columns = groupName, align = "center") |>
+            gt::tab_footnote(footnote = stub_note,
+                             location = gt::cells_stubhead(),
+                             placement = "left")
     }
     
     return(tbl)
@@ -214,7 +222,8 @@ add_multiple_footnotes <- function(tbl, note_list, location_list, noteColumns, n
             tbl <- tbl |>
                 gt::tab_footnote(
                     footnote = note_list[[i]],
-                    location = gt::cells_column_labels(columns = location_list[[i]])
+                    location = gt::cells_column_labels(columns = location_list[[i]]),
+                    placement = "left"
                 )
         }
     }
@@ -223,8 +232,9 @@ add_multiple_footnotes <- function(tbl, note_list, location_list, noteColumns, n
         for (i in seq_along(note_list)) {
             tbl <- tbl |>
                 gt::tab_footnote(footnote = note_list[[i]],
-                                 location = gt::cells_stub(rows = location_list[[i]])
-                )
+                                 location = gt::cells_stub(rows = location_list[[i]]),
+                                 placement = "left"
+                ) 
         }
     }
     
