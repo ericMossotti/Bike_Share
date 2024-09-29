@@ -1,7 +1,13 @@
+#  ----
+# Author: Eric Mossotti
+# CC BY-SA
+#  ----
 # For easily dropping specified tables from the duck db. 
-
+# ----
+# 
 paths <- duckdb::dbListTables(dbconn)
 
+# drops_tables() ----
 drops_tables <- function(path) {
     duckdb::dbRemoveTable(dbconn, 
                           path)
@@ -19,7 +25,7 @@ choice <- readline(prompt = message("\n Drop which tables? \n")) |>
     unlist() |>
     as.integer()
 
-if (is.na(choice)== TRUE) {
+if (is.na(choice) == TRUE) {
     message("No tables were removed\n")
 } else {
     paths[choice] |> purrr::walk(drops_tables)    
