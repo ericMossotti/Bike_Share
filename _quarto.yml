@@ -9,13 +9,14 @@ execute:
 website:
   title: "BikeShare Analysis"
   open-graph: true
-  image: "previewThumbnail.png"
+  image: "images/previewThumbnail.png"
+  comments: 
+    hypothesis:
+      theme: clean
+      openSidebar: false
 
-#  navbar:
-#   left:
-#      - href: index.qmd
-#        text: BikeShare
-#      - about.qmd
+preview:
+  browser: true
 
 format:
   html:
