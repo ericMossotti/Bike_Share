@@ -1,15 +1,10 @@
-# Header ----
+#  ----
 # Author: Eric Mossotti
-# Date: `r paste(Sys.Date())`
-# Copyright (c) Eric Mossotti, `r paste(format(Sys.Date(), "%Y"))`
-# Email: ecmossotti@gmail.com
-#
-# Description ----
-#
+# CC BY-SA
+#  ----
 # To help reduce duplicate code and implement a consistent theme throughout a
 # markdown project. This doesn't account for all plot types possible yet.
-#
-# plotter() ----
+# ----
 plotter <- function(data,
                     x_col,
                     y_col,
@@ -392,7 +387,6 @@ plotter <- function(data,
                         date_breaks = date_breaks,
                         date_labels = date_labels,
                         date_minor_breaks = date_minor_breaks,
-                        #oob = scales::squish(),
                         guide =  ggplot2::guide_axis(n.dodge = n.dodge, angle = angle),
                         sec.axis = ggplot2::sec_axis(
                             ~ .,
@@ -406,10 +400,15 @@ plotter <- function(data,
                     ggplot2::scale_x_continuous(
                         breaks = breaks,
                         limits = limits,
-                        guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                        guide = ggplot2::guide_axis(n.dodge = n.dodge, angle = angle),
+                        sec.axis = ggplot2::sec_axis(
+                            ~ .,
+                            breaks = quartiles,
+                            labels = scales::label_number(),
+                            guide =  ggplot2::guide_axis(n.dodge = n.dodge, angle = angle)
+                        )
                     )
             }
-            
             plot <- plot +
                 ggplot2::scale_y_continuous() +
                 ggplot2::scale_fill_gradient(low = low, high = high) +
