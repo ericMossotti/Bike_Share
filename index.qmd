@@ -166,7 +166,7 @@ footnotes.multiline = FALSE
 :::
 :::
 
-::: {#offcanvas100 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas100 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Glimpse
@@ -230,7 +230,7 @@ gt::cols_align(align = "left")
 dbList
 ```
 
-![A view of the filesystem directory. Notice there are not separate files for tables. Technically, data.db, in this view, does not represent a table name, but the name of the database.](images/clipboard-3971367510.png){.column-margin}
+![A view of the filesystem directory. Notice there are not separate files for tables. Technically, data.db, in this view, does not represent a table name, but the name of the database.](images/dbFiles_start.png){.column-margin}
 
 # Tidying
 
@@ -686,21 +686,21 @@ Scripts used frequently in this section
 ## Membership {#sec-membership}
 
 ::: {.d-grid .gap-3}
-::: {.callout-important .mb-3 icon="false"} 
+::: {.callout-important .mb-3 icon="false"}
 <!-- -->
 
 -   @tbl-memberTotals and @fig-totalMemberFrequency gives an idea of the membership distribution.
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas771" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas771" aria-controls="offcanvas"}
 Database Operations
 :::
+
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas772" aria-controls="offcanvas"}
 Table Preview
 :::
 :::
-
 :::
 
 ::: {#offcanvas771 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -734,7 +734,7 @@ overwrite = TRUE)
 :::
 :::
 
-::: {#offcanvas772 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas772 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -760,11 +760,6 @@ kableExtra::kable()
 :::
 :::
 :::
-
-
-
-
-
 
 ::: panel-tabset
 ### [Overall Frequency Analysis]{.panel-tabset-label}
@@ -856,9 +851,10 @@ gt::cols_align(columns = member_casual, align = "left")
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas771" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas771" aria-controls="offcanvas"}
 Database Operations
 :::
+
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas772" aria-controls="offcanvas"}
 Table Preview
 :::
@@ -868,7 +864,7 @@ Table Preview
 ::: {#offcanvas871 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
-
+DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
@@ -922,7 +918,7 @@ overwrite = TRUE)
 :::
 :::
 
-::: {#offcanvas872 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas872 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -965,6 +961,36 @@ kableExtra::kable()
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### Frequency [Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-btypeTotal
+#| fig-cap: Bicycle type frequencies 
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/bType.db", 
+select_cols = "rideable_type",
+group_cols = "rideable_type", 
+doWeights = TRUE
+) |>
+plotter(
+x_col = rideable_type, 
+y_col = n, 
+geomType = "column", 
+title = "Bicycle Type", 
+x_label = "Type", 
+y_label = "n")
+
+gplot
+
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ```{r}
@@ -991,84 +1017,11 @@ gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = rideable_type, align = "left") 
 
 ```
-
-#### Frequency [Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-btypeTotal
-#| fig-cap: Bicycle type frequencies 
-#| tidy: true
-#| fig-dpi: 150
-
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/bType.db", 
-select_cols = "rideable_type",
-group_cols = "rideable_type", 
-doWeights = TRUE
-) |>
-plotter(
-x_col = rideable_type, 
-y_col = n, 
-geomType = "column", 
-title = "Bicycle Type", 
-x_label = "Type", 
-y_label = "Trips")
-
-gplot
-
-```
-:::
 :::
 
 ### [Comparative Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
-#### [Frequency Table]{.panel-tabset-label}
-
-```{r}
-#| label: tbl-btypeGroups
-#| tbl-cap: Bicycle type membership frequencies
-#| tidy: true
-
-
-location_list <- list("member_casual", "n")
-
-note_list <- list(
-"membership status",
-"observation count"
-)
-
-transformData(
-conn = dbconn, 
-path = "db/bType.db", 
-select_cols = c("rideable_type", "member_casual"),
-group_cols = c("rideable_type", "member_casual"),
-doWeights = TRUE
-) |>
-tabler(
-title = "Bicycle Type - Membership", 
-groupName = "rideable_type", 
-location = n,
-label_n = "n",
-note_list = note_list,
-location_list = location_list,
-source_note = gt::md("**Source**: `db/bType.db`"),
-noteColumns = TRUE,
-isStub = TRUE,
-stub_label = "Type",
-stub_note = "bicycle type"
-) |>       
-gt::cols_label(member_casual = "Membership", rideable_type = "Bicycle Type") |>
-gt::cols_label(rideable_type = "Type") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left"
-) 
-
-```
-
 #### [Frequency Plot]{.panel-tabset-label}
 
 ::: column-body-outset-right
@@ -1104,6 +1057,48 @@ gplot
 
 ```
 :::
+
+#### [Frequency Table]{.panel-tabset-label}
+
+```{r}
+#| label: tbl-btypeGroups
+#| tbl-cap: Bicycle type membership frequencies
+#| tidy: true
+
+location_list <- list("member_casual", "n")
+
+note_list <- list(
+"membership status",
+"observation count"
+)
+
+transformData(
+conn = dbconn, 
+path = "db/bType.db", 
+select_cols = c("rideable_type", "member_casual"),
+group_cols = c("rideable_type", "member_casual"),
+doWeights = TRUE
+) |>
+tabler(
+title = "Bicycle Type - Membership", 
+groupName = "rideable_type", 
+location = n,
+label_n = "n",
+note_list = note_list,
+location_list = location_list,
+source_note = gt::md("**Source**: `db/bType.db`"),
+noteColumns = TRUE,
+isStub = TRUE,
+stub_label = "Type",
+stub_note = "bicycle type"
+) |>       
+gt::cols_label(member_casual = "Membership", rideable_type = "Bicycle Type") |>
+gt::cols_label(rideable_type = "Type") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = member_casual, align = "left"
+) 
+
+```
 
 #### [Chi-Squared]{.panel-tabset-label}
 
@@ -1221,20 +1216,20 @@ isBinary = TRUE)
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas671" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas671" aria-controls="offcanvas"}
 Database Operations
 :::
+
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas672" aria-controls="offcanvas"}
 Table Preview
 :::
 :::
-
 :::
 
 ::: {#offcanvas671 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
-Database Operations
+DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
@@ -1303,7 +1298,7 @@ overwrite = TRUE)
 :::
 :::
 
-::: {#offcanvas672 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas672 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -1346,35 +1341,6 @@ kableExtra::kable()
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
-#### [Frequency Table]{.panel-tabset-label}
-
-::: tableScroller
-```{r}
-#| label: tbl-triptimeTotals
-#| tbl-cap: Trip-Time Totals
-#| tidy: true
-
-transformData(
-conn = dbconn, 
-path = "db/duration.db", 
-select_cols = "mins",
-group_cols = "mins", 
-doWeights = TRUE
-) |>
-tabler( 
-title = "Duration", 
-note_list = list("trip duration", "observation count"),
-location_list = list("mins", "n"),
-source_note = gt::md("**Source**: `db/duration.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(mins = "Minutes") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = mins, align = "center") 
-
-```
-:::
-
 #### [Frequency Plot]{.panel-tabset-label}
 
 ::: column-page-inset-right
@@ -1410,11 +1376,83 @@ gplot
 
 ```
 :::
+
+#### [Frequency Table]{.panel-tabset-label}
+
+::: tableScroller
+```{r}
+#| label: tbl-triptimeTotals
+#| tbl-cap: Trip-Time Totals
+#| tidy: true
+
+transformData(
+conn = dbconn, 
+path = "db/duration.db", 
+select_cols = "mins",
+group_cols = "mins", 
+doWeights = TRUE
+) |>
+tabler( 
+title = "Duration", 
+note_list = list("trip duration", "observation count"),
+location_list = list("mins", "n"),
+source_note = gt::md("**Source**: `db/duration.db`"),
+noteColumns = TRUE
+) |>
+gt::cols_label(mins = "Minutes") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = mins, align = "center") 
+
+```
+:::
 :::
 
 ### [Comparative Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### [Frequency Plot]{.panel-tabset-label}
+
+::: column-page-inset-right
+```{r}
+#| label: fig-triptimeCompare
+#| fig-cap: Trip-Time Group Frequency
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::select(mins, member_casual) |>
+dplyr::filter(as.integer(mins) <= 100) |>
+dplyr::collect() |>
+transformData(
+conn = NULL, 
+path = NULL,
+select_cols = c("mins", "member_casual"),
+group_cols = c("mins", "member_casual"), 
+doWeights = TRUE,
+isDF = TRUE
+) |>
+plotter(
+title = "Duration Groups",
+x_label = "Minutes",
+y_label = "n",
+x_col = mins, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column",
+is_colGroup = TRUE,
+colPosition = ggplot2::position_stack(reverse = TRUE),
+color_col = "black"
+) +
+ggplot2::scale_x_discrete(
+guide = ggplot2::guide_axis(n.dodge = 1, angle = 45), 
+breaks = forcats::as_factor(seq(0, 100, by = 5)))
+
+gplot
+
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ::: tableScroller
@@ -1452,54 +1490,11 @@ gt::cols_align(columns = "mins", align = "center")
 ```
 :::
 
-#### [Frequency Plot]{.panel-tabset-label}
-
-::: column-page-inset-right
-```{r}
-#| label: fig-triptimeCompare
-#| fig-cap: Trip-Time Group Frequency
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-dplyr::tbl(dbconn, "db/duration.db") |>
-dplyr::select(mins, member_casual) |>
-dplyr::filter(as.integer(mins) <= 100) |>
-dplyr::collect() |>
-transformData(
-conn = NULL, 
-path = NULL,
-select_cols = c("mins", "member_casual"),
-group_cols = c("mins", "member_casual"), 
-doWeights = TRUE,
-isDF = TRUE
-) |>
-plotter(
-title = "Duration Groups",
-x_label = "Minutes",
-y_label = "Trips",
-x_col = mins, 
-y_col = n, 
-group_col = member_casual,
-geomType = "column",
-is_colGroup = TRUE,
-colPosition = ggplot2::position_stack(reverse = TRUE),
-color_col = "black"
-) +
-ggplot2::scale_x_discrete(
-guide = ggplot2::guide_axis(n.dodge = 1, angle = 45), 
-breaks = forcats::as_factor(seq(0, 100, by = 5)))
-
-gplot
-
-```
-:::
-
 #### [Summary Stats]{.panel-tabset-label}
 
 ```{r}
 #| label: tbl-durationSummary
-#| tidy: true
+#| tbl-cap: "Useful summary statistics."
 
 gtTable <- dplyr::tbl(dbconn, "db/duration.db") |>
 dplyr::select(mins, member_casual) |>
@@ -1521,7 +1516,7 @@ gtsummary::all_continuous() ~ c(
 ) |>
 gtsummary::italicize_levels() |>
 tabler(
-title = gt::md("Summary Statistics: <br> Duration - Membership"),
+title = gt::md("Summary Statistics:<br>Duration - Membership"),
 source_note = gt::md("**Source**: `db/duration.db`"),
 isBinary = TRUE
 )
@@ -1620,7 +1615,7 @@ qdf |>
 plotter(
 title = "Duration",
 x_label = "Duration",
-y_label = "Trips",
+y_label = "n",
 x_col = trip_time, 
 geomType = "column", 
 isHistogram = TRUE,
@@ -1668,16 +1663,15 @@ gplot
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas571" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas571" aria-controls="offcanvas"}
 Database Operations
 :::
+
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas572" aria-controls="offcanvas"}
 Table Preview
 :::
 :::
-
 :::
-
 
 ::: {#offcanvas571 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -1750,7 +1744,7 @@ overwrite = TRUE)
 :::
 :::
 
-::: {#offcanvas572 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas572 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -1793,6 +1787,34 @@ kableExtra::kable()
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### [Frequency Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-monthTotals
+#| fig-cap: Month Total Frequency
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- transformData(
+conn = dbconn, 
+path = "db/moy.db", 
+select_cols = "abbMonths",
+group_cols = "abbMonths", 
+doWeights = TRUE
+) |>
+plotter(
+x_col = abbMonths, 
+y_col = n, 
+geomType = "column", 
+title = "Months", 
+x_label = "Months", 
+y_label = "n")
+
+gplot
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ```{r}
@@ -1819,39 +1841,44 @@ gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = abbMonths, align = "left") 
 
 ```
-
-#### [Frequency Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-monthTotals
-#| fig-cap: Month Total Frequency
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- transformData(
-conn = dbconn, 
-path = "db/moy.db", 
-select_cols = "abbMonths",
-group_cols = "abbMonths", 
-doWeights = TRUE
-) |>
-plotter(
-x_col = abbMonths, 
-y_col = n, 
-geomType = "column", 
-title = "Months", 
-x_label = "Months", 
-y_label = "Trips")
-
-gplot
-```
-:::
 :::
 
 ### [Comparative Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### [Frequency Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-monthCompare
+#| fig-cap: Month Group Frequency
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/moy.db", 
+select_cols = c("abbMonths", "member_casual"),
+group_cols = c("abbMonths", "member_casual"), 
+doWeights = TRUE
+) |>
+plotter(
+title = "Month Groups",
+x_label = "Months",
+y_label = "n",
+x_col = abbMonths, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column", 
+isFaceted = TRUE,
+is_colGroup = TRUE
+)
+
+gplot
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ::: tableScroller
@@ -1884,39 +1911,6 @@ gt::cols_label(member_casual = "Membership") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
 
-```
-:::
-
-#### [Frequency Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-monthCompare
-#| fig-cap: Month Group Frequency
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/moy.db", 
-select_cols = c("abbMonths", "member_casual"),
-group_cols = c("abbMonths", "member_casual"), 
-doWeights = TRUE
-) |>
-plotter(
-title = "Month Groups",
-x_label = "Months",
-y_label = "n",
-x_col = abbMonths, 
-y_col = n, 
-group_col = member_casual,
-geomType = "column", 
-isFaceted = TRUE,
-is_colGroup = TRUE
-)
-
-gplot
 ```
 :::
 
@@ -2042,7 +2036,7 @@ dplyr::collect() |>
 plotter(
 title = "Months",
 x_label = "Months",
-y_label = "Trips",
+y_label = "n",
 x_col = started_at, 
 geomType = "column", 
 isHistogram = TRUE,
@@ -2094,16 +2088,15 @@ gplot
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas471" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas471" aria-controls="offcanvas"}
 Database Operations
 :::
+
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas472" aria-controls="offcanvas"}
 Table Preview
 :::
 :::
-
 :::
-
 
 ::: {#offcanvas471 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -2183,8 +2176,7 @@ overwrite = TRUE)
 :::
 :::
 
-
-::: {#offcanvas472 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas472 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -2215,6 +2207,38 @@ kableExtra::kable()
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### [Frequency Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-wkdayTotals
+#| fig-cap: Weekday Totals Frequency
+#| fig-dpi: 150
+#| tidy: true
+
+# Values were too similar to visualize differences, see coord_cartesion()
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/dow.db", 
+select_cols = "abbDays",
+group_cols = "abbDays", 
+doWeights = TRUE
+) |>
+plotter(
+x_col = abbDays, 
+y_col = n, 
+geomType = "column", 
+title = "Days for all Riders", 
+x_label = "Days of the Week",
+y_label = "n"
+) +
+ggplot2::coord_cartesian(ylim = c(4.5 * 10^5, NA))
+
+gplot
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ```{r}
@@ -2241,43 +2265,44 @@ gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = abbDays, align = "left") 
 
 ```
-
-#### [Frequency Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-wkdayTotals
-#| fig-cap: Weekday Totals Frequency
-#| fig-dpi: 150
-#| tidy: true
-
-# Values were too similar to visualize differences, see coord_cartesion()
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/dow.db", 
-select_cols = "abbDays",
-group_cols = "abbDays", 
-doWeights = TRUE
-) |>
-plotter(
-x_col = abbDays, 
-y_col = n, 
-geomType = "column", 
-title = "Days for all Riders", 
-x_label = "Days of the Week",
-y_label = "Trips"
-) +
-ggplot2::coord_cartesian(ylim = c(4.5 * 10^5, NA))
-
-gplot
-```
-:::
 :::
 
 ### [Comparative Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### [Frequency Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-wkdayCompare
+#| fig-cap: Weekday Group Frequency
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/dow.db", 
+select_cols = c("abbDays", "member_casual"),
+group_cols = c("abbDays", "member_casual"),
+doWeights = TRUE
+) |>
+plotter(
+title = "Day Groups",
+x_label = "Days",
+y_label = "n",
+x_col = abbDays, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column", 
+isFaceted = TRUE,
+is_colGroup = TRUE
+)
+
+gplot
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ```{r}
@@ -2310,39 +2335,6 @@ gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
 
 ```
-
-#### [Frequency Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-wkdayCompare
-#| fig-cap: Weekday Group Frequency
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/dow.db", 
-select_cols = c("abbDays", "member_casual"),
-group_cols = c("abbDays", "member_casual"),
-doWeights = TRUE
-) |>
-plotter(
-title = "Day Groups",
-x_label = "Days",
-y_label = "Trips",
-x_col = abbDays, 
-y_col = n, 
-group_col = member_casual,
-geomType = "column", 
-isFaceted = TRUE,
-is_colGroup = TRUE
-)
-
-gplot
-```
-:::
 
 #### [Chi-Squared]{.panel-tabset-label}
 
@@ -2522,14 +2514,14 @@ gplot
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas371" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas371" aria-controls="offcanvas"}
 Database Operations
 :::
+
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas372" aria-controls="offcanvas"}
 Table Preview
 :::
 :::
-
 :::
 
 ::: {#offcanvas371 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -2619,7 +2611,7 @@ overwrite = TRUE)
 :::
 :::
 
-::: {#offcanvas372 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas372 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -2662,6 +2654,37 @@ kableExtra::kable()
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### [Frequency Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-hourTotals
+#| fig-cap: Total frequency by hour of day.
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- transformData(
+conn = dbconn, 
+path = "db/hod.db", 
+select_cols = "hr",
+group_cols = "hr", 
+doWeights = TRUE
+) |>
+plotter(
+x_col = hr, 
+y_col = n,
+geomType = "column", 
+title = "Hour of Day", 
+x_label = "Hour", 
+y_label = "n",
+) +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+
+gplot
+
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ::: tableScroller
@@ -2690,30 +2713,38 @@ gt::cols_align(columns = hr, align = "left")
 
 ```
 :::
+:::
 
+### [Comparative Frequency Analysis]{.panel-tabset-label}
+
+::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
 ::: column-body-outset-right
 ```{r}
-#| label: fig-hourTotals
-#| fig-cap: Total frequency by hour of day.
+#| label: fig-hourCompare
+#| fig-cap: Grouped hour frequency
 #| fig-dpi: 150
 #| tidy: true
 
-gplot <- transformData(
+gplot <- 
+transformData(
 conn = dbconn, 
 path = "db/hod.db", 
-select_cols = "hr",
-group_cols = "hr", 
+select_cols = c("hr", "member_casual"),
+group_cols = c("hr", "member_casual"),
 doWeights = TRUE
 ) |>
 plotter(
+title = "Hour Groups",
+x_label = "Hour of Day",
+y_label = "n",
 x_col = hr, 
-y_col = n,
+y_col = n, 
+group_col = member_casual,
 geomType = "column", 
-title = "Hour of Day", 
-x_label = "Hour", 
-y_label = "Trips",
+isFaceted = TRUE,
+is_colGroup = TRUE
 ) +
 ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
@@ -2721,11 +2752,7 @@ gplot
 
 ```
 :::
-:::
 
-### [Comparative Frequency Analysis]{.panel-tabset-label}
-
-::: panel-tabset
 #### [Frequency Table]{.panel-tabset-label}
 
 ::: tableScroller
@@ -2757,41 +2784,6 @@ stub_note = "hour of the day (12-hour clock)"
 gt::cols_label(member_casual = "Membership") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
-
-```
-:::
-
-#### [Frequency Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-hourCompare
-#| fig-cap: Grouped hour frequency
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/hod.db", 
-select_cols = c("hr", "member_casual"),
-group_cols = c("hr", "member_casual"),
-doWeights = TRUE
-) |>
-plotter(
-title = "Hour Groups",
-x_label = "Hour of Day",
-y_label = "Trips",
-x_col = hr, 
-y_col = n, 
-group_col = member_casual,
-geomType = "column", 
-isFaceted = TRUE,
-is_colGroup = TRUE
-) +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
-
-gplot
 
 ```
 :::
@@ -2972,20 +2964,18 @@ gplot
 
 -   To visualize the full distance dataset as a histogram with illustrated, colored-coded quartiles as dotted lines, see @fig-distanceHistogram (the solid yellow line represents the mean).
 
--    @tbl-distanceSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
-
+-   @tbl-distanceSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
 :::
-
 
 ::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas271" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas271" aria-controls="offcanvas"}
 Database Operations
 :::
+
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas272" aria-controls="offcanvas"}
 Table Preview
 :::
 :::
-
 :::
 
 ::: {#offcanvas271 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -3057,7 +3047,7 @@ overwrite = TRUE)
 :::
 :::
 
-::: {#offcanvas272 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas272 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -3100,35 +3090,6 @@ kableExtra::kable()
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
-#### Frequency [Table]{.panel-tabset-label}
-
-::: tableScroller
-```{r}
-#| label: tbl-milesTotals
-#| tbl-cap: Miles Total Frequency
-#| tidy: true
-
-transformData(
-conn = dbconn, 
-path = "db/distance.db", 
-select_cols = "milesR",
-group_cols = "milesR", 
-doWeights = TRUE
-) |>
-tabler( 
-title = "Distance", 
-note_list = list("trip distance", "observation count"),
-location_list = list("milesR", "n"),
-source_note = gt::md("**Source**: `db/distance.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(milesR = "Miles") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = milesR, align = "left") 
-
-```
-:::
-
 #### [Frequency Plot]{.panel-tabset-label}
 
 ::: column-body-outset-right
@@ -3159,11 +3120,75 @@ ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 ```
 :::
+
+#### Frequency [Table]{.panel-tabset-label}
+
+::: tableScroller
+```{r}
+#| label: tbl-milesTotals
+#| tbl-cap: Miles Total Frequency
+#| tidy: true
+
+transformData(
+conn = dbconn, 
+path = "db/distance.db", 
+select_cols = "milesR",
+group_cols = "milesR", 
+doWeights = TRUE
+) |>
+tabler( 
+title = "Distance", 
+note_list = list("trip distance", "observation count"),
+location_list = list("milesR", "n"),
+source_note = gt::md("**Source**: `db/distance.db`"),
+noteColumns = TRUE
+) |>
+gt::cols_label(milesR = "Miles") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = milesR, align = "left") 
+
+```
+:::
 :::
 
 ### [Comparative Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### [Frequency Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-membershipMiles
+#| fig-cap: Distance by membership.
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/distance.db", 
+select_cols = c("milesR", "member_casual"),
+group_cols = c("milesR", "member_casual"),
+doWeights = TRUE
+) |>
+plotter(
+title = "Distance Groups",
+x_label = "Miles",
+y_label = "n",
+x_col = milesR, 
+y_col = n, 
+group_col = member_casual,
+geomType = "column", 
+isFaceted = TRUE,
+is_colGroup = TRUE
+)
+
+gplot +
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ::: tableScroller
@@ -3195,41 +3220,6 @@ stub_note = "miles traveled per trip"
 gt::cols_label(member_casual = "Membership") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
-
-```
-:::
-
-#### [Frequency Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-membershipMiles
-#| fig-cap: Distance by membership.
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/distance.db", 
-select_cols = c("milesR", "member_casual"),
-group_cols = c("milesR", "member_casual"),
-doWeights = TRUE
-) |>
-plotter(
-title = "Distance Groups",
-x_label = "Miles",
-y_label = "Trips",
-x_col = milesR, 
-y_col = n, 
-group_col = member_casual,
-geomType = "column", 
-isFaceted = TRUE,
-is_colGroup = TRUE
-)
-
-gplot +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
 
 ```
 :::
@@ -3345,7 +3335,7 @@ gplot
 
 ```{r}
 #| label: tbl-distanceSummary
-#| tidy: true
+#| tbl-cap: "Useful summary statistics."
 
 gTable <- 
 dplyr::tbl(dbconn, "db/distance.db") |>
@@ -3365,7 +3355,7 @@ gtsummary::all_continuous() ~ c(
 ) |>
 gtsummary::italicize_levels() |>
 tabler(
-title = gt::md("Summary Statistics: <br> Distance - Membership"),
+title = gt::md("Summary Statistics:<br>Distance - Membership"),
 source_note = gt::md("**Source**: `db/distance.db`"),
 isBinary = TRUE
 )
@@ -3400,18 +3390,18 @@ gTable
 
 -   To visualize the full speed dataset as a histogram with illustrated, colored-coded quartiles as dotted lines, see @fig-speedHistogram (the solid yellow line represents the mean).
 
--    @tbl-speedSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
+-   @tbl-speedSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
-::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas171" aria-controls="offcanvas"}
+::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas171" aria-controls="offcanvas"}
 Database Operations
 :::
+
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas172" aria-controls="offcanvas"}
 Table Preview
 :::
 :::
-
 :::
 
 ::: {#offcanvas171 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
@@ -3476,7 +3466,7 @@ duckdb::dbWriteTable(conn = dbconn, name = "db/speed_wq.db", overwrite = TRUE)
 :::
 :::
 
-::: {#offcanvas172 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas172 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -3519,35 +3509,6 @@ kableExtra::kable()
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
-#### [Frequency Table]{.panel-tabset-label}
-
-::: tableScroller
-```{r}
-#| label: tbl-mphTotals
-#| tbl-cap: Mph Total Frequency
-#| tidy: true
-
-transformData(
-conn = dbconn, 
-path = "db/speed.db", 
-select_cols = "mphR",
-group_cols = "mphR", 
-doWeights = TRUE
-) |>
-tabler(
-title = "Speed",
-note_list = list("trip speed (miles per hour)", "observation count"),
-location_list = list("mphR", "n"),
-source_note = gt::md("**Source**: `db/speed.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(mphR = "Mph") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = mphR, align = "left") 
-
-```
-:::
-
 #### [Frequency Plot]{.panel-tabset-label}
 
 ::: column-body-outset-right
@@ -3576,11 +3537,73 @@ y_label = "n")
 gplot
 ```
 :::
+
+#### [Frequency Table]{.panel-tabset-label}
+
+::: tableScroller
+```{r}
+#| label: tbl-mphTotals
+#| tbl-cap: Mph Total Frequency
+#| tidy: true
+
+transformData(
+conn = dbconn, 
+path = "db/speed.db", 
+select_cols = "mphR",
+group_cols = "mphR", 
+doWeights = TRUE
+) |>
+tabler(
+title = "Speed",
+note_list = list("trip speed (miles per hour)", "observation count"),
+location_list = list("mphR", "n"),
+source_note = gt::md("**Source**: `db/speed.db`"),
+noteColumns = TRUE
+) |>
+gt::cols_label(mphR = "Mph") |>
+gt::cols_align(columns = n, align = "right") |>
+gt::cols_align(columns = mphR, align = "left") 
+
+```
+:::
 :::
 
 ### [Comparative Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
+#### [Frequency Plot]{.panel-tabset-label}
+
+::: column-body-outset-right
+```{r}
+#| label: fig-mphCompare
+#| fig-cap: Mph Group Frequency
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/speed.db", 
+select_cols = c("mphR", "member_casual"),
+group_cols = c("mphR", "member_casual"),
+doWeights = TRUE
+) |>
+plotter(
+title = "Speed Groups (Aggregated)",
+x_label = "Miles per Hour",
+y_label = "n",
+x_col = mphR, 
+y_col = n, 
+color_col = member_casual,
+geomType = "column",
+is_colGroup = TRUE,
+isFaceted = TRUE
+)
+
+gplot
+```
+:::
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ::: tableScroller
@@ -3614,39 +3637,6 @@ gt::cols_label(member_casual = "Membership") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
 
-```
-:::
-
-#### [Frequency Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-mphCompare
-#| fig-cap: Mph Group Frequency
-#| tidy: true
-#| fig-dpi: 150
-
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/speed.db", 
-select_cols = c("mphR", "member_casual"),
-group_cols = c("mphR", "member_casual"),
-doWeights = TRUE
-) |>
-plotter(
-title = "Speed Groups (Aggregated)",
-x_label = "Miles per Hour",
-y_label = "Trips",
-x_col = mphR, 
-y_col = n, 
-color_col = member_casual,
-geomType = "column",
-is_colGroup = TRUE,
-isFaceted = TRUE
-)
-
-gplot
 ```
 :::
 
@@ -3736,7 +3726,7 @@ gplot <- qdf |>
 plotter(
 title = "Estimated Average Trip Speed",
 x_label = "MPH",
-y_label = "Trips",
+y_label = "n",
 x_col = mph, 
 geomType = "column", 
 isHistogram = TRUE,
@@ -3760,7 +3750,7 @@ gplot
 
 ```{r}
 #| label: tbl-speedSummary
-#| tidy: true
+#| tbl-cap: "Useful summary statistics."
 
 dplyr::tbl(dbconn, "db/speed.db") |>
 dplyr::select(mph, member_casual) |>
@@ -3779,7 +3769,7 @@ gtsummary::all_continuous() ~ c(
 ) |>
 gtsummary::italicize_levels() |>
 tabler(
-title = gt::md("Summary Statistics: <br> Speed - Membership"),
+title = gt::md("Summary Statistics:<br>Speed - Membership"),
 source_note = gt::md("**Source**: `db/speed.db`"),
 isBinary = TRUE
 )
@@ -3899,7 +3889,7 @@ num_cases = "trips_toAndfrom")
 :::
 :::
 
-::: {#offcanvas14 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::: {#offcanvas14 .offcanvas .offcanvas-end tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
@@ -4188,6 +4178,8 @@ gt::cols_align(align = "left")
 dbList2
 
 ```
+
+![Notice the size difference from the previous image. The database is still represented in db folder as one file..](images/dbFiles_end.png){.column-margin}
 
 # Conclusion
 
