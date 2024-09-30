@@ -42,11 +42,13 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
 /*-- scss:classes --*/
 
 .gt_sourcenote > code {
-  background-color: #BEBEBE !important;
+  background-color: rgba(25,25,25,0.5) !important;
+  color: SeaShell !important;
 }
 
 .gt_footnote > code {
-  background-color: #BEBEBE !important;
+  background-color: rgba(25,25,25,0.5) !important;
+  color: SeaShell !important;
 }
 
 .btn-group {
