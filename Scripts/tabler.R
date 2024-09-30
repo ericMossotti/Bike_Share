@@ -119,7 +119,7 @@ tabler <- function(tbl_name,
                     gt::cell_text(
                         align = "left",
                         stretch = "semi-expanded",
-                        whitespace = "break-spaces"
+                     #   whitespace = "break-spaces"
                     )
                 ),
                 locations = gt::cells_body(gt::everything())
@@ -128,7 +128,7 @@ tabler <- function(tbl_name,
                 gt::cell_text(
                     align = "center",
                     stretch = "semi-expanded",
-                    whitespace = "break-spaces"
+                    #whitespace = "break-spaces"
                 ),
                 locations = list(
                     gt::cells_title(groups = c("title", "subtitle")),
@@ -157,8 +157,7 @@ tabler <- function(tbl_name,
             gt::tab_style(
                 style = list(
                     gt::cell_borders(sides = c("right", "left"), color = vline_color),
-                    gt::cell_text(#align = "left",
-                        stretch = "semi-expanded", whitespace = "break-spaces")
+                    gt::cell_text(stretch = "semi-expanded", whitespace = "break-spaces")
                 ),
                 locations = gt::cells_body(gt::everything())
             ) |>
