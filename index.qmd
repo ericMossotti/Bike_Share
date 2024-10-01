@@ -71,8 +71,8 @@ Import Processing Code
 #| tidy: true
 
 # Does the database directory exist? If not, means we need to import data
-if(exists("dbconn") == FALSE &&
-   dir.exists("db") == FALSE) {
+if (exists("dbconn") == FALSE &&
+    dir.exists("db") == FALSE) {
   
   source("Scripts/importClean.R")
   
@@ -558,15 +558,14 @@ as.integer()
 ```
 :::
 
-::: {.flex-code max-width="auto"}
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
 
 # To see the history of obs in our dataset.
 summaryProcessTable <- tidyr::tribble(
-~ "Observations",
-~ "Counts",
+~ " ",
+~ "  ",
 "Original   ",
 original_nobs,
 "Complete Observations   ",
@@ -579,18 +578,18 @@ count_incorrectDists,
 count_filtered
 ) |>
 gt::gt(rownames_to_stub = FALSE) |>
-gt::tab_header(title = "Tallying Observations") |>
+gt::tab_header(title = "Tallying Observations", 
+subtitle = gt::md("Noting the change<br>in observations")) |>
 gt::tab_footnote(
 footnote = gt::md("Row counts throughout the cleaning steps."),
-locations = gt::cells_column_labels(columns = Counts)
+locations = gt::cells_column_labels(columns = "  ")
 ) |>
 gt::tab_style(
 style = list(
 gt::cell_borders(sides = "bottom"),
 gt::cell_text(
 align = "left",
-stretch = "semi-expanded",
-whitespace = "break-spaces"
+stretch = "semi-expanded"
 )
 ),
 locations = gt::cells_body(gt::everything())
@@ -598,9 +597,7 @@ locations = gt::cells_body(gt::everything())
 gt::tab_style(
 gt::cell_text(
 align = "center",
-stretch = "semi-expanded",
-whitespace = "break-spaces"
-),
+stretch = "semi-expanded"),
 locations = list(
 gt::cells_title(groups = c("title", "subtitle")),
 gt::cells_column_labels(gt::everything())
@@ -614,11 +611,10 @@ table.font.color = "SeaShell",
 row.striping.background_color = "gray10",
 row.striping.include_table_body = TRUE
 ) |>
-gt::tab_source_note(source_note = gt::md("**Sources**: `db/data_original.db`, `db/data_complete.db`, `db/data_unduped.db`, `db/data_filtered.db`"))
+gt::tab_source_note(source_note = gt::md("**Sources**: `db/data_original.db`, `db/data_complete.db`,<br>`db/data_unduped.db`, `db/data_filtered.db`"))
 
 summaryProcessTable
 ```
-:::
 
 ::: {.d-grid .gap-0}
 ::: {.btn .btn-outline-success .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
@@ -761,16 +757,18 @@ kableExtra::kable()
 :::
 :::
 
+::: column-page-inset-right
+
 ::: panel-tabset
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-totalMemberFrequency
-#| fig-cap: Total Member Frequency
+#| fig-cap: "Plotting the overall membership status distribution"
+#| fig-cap-location: top
 #| tidy: true
 #| fig-dpi: 150
 
@@ -786,20 +784,20 @@ plotter(
 x_col = member_casual, 
 y_col = n, 
 geomType = "column", 
-title = "Membership Types", 
-x_label = "Rider Types", 
+title = paste0("What does the overall\nmembership distribution look like?"),
+subtitle = NULL,
+x_label = "Rider Groups", 
 y_label = "n")
 
 gplot
 
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
 ```{r}
 #| label: tbl-memberTotals
-#| tbl-cap: Total Member Frequency
+#| tbl-cap: "Tabularizing membership distribution across all observations"
 #| tidy: true
 
 transformData(
@@ -810,18 +808,21 @@ group_cols = "member_casual",
 doWeights = TRUE
 ) |>
 tabler (
-title = "Membership",
+title = gt::md("Overall membership<br>distribution"),
 note_list = list(
 "membership status", "observation count"),
 location_list = c("member_casual", "n"),
 source_note = gt::md("**Source**: `db/membership.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(member_casual = "Membership") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left")
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
+#gt::cols_label(member_casual = " ", n = " ") |>
+#gt::cols_align(columns = n, align = "right") |>
+#gt::cols_align(columns = member_casual, align = "left")
 
 ```
+:::
 :::
 :::
 
@@ -831,23 +832,23 @@ gt::cols_align(columns = member_casual, align = "left")
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
--   @tbl-btypeTotal and @fig-btypeTotal gives an idea of the `rideable_type` parameter's distribution.
+-   @tbl-btypeTotal and @fig-btypeTotal gives an idea of the *rideable_type* parameter's distribution.
 
 -   @tbl-btypeGroups and @fig-btypeGroups summarizes the bicycle type frequencies by membership status.
 
--   @tbl-btypeChiSquare presents a Chi-Square analysis of bicycle type usage among casual users and members. There is a statistically significant association between bicycle type and membership status (p \< 0.001).
+-   @tbl-btypeChiSquare presents a Chi-Square analysis of bicycle type usage among casual users and members. There is a statistically significant association between bicycle type and membership status ($p < 0.001$).
 
-    -   Members show a higher preference for classic bikes (65%) compared to casual users (59%). Casual users have a higher proportion of electric bike usage (41%) compared to members (35%).
+    -   Members show a higher preference for classic bikes ($65 \%$) compared to casual users (59%). Casual users have a higher proportion of electric bike usage ($41 \%$) compared to members ($35 \%$).
 
     -   Both casual users and members prefer classic bikes over electric bikes.
 
-    -   The very low p-value (\< 0.001) indicates strong evidence against the null hypothesis of no association between bicycle type and membership status. This suggests that the choice of bicycle type is not independent of membership status.
+    -   The very low p-value ($< 0.001$) indicates strong evidence against the null hypothesis of no association between bicycle type and membership status. This suggests that the choice of bicycle type is not independent of membership status.
 
-    -   The large χ² value (14762.37) with just 1 degree of freedom (calculated as \[rows - 1\] \* \[columns - 1\]) results in the very small p-value (\< 0.001). This combination strongly suggests that the difference in bike type preference between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+    -   The large $\chi^2$ value ($14762.37$) with just 1 degree of freedom (calculated as $[rows - 1] * [columns - 1]$) results in the very small p-value ($< 0.001$). This combination strongly suggests that the difference in bike type preference between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
 
 -   @tbl-btypeModel presents the results of a binary logistic regression analyzing the relationship between bicycle type and membership status. The analysis compares two types of bicycles: classic bikes and electric bikes, with classic bikes serving as the reference category.
 
-    -   The odds of membership for users of electric bikes were 0.76 times the odds for users of classic bikes. Statistical Significance: The difference in membership likelihood between electric and classic bike users is highly statistically significant (p \< 0.001).
+    -   The odds of membership for users of electric bikes were $0.76$ times the odds for users of classic bikes. Statistical Significance: The difference in membership likelihood between electric and classic bike users is highly statistically significant ($p < 0.001$).
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
@@ -963,7 +964,6 @@ kableExtra::kable()
 ::: panel-tabset
 #### Frequency [Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-btypeTotal
 #| fig-cap: Bicycle type frequencies 
@@ -989,7 +989,6 @@ y_label = "n")
 gplot
 
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -1024,7 +1023,6 @@ gt::cols_align(columns = rideable_type, align = "left")
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-btypeGroups
 #| fig-cap: Bicycle type membership frequencies
@@ -1056,7 +1054,6 @@ colGroup_palette = "Paired"
 gplot
 
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -1080,7 +1077,7 @@ group_cols = c("rideable_type", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = "Bicycle Type - Membership", 
+title = gt::md("Membership frequencies<br>by bicycle type?"), 
 groupName = "rideable_type", 
 location = n,
 label_n = "n",
@@ -1089,11 +1086,10 @@ location_list = location_list,
 source_note = gt::md("**Source**: `db/bType.db`"),
 noteColumns = TRUE,
 isStub = TRUE,
-stub_label = "Type",
+stub_label = " ",
 stub_note = "bicycle type"
 ) |>       
-gt::cols_label(member_casual = "Membership", rideable_type = "Bicycle Type") |>
-gt::cols_label(rideable_type = "Type") |>
+gt::cols_label(member_casual = " ", rideable_type = "Bicycle Type", n = " ") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left"
 ) 
@@ -1343,7 +1339,6 @@ kableExtra::kable()
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-page-inset-right
 ```{r}
 #| label: fig-triptimeTotals
 #| fig-cap: Trip Duration Totals
@@ -1364,18 +1359,21 @@ y_col = n,
 geomType = "column", 
 title = "Duration", 
 x_label = "Minutes", 
-y_label = "Overall Trips",
+y_label = "n",
 color_col = "black") +
 ggplot2::scale_x_continuous(
-limits = c(0, 100),
-breaks = seq(0, 100, by = 5),
+limits = c(0, 60),
+breaks = seq(0, 60, by = 5),
 guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)
 )
 
-gplot
+gplot +
+ggplot2::theme(
+axis.text = ggplot2::element_text(size = 8)
+)
+
 
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -1412,7 +1410,6 @@ gt::cols_align(columns = mins, align = "center")
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-page-inset-right
 ```{r}
 #| label: fig-triptimeCompare
 #| fig-cap: Trip-Time Group Frequency
@@ -1446,12 +1443,15 @@ color_col = "black"
 ) +
 ggplot2::scale_x_discrete(
 guide = ggplot2::guide_axis(n.dodge = 1, angle = 45), 
-breaks = forcats::as_factor(seq(0, 100, by = 5)))
+limits = forcats::as_factor(seq(0, 60)),
+breaks = forcats::as_factor(seq(0, 60, by = 5)))
 
-gplot
+gplot +
+ggplot2::theme(
+axis.text = ggplot2::element_text(size = 8)
+)
 
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -1527,7 +1527,6 @@ gtTable
 
 #### [Density]{.panel-tabset-label}
 
-::: column-page-inset-right
 ```{r}
 #| label: fig-durationDensity
 #| code-summary: Density plot for duration by membership.
@@ -1556,7 +1555,6 @@ limits = c(0, 100)
 
 gplot
 ```
-:::
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
@@ -1604,7 +1602,6 @@ dplyr::collect()
 quartiles <- quantile(qdf$trip_time, probs = c(0.25, 0.5, 0.75))
 ```
 
-::: column-page-inset-right
 ```{r}
 #| label: fig-durationHistogram
 #| tidy: true
@@ -1633,7 +1630,6 @@ quartiles = quartiles
 
 gplot
 ```
-:::
 :::
 :::
 
@@ -1789,7 +1785,6 @@ kableExtra::kable()
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-monthTotals
 #| fig-cap: Month Total Frequency
@@ -1808,12 +1803,11 @@ x_col = abbMonths,
 y_col = n, 
 geomType = "column", 
 title = "Months", 
-x_label = "Months", 
-y_label = "n")
+x_label = " ", 
+y_label = " ")
 
 gplot
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -1836,7 +1830,7 @@ location_list = c("abbMonths", "n"),
 source_note = gt::md("**Source**: `db/moy.db`"),
 noteColumns = TRUE
 ) |>
-gt::cols_label(abbMonths = "Month") |>
+gt::cols_label(abbMonths = " ", n = " ") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = abbMonths, align = "left") 
 
@@ -1848,7 +1842,6 @@ gt::cols_align(columns = abbMonths, align = "left")
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-monthCompare
 #| fig-cap: Month Group Frequency
@@ -1877,7 +1870,6 @@ is_colGroup = TRUE
 
 gplot
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -1895,7 +1887,7 @@ group_cols = c("abbMonths", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = "Months - Membership", 
+title = gt::md("How many members<br>grouped by month?"), 
 groupName = "abbMonths", 
 location = n,
 label_n = "n",
@@ -1904,7 +1896,7 @@ location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/moy.db`"),
 noteColumns = TRUE,
 isStub = TRUE,
-stub_label = "Months",
+stub_label = " ",
 stub_note = "months of the year (abbreviated)"
 ) |>
 gt::cols_label(member_casual = "Membership") |>
@@ -1957,7 +1949,6 @@ chi_table
 
 #### [Density]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-monthDensity
 #| fig-dpi: 150
@@ -1982,7 +1973,6 @@ date_labels = "%b",
 
 gplot
 ```
-:::
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
@@ -2018,7 +2008,6 @@ isBinary = TRUE)
 
 #### [Histogram Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-monthHistogram
 #| fig-dpi: 150
@@ -2056,7 +2045,6 @@ qformat = "%b-%d"
 
 gplot
 ```
-:::
 :::
 :::
 
@@ -2209,7 +2197,6 @@ kableExtra::kable()
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-wkdayTotals
 #| fig-cap: Weekday Totals Frequency
@@ -2237,7 +2224,6 @@ ggplot2::coord_cartesian(ylim = c(4.5 * 10^5, NA))
 
 gplot
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -2260,7 +2246,7 @@ location_list = list("abbDays", "n"),
 source_note = gt::md("**Source**: `db/dow.db`"),
 noteColumns = TRUE
 ) |>
-gt::cols_label(abbDays = "Day") |>
+gt::cols_label(abbDays = " ", n = " ") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = abbDays, align = "left") 
 
@@ -2272,7 +2258,6 @@ gt::cols_align(columns = abbDays, align = "left")
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-wkdayCompare
 #| fig-cap: Weekday Group Frequency
@@ -2301,7 +2286,6 @@ is_colGroup = TRUE
 
 gplot
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -2318,7 +2302,7 @@ group_cols = c("abbDays", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = "Days - Membership", 
+title = gt::md("How many members<br>grouped by day?"), 
 groupName = "abbDays", 
 location = n,
 label_n = "n",
@@ -2327,10 +2311,10 @@ location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/dow.db`"),
 noteColumns = TRUE,
 isStub = TRUE,
-stub_label = "Day",
+stub_label = " ",
 stub_note = "days of the week (abbreviated)"
 ) |>
-gt::cols_label(member_casual = "Membership") |>
+gt::cols_label(member_casual = " ", n = " ") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
 
@@ -2379,7 +2363,6 @@ chi_result = chiResult
 
 #### [Density]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-dayDensity
 #| code-summary: Density by day of the week.
@@ -2405,7 +2388,6 @@ date_labels = "%a")
 
 gplot
 ```
-:::
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
@@ -2445,7 +2427,6 @@ isBinary = TRUE
 
 #### [Histogram Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-Hdays
 #| fig-dpi: 150
@@ -2482,7 +2463,6 @@ qformat = "%a %I %p"
 gplot
 
 ```
-:::
 :::
 :::
 
@@ -2650,13 +2630,13 @@ kableExtra::kable()
 :::
 :::
 
+::: column-body-outset-right
 ::: panel-tabset
 ### [Overall Frequency Analysis]{.panel-tabset-label}
 
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-hourTotals
 #| fig-cap: Total frequency by hour of day.
@@ -2678,19 +2658,22 @@ title = "Hour of Day",
 x_label = "Hour", 
 y_label = "n",
 ) +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
+ggplot2::theme(
+axis.text = ggplot2::element_text(size = 8)
+)
 
 gplot
 
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
 ::: tableScroller
 ```{r}
 #| label: tbl-hourTotals
-#| tbl-cap: Total freqeuncy by the hour of day
+#| tbl-cap: "Total freqeuncy by the hour of day"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -2707,7 +2690,7 @@ location_list = list("hr", "n"),
 source_note = gt::md("**Source**: `db/hod.db`"),
 noteColumns = TRUE
 ) |>
-gt::cols_label("hr" = "Hour") |>
+gt::cols_label("hr" = " ", n = " ") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = hr, align = "left") 
 
@@ -2720,7 +2703,6 @@ gt::cols_align(columns = hr, align = "left")
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-hourCompare
 #| fig-cap: Grouped hour frequency
@@ -2746,12 +2728,14 @@ geomType = "column",
 isFaceted = TRUE,
 is_colGroup = TRUE
 ) +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
+ggplot2::theme(
+axis.text = ggplot2::element_text(size = 8)
+)
 
 gplot
 
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -2769,7 +2753,7 @@ group_cols = c("hr", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = "Hour - Membership", 
+title = gt::md("How many members<br>grouped by hour?"), 
 groupName = "hr", 
 location = n,
 label_n = "n",
@@ -2781,7 +2765,7 @@ isStub = TRUE,
 stub_label = "Day",
 stub_note = "hour of the day (12-hour clock)"
 ) |>
-gt::cols_label(member_casual = "Membership") |>
+gt::cols_label(member_casual = " ") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
 
@@ -2833,7 +2817,6 @@ chi_result = chiResult
 
 #### [Density]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-hourDensity
 #| fig-cap: Query, load, and plot the grouped densities 
@@ -2860,7 +2843,6 @@ date_labels = "%I %p",
 gplot
 
 ```
-:::
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
@@ -2901,9 +2883,10 @@ isBinary = TRUE)
 ::: column-body-outset-right
 ```{r}
 #| label: fig-Histogram
-#| code-summary: Member histogram plot with quartile ranges. 
 #| fig-dpi: 150
 #| tidy: true
+#| fig-cap-location: top
+#| fig-cap: Hourly histogram with quartile ranges
 
 qdf <- dplyr::tbl(dbconn, "db/hod.db") |>
 dplyr::select(started_at_time) |>
@@ -2914,13 +2897,13 @@ quartiles <- quantile(qdf$started_at_time, probs = c(0.25, 0.5, 0.75))
 gplot <- qdf |>
 plotter(
 title = "Hours",
-x_label = "Hours (12-hour clock)",
+x_label = paste0("Hours\n", "(12-hour clock)"),
 y_label = "n",
 x_col = started_at_time, 
 geomType = "column", 
 isHistogram = TRUE,
 isTimeHist = TRUE,
-date_breaks = "1 hour", 
+date_breaks = "2 hour", 
 date_labels = "%I %p", 
 angle = 45,
 color_col = "black",
@@ -2933,9 +2916,12 @@ quartiles = quartiles,
 qformat = "%I:%M %p"
 ) 
 
-gplot
+gplot +
+ggplot2::theme(
+axis.text.x = ggplot2::element_text(size = ggplot2::rel(.9)))
 
 ```
+:::
 :::
 :::
 :::
@@ -3092,7 +3078,6 @@ kableExtra::kable()
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-milesTotals
 #| fig-cap: Miles Total Frequency
@@ -3116,10 +3101,13 @@ x_label = "Miles",
 y_label = "n") 
 
 gplot +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
+ggplot2::theme(
+axis.text = ggplot2::element_text(size = 7)
+)
+
 
 ```
-:::
 
 #### Frequency [Table]{.panel-tabset-label}
 
@@ -3156,7 +3144,6 @@ gt::cols_align(columns = milesR, align = "left")
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-membershipMiles
 #| fig-cap: Distance by membership.
@@ -3184,10 +3171,13 @@ is_colGroup = TRUE
 )
 
 gplot +
-ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45))
+ggplot2::scale_x_discrete(guide = ggplot2::guide_axis(n.dodge = 1, angle = 45)) +
+ggplot2::theme(
+axis.text = ggplot2::element_text(size = 7)
+)
+
 
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -3205,7 +3195,7 @@ group_cols = c("milesR", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = "Distance - Membership", 
+title = gt::md("How many members<br>grouped by distance?"), 
 groupName = "milesR", 
 location = n,
 label_n = "n",
@@ -3214,10 +3204,10 @@ location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/distance.db`"),
 noteColumns = TRUE,
 isStub = TRUE,
-stub_label = "Trip distance",
+stub_label = " ",
 stub_note = "miles traveled per trip"
 ) |>
-gt::cols_label(member_casual = "Membership") |>
+gt::cols_label(member_casual = " ") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
 
@@ -3226,7 +3216,6 @@ gt::cols_align(columns = member_casual, align = "left")
 
 #### [Density]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-distanceDensity
 #| fig-cap: Densities of miles to membership.
@@ -3255,7 +3244,6 @@ limits = c(0.1, 11)
 gplot
 
 ```
-:::
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
@@ -3294,7 +3282,6 @@ isBinary = TRUE
 
 #### [Histogram Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-distanceHistogram
 #| fig-dpi: 150
@@ -3329,7 +3316,6 @@ quartiles = quartiles)
 gplot
 
 ```
-:::
 
 #### [Summary Stats]{.panel-tabset-label}
 
@@ -3382,7 +3368,7 @@ gTable
 
 -   @tbl-modelspeedQ presents the odds ratios for membership status across speed quartiles, with Q1 serving as the reference category.
 
-    -   Compared to Q1, the odds of being a member versus a casual rider were significantly higher in all other quartiles (p \< 0.001 for all comparisons).
+    -   Compared to Q1, the odds of being a member versus a casual rider were significantly higher in all other quartiles ($p < 0.001$ for all comparisons).
 
     -   Specifically, the odds of membership were 2.09 times higher in Q2, 2.50 times higher in Q3, and 2.69 times higher in Q4.
 
@@ -3511,7 +3497,6 @@ kableExtra::kable()
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-mphTotals
 #| fig-cap: Mph Total Frequency
@@ -3535,8 +3520,8 @@ x_label = "Miles per Hour",
 y_label = "n")
 
 gplot
+
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -3558,11 +3543,12 @@ title = "Speed",
 note_list = list("trip speed (miles per hour)", "observation count"),
 location_list = list("mphR", "n"),
 source_note = gt::md("**Source**: `db/speed.db`"),
-noteColumns = TRUE
+noteColumns = TRUE,
+#hide_column_labels = TRUE
 ) |>
-gt::cols_label(mphR = "Mph") |>
+gt::cols_label(mphR = " ") |>
 gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = mphR, align = "left") 
+gt::cols_align(columns = mphR, align = "center") 
 
 ```
 :::
@@ -3573,7 +3559,6 @@ gt::cols_align(columns = mphR, align = "left")
 ::: panel-tabset
 #### [Frequency Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-mphCompare
 #| fig-cap: Mph Group Frequency
@@ -3602,7 +3587,6 @@ isFaceted = TRUE
 
 gplot
 ```
-:::
 
 #### [Frequency Table]{.panel-tabset-label}
 
@@ -3621,7 +3605,7 @@ group_cols = c("mphR", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = "Speed - Membership", 
+title = gt::md("How many members<br>grouped by trip speed?"), 
 groupName = "mphR", 
 location = n,
 label_n = "n",
@@ -3630,10 +3614,10 @@ location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/speed.db`"),
 noteColumns = TRUE,
 isStub = TRUE,
-stub_label = "Trip Speed",
+stub_label = " ",
 stub_note = "estimated average speed traveled per trip (mph)"
 ) |>
-gt::cols_label(member_casual = "Membership") |>
+gt::cols_label(member_casual = " ") |>
 gt::cols_align(columns = n, align = "right") |>
 gt::cols_align(columns = member_casual, align = "left") 
 
@@ -3642,7 +3626,6 @@ gt::cols_align(columns = member_casual, align = "left")
 
 #### [Density]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-speedDensity
 #| fig-cap: Density plot for speed by membership.
@@ -3671,7 +3654,6 @@ limits = c(1, 20)
 gplot
 
 ```
-:::
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
@@ -3709,7 +3691,6 @@ isBinary = TRUE)
 
 #### [Histogram Plot]{.panel-tabset-label}
 
-::: column-body-outset-right
 ```{r}
 #| label: fig-speedHistogram
 #| tidy: true
@@ -3725,7 +3706,7 @@ quartiles <- quantile(qdf$mph, probs = c(0.25, 0.5, 0.75))
 gplot <- qdf |>
 plotter(
 title = "Estimated Average Trip Speed",
-x_label = "MPH",
+x_label = "Miles per Hour",
 y_label = "n",
 x_col = mph, 
 geomType = "column", 
@@ -3737,14 +3718,13 @@ vline_size = 0.5,
 low = "blue",
 high = "red",
 binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-breaks = seq(1, 20, by = 1),
+breaks = seq(1, 20, by = 2),
 limits = c(1, 20),
 quartiles = quartiles) 
 
 gplot
 
 ```
-:::
 
 #### [Summary Stats]{.panel-tabset-label}
 
