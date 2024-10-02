@@ -767,7 +767,7 @@ kableExtra::kable()
 
 ```{r}
 #| label: fig-totalMemberFrequency
-#| fig-cap: "Plotting the overall membership status distribution"
+#| fig-cap: "Plotting the overall membership distribution"
 #| fig-cap-location: top
 #| tidy: true
 #| fig-dpi: 150
@@ -784,8 +784,7 @@ plotter(
 x_col = member_casual, 
 y_col = n, 
 geomType = "column", 
-title = paste0("What does the overall\nmembership distribution look like?"),
-subtitle = NULL,
+title = "How often do members ride?",
 x_label = "Rider Groups", 
 y_label = "n")
 
@@ -798,6 +797,7 @@ gplot
 ```{r}
 #| label: tbl-memberTotals
 #| tbl-cap: "Tabularizing membership distribution across all observations"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -808,7 +808,7 @@ group_cols = "member_casual",
 doWeights = TRUE
 ) |>
 tabler (
-title = gt::md("Overall membership<br>distribution"),
+title = gt::md("How often do<br>members travel?"),
 note_list = list(
 "membership status", "observation count"),
 location_list = c("member_casual", "n"),
@@ -966,7 +966,8 @@ kableExtra::kable()
 
 ```{r}
 #| label: fig-btypeTotal
-#| fig-cap: Bicycle type frequencies 
+#| fig-cap: "The overall distribution of trips taken by bicycle choice"
+#| fig-cap-location: top
 #| tidy: true
 #| fig-dpi: 150
 
@@ -982,7 +983,7 @@ plotter(
 x_col = rideable_type, 
 y_col = n, 
 geomType = "column", 
-title = "Bicycle Type", 
+title = paste0("How often were the bicycle types chosen?"),
 x_label = "Type", 
 y_label = "n")
 
@@ -994,7 +995,8 @@ gplot
 
 ```{r}
 #| label: tbl-btypeTotal
-#| tbl-cap: Cycle Type Total Frequency
+#| tbl-cap: "The overall distribution of bicycle choice"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -1005,15 +1007,15 @@ group_cols = "rideable_type",
 doWeights = TRUE
 ) |>
 tabler( 
-title = "Bicycle Types", 
+title = gt::md("How often were the bicycle<br>types chosen?"), 
 note_list = list("bicycle type","observation count"),
 location_list = list("rideable_type", "n"),
 source_note = gt::md("**Source**: `db/bType.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(rideable_type = "Type") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = rideable_type, align = "left") 
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+) 
+#gt::cols_align(columns = rideable_type, align = "left") 
 
 ```
 :::
@@ -1025,7 +1027,8 @@ gt::cols_align(columns = rideable_type, align = "left")
 
 ```{r}
 #| label: fig-btypeGroups
-#| fig-cap: Bicycle type membership frequencies
+#| fig-cap: "The membership distribution of bicycle choice"
+#| fig-cap-location: top
 #| tidy: true
 #| fig-dpi: 150
 
@@ -1038,7 +1041,7 @@ group_cols = c("rideable_type", "member_casual"),
 doWeights = TRUE
 ) |>
 plotter(
-title = "Bicycle Groups",
+title = paste0("Which bicycles are members choosing?"),
 x_label = "Type",
 y_label = "n",
 x_col = rideable_type, 
@@ -1059,15 +1062,9 @@ gplot
 
 ```{r}
 #| label: tbl-btypeGroups
-#| tbl-cap: Bicycle type membership frequencies
+#| tbl-cap: "The membership distribution of bicycle choice"
+#| tbl-cap-location: top
 #| tidy: true
-
-location_list <- list("member_casual", "n")
-
-note_list <- list(
-"membership status",
-"observation count"
-)
 
 transformData(
 conn = dbconn, 
@@ -1077,22 +1074,21 @@ group_cols = c("rideable_type", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = gt::md("Membership frequencies<br>by bicycle type?"), 
+title = gt::md("Which bicycles do members choose?"), 
 groupName = "rideable_type", 
-location = n,
-label_n = "n",
-note_list = note_list,
-location_list = location_list,
+#location = n,
+note_list =  list("membership status", "observation count"),
+location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/bType.db`"),
-noteColumns = TRUE,
+noteRows = TRUE,
+#hide_column_labels = TRUE,
+row_index = 1,
 isStub = TRUE,
-stub_label = " ",
+stub_label = "Type",
 stub_note = "bicycle type"
 ) |>       
-gt::cols_label(member_casual = " ", rideable_type = "Bicycle Type", n = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left"
-) 
+gt::cols_label(member_casual = " ", n = " ")
+
 
 ```
 
@@ -1341,7 +1337,8 @@ kableExtra::kable()
 
 ```{r}
 #| label: fig-triptimeTotals
-#| fig-cap: Trip Duration Totals
+#| fig-cap: "The overall distribution of trip durations"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -1357,7 +1354,7 @@ plotter(
 x_col = as.integer(mins), 
 y_col = n,
 geomType = "column", 
-title = "Duration", 
+title = paste0("How long do people travel?"),
 x_label = "Minutes", 
 y_label = "n",
 color_col = "black") +
@@ -1380,7 +1377,8 @@ axis.text = ggplot2::element_text(size = 8)
 ::: tableScroller
 ```{r}
 #| label: tbl-triptimeTotals
-#| tbl-cap: Trip-Time Totals
+#| tbl-cap: "The overall distribution of trip durations"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -1391,15 +1389,14 @@ group_cols = "mins",
 doWeights = TRUE
 ) |>
 tabler( 
-title = "Duration", 
+title = gt::md("For how long<br>do people travel?"), 
 note_list = list("trip duration", "observation count"),
 location_list = list("mins", "n"),
 source_note = gt::md("**Source**: `db/duration.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(mins = "Minutes") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = mins, align = "center") 
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 
 ```
 :::
@@ -1412,7 +1409,8 @@ gt::cols_align(columns = mins, align = "center")
 
 ```{r}
 #| label: fig-triptimeCompare
-#| fig-cap: Trip-Time Group Frequency
+#| fig-cap: "The membership distribution of trip durations"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -1430,7 +1428,7 @@ doWeights = TRUE,
 isDF = TRUE
 ) |>
 plotter(
-title = "Duration Groups",
+title = paste0("How long do members ride for?"),
 x_label = "Minutes",
 y_label = "n",
 x_col = mins, 
@@ -1458,7 +1456,8 @@ axis.text = ggplot2::element_text(size = 8)
 ::: tableScroller
 ```{r}
 #| label: tbl-triptimeCompare
-#| tbl-cap: Trip Time Comparison
+#| tbl-cap: "The membership distribution of trip durations"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -1469,22 +1468,19 @@ group_cols = c("mins", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = "Duration - Membership", 
+title = gt::md("How long do members ride for?"), 
 groupName = "mins", 
-location = n,
 label_n = "n",
 note_list = list("membership status","observation count"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/duration.db`"),
-noteColumns = TRUE,
 isStub = TRUE,
-stub_label = "Trip Time",
-stub_note = "trip duration (minutes)"
-) |>
-gt::cols_label(member_casual = "Membership") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left") |>
-gt::cols_align(columns = "mins", align = "center")
+stub_label = "Time",
+stub_note = "trip duration (minutes)",
+row_index = 1,
+noteRows = TRUE
+) |>       
+gt::cols_label(member_casual = " ", n = " ")
 
 
 ```
@@ -1787,7 +1783,8 @@ kableExtra::kable()
 
 ```{r}
 #| label: fig-monthTotals
-#| fig-cap: Month Total Frequency
+#| fig-cap: "The overall distribution of trips taken by month"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -1802,9 +1799,9 @@ plotter(
 x_col = abbMonths, 
 y_col = n, 
 geomType = "column", 
-title = "Months", 
-x_label = " ", 
-y_label = " ")
+title = paste0("Which months do people tend to ride?"),
+x_label = paste0("Months","\n","(2023)"),
+y_label = "n")
 
 gplot
 ```
@@ -1813,7 +1810,8 @@ gplot
 
 ```{r}
 #| label: tbl-monthTotals
-#| tbl-cap: Month Total Frequency
+#| tbl-cap: "The overall distribution of trips taken by month"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -1824,15 +1822,14 @@ group_cols = "abbMonths",
 doWeights = TRUE
 ) |>
 tabler(
-title = "Months",
+title = gt::md("Which months do people<br>tend to travel?"),
 note_list = list("month of year", "observation count"),
 location_list = c("abbMonths", "n"),
 source_note = gt::md("**Source**: `db/moy.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(abbMonths = " ", n = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = abbMonths, align = "left") 
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 
 ```
 :::
@@ -1844,7 +1841,8 @@ gt::cols_align(columns = abbMonths, align = "left")
 
 ```{r}
 #| label: fig-monthCompare
-#| fig-cap: Month Group Frequency
+#| fig-cap: "The membership distribution of trips taken by month"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -1857,7 +1855,7 @@ group_cols = c("abbMonths", "member_casual"),
 doWeights = TRUE
 ) |>
 plotter(
-title = "Month Groups",
+title = paste0("Which months do members ride?"),
 x_label = "Months",
 y_label = "n",
 x_col = abbMonths, 
@@ -1876,7 +1874,8 @@ gplot
 ::: tableScroller
 ```{r}
 #| label: tbl-monthCompare
-#| tbl-cap: Month Group Frequency
+#| tbl-cap: "The membership distribution of trips taken by month"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -1887,21 +1886,20 @@ group_cols = c("abbMonths", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = gt::md("How many members<br>grouped by month?"), 
+title = gt::md("Which months do members prefer?"), 
 groupName = "abbMonths", 
 location = n,
 label_n = "n",
 note_list = list("membership status", "observation count"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/moy.db`"),
-noteColumns = TRUE,
 isStub = TRUE,
-stub_label = " ",
-stub_note = "months of the year (abbreviated)"
-) |>
-gt::cols_label(member_casual = "Membership") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left") 
+stub_label = "Month",
+stub_note = "months of the year (abbreviated)",
+row_index = 1,
+noteRows = TRUE
+) |>       
+gt::cols_label(member_casual = " ", n = " ")
 
 ```
 :::
@@ -2199,7 +2197,8 @@ kableExtra::kable()
 
 ```{r}
 #| label: fig-wkdayTotals
-#| fig-cap: Weekday Totals Frequency
+#| fig-cap: "The overall distribution of trips taken by day of the week"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -2216,7 +2215,7 @@ plotter(
 x_col = abbDays, 
 y_col = n, 
 geomType = "column", 
-title = "Days for all Riders", 
+title = paste0("Which days\ndo people tend to ride?"),
 x_label = "Days of the Week",
 y_label = "n"
 ) +
@@ -2229,7 +2228,8 @@ gplot
 
 ```{r}
 #| label: tbl-wkdayTotals
-#| tbl-cap: Weekday Total Frequency
+#| tbl-cap: "The overall distribution of trips taken by day of the week"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -2240,15 +2240,14 @@ group_cols = "abbDays",
 doWeights = TRUE
 ) |>
 tabler( 
-title = "Days of the Week", 
+title = gt::md("Which days do people<br>tend to travel?"),
 note_list = list("day of the week", "observation count"),
 location_list = list("abbDays", "n"),
 source_note = gt::md("**Source**: `db/dow.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(abbDays = " ", n = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = abbDays, align = "left") 
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 
 ```
 :::
@@ -2260,7 +2259,8 @@ gt::cols_align(columns = abbDays, align = "left")
 
 ```{r}
 #| label: fig-wkdayCompare
-#| fig-cap: Weekday Group Frequency
+#| fig-cap: "The membership distribution of trips taken by day of the week"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -2291,7 +2291,8 @@ gplot
 
 ```{r}
 #| label: tbl-wkdayCompare
-#| tbl-cap: Weekday Group Frequency
+#| tbl-cap: "The membership distribution of trips taken by day of the week"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -2302,21 +2303,20 @@ group_cols = c("abbDays", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = gt::md("How many members<br>grouped by day?"), 
+title = gt::md("Which days do members prefer?"), 
 groupName = "abbDays", 
 location = n,
 label_n = "n",
 note_list = list("membership status", "observation count"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/dow.db`"),
-noteColumns = TRUE,
 isStub = TRUE,
-stub_label = " ",
-stub_note = "days of the week (abbreviated)"
-) |>
-gt::cols_label(member_casual = " ", n = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left") 
+stub_label = "Day",
+stub_note = "days of the week (abbreviated)",
+row_index = 1,
+noteRows = TRUE
+) |>       
+gt::cols_label(member_casual = " ", n = " ")
 
 ```
 
@@ -2639,7 +2639,8 @@ kableExtra::kable()
 
 ```{r}
 #| label: fig-hourTotals
-#| fig-cap: Total frequency by hour of day.
+#| fig-cap: "The overall distribution of trips taken by hour of the day"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -2654,7 +2655,7 @@ plotter(
 x_col = hr, 
 y_col = n,
 geomType = "column", 
-title = "Hour of Day", 
+title = paste0("Which hours do people tend to ride?"),
 x_label = "Hour", 
 y_label = "n",
 ) +
@@ -2672,7 +2673,7 @@ gplot
 ::: tableScroller
 ```{r}
 #| label: tbl-hourTotals
-#| tbl-cap: "Total freqeuncy by the hour of day"
+#| tbl-cap: "The overall distribution of trips taken by hour of the day"
 #| tbl-cap-location: top
 #| tidy: true
 
@@ -2684,15 +2685,14 @@ group_cols = "hr",
 doWeights = TRUE
 ) |>
 tabler( 
-title = "Hours", 
+title = gt::md("Which hours do people<br>tend to travel?"),
 note_list = list("hour of the day", "observation count"),
 location_list = list("hr", "n"),
 source_note = gt::md("**Source**: `db/hod.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label("hr" = " ", n = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = hr, align = "left") 
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 
 ```
 :::
@@ -2705,7 +2705,8 @@ gt::cols_align(columns = hr, align = "left")
 
 ```{r}
 #| label: fig-hourCompare
-#| fig-cap: Grouped hour frequency
+#| fig-cap: "The membership distribution of trips taken by hour of the day"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -2718,7 +2719,7 @@ group_cols = c("hr", "member_casual"),
 doWeights = TRUE
 ) |>
 plotter(
-title = "Hour Groups",
+title = paste0("Which hours of the day do members ride?"),
 x_label = "Hour of Day",
 y_label = "n",
 x_col = hr, 
@@ -2742,7 +2743,8 @@ gplot
 ::: tableScroller
 ```{r}
 #| label: tbl-hourMembership
-#| tbl-cap: Frequencies for membership by hour.
+#| tbl-cap: "The membership distribution of trips taken by hour of the day"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -2753,21 +2755,20 @@ group_cols = c("hr", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = gt::md("How many members<br>grouped by hour?"), 
+title = gt::md("Which hours do members prefer?"), 
 groupName = "hr", 
 location = n,
 label_n = "n",
 note_list = list("membership status", "observation count"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/hod.db`"),
-noteColumns = TRUE,
 isStub = TRUE,
-stub_label = "Day",
-stub_note = "hour of the day (12-hour clock)"
-) |>
-gt::cols_label(member_casual = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left") 
+stub_label = "Hour",
+stub_note = "hour of the day (12-hour clock)",
+row_index = 1,
+noteRows = TRUE
+) |>       
+gt::cols_label(member_casual = " ", n = " ")
 
 ```
 :::
@@ -3080,7 +3081,8 @@ kableExtra::kable()
 
 ```{r}
 #| label: fig-milesTotals
-#| fig-cap: Miles Total Frequency
+#| fig-cap: "The overall distribution of trips taken by the estimated distance traveled"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -3096,7 +3098,7 @@ plotter(
 x_col = milesR, 
 y_col = n,
 geomType = "column", 
-title = "Distance", 
+title = paste0("How far do people ride?"),
 x_label = "Miles", 
 y_label = "n") 
 
@@ -3114,7 +3116,8 @@ axis.text = ggplot2::element_text(size = 7)
 ::: tableScroller
 ```{r}
 #| label: tbl-milesTotals
-#| tbl-cap: Miles Total Frequency
+#| tbl-cap: "The overall distribution of trips taken by the esimated distance traveled"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -3125,15 +3128,14 @@ group_cols = "milesR",
 doWeights = TRUE
 ) |>
 tabler( 
-title = "Distance", 
+title = gt::md("How far do people travel?"),
 note_list = list("trip distance", "observation count"),
 location_list = list("milesR", "n"),
 source_note = gt::md("**Source**: `db/distance.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(milesR = "Miles") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = milesR, align = "left") 
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+) 
 
 ```
 :::
@@ -3146,7 +3148,8 @@ gt::cols_align(columns = milesR, align = "left")
 
 ```{r}
 #| label: fig-membershipMiles
-#| fig-cap: Distance by membership.
+#| fig-cap: "The membership distribution of trips taken by the estimated distance traveled"
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -3159,7 +3162,7 @@ group_cols = c("milesR", "member_casual"),
 doWeights = TRUE
 ) |>
 plotter(
-title = "Distance Groups",
+title = paste0("How far do members travel?"),
 x_label = "Miles",
 y_label = "n",
 x_col = milesR, 
@@ -3184,7 +3187,8 @@ axis.text = ggplot2::element_text(size = 7)
 ::: tableScroller
 ```{r}
 #| label: tbl-milesCompare
-#| tbl-cap: Miles Group Frequency
+#| tbl-cap: "The membership distribution of trips taken by the estimated distance traveled"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -3195,21 +3199,20 @@ group_cols = c("milesR", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = gt::md("How many members<br>grouped by distance?"), 
+title = gt::md("How far do members travel?"), 
 groupName = "milesR", 
 location = n,
 label_n = "n",
 note_list = list("membership status", "observation count"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/distance.db`"),
-noteColumns = TRUE,
 isStub = TRUE,
-stub_label = " ",
-stub_note = "miles traveled per trip"
-) |>
-gt::cols_label(member_casual = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left") 
+stub_label = "Distance",
+stub_note = "miles traveled per trip",
+row_index = 1,
+noteRows = TRUE
+) |>       
+gt::cols_label(member_casual = " ", n = " ")
 
 ```
 :::
@@ -3404,7 +3407,7 @@ DB Operations
 ::: flex-code
 ```{r}
 #| label: writeSpeed
-#| code-summary: Write ... to the database.
+#| code-summary: "Write to the database"
 #| tidy: true
 
 if (isFALSE(duckdb::dbExistsTable(dbconn, "db/speed.db"))) {
@@ -3499,7 +3502,8 @@ kableExtra::kable()
 
 ```{r}
 #| label: fig-mphTotals
-#| fig-cap: Mph Total Frequency
+#| fig-cap: "The overall distribution of trips taken by the estimated average speed"
+#| fig-cap-location: top
 #| tidy: true
 #| fig-dpi: 150
 
@@ -3515,7 +3519,7 @@ plotter(
 x_col = mphR, 
 y_col = n,
 geomType = "column", 
-title = "Speed", 
+title = paste0("How fast do people ride?"),
 x_label = "Miles per Hour", 
 y_label = "n")
 
@@ -3528,7 +3532,8 @@ gplot
 ::: tableScroller
 ```{r}
 #| label: tbl-mphTotals
-#| tbl-cap: Mph Total Frequency
+#| tbl-cap: "The overall distribution of trips taken by the estimated average speed"
+#| tbl-cap-location: top
 #| tidy: true
 
 transformData(
@@ -3539,16 +3544,14 @@ group_cols = "mphR",
 doWeights = TRUE
 ) |>
 tabler(
-title = "Speed",
+title = gt::md("How fast do people travel?"),
 note_list = list("trip speed (miles per hour)", "observation count"),
 location_list = list("mphR", "n"),
 source_note = gt::md("**Source**: `db/speed.db`"),
-noteColumns = TRUE,
-#hide_column_labels = TRUE
-) |>
-gt::cols_label(mphR = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = mphR, align = "center") 
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 
 ```
 :::
@@ -3561,7 +3564,8 @@ gt::cols_align(columns = mphR, align = "center")
 
 ```{r}
 #| label: fig-mphCompare
-#| fig-cap: Mph Group Frequency
+#| fig-cap: "The membership distribution of trips taken by the estimated average speed"
+#| fig-cap-location: top
 #| tidy: true
 #| fig-dpi: 150
 
@@ -3574,7 +3578,7 @@ group_cols = c("mphR", "member_casual"),
 doWeights = TRUE
 ) |>
 plotter(
-title = "Speed Groups (Aggregated)",
+title = paste0("How fast do members travel?"),
 x_label = "Miles per Hour",
 y_label = "n",
 x_col = mphR, 
@@ -3593,9 +3597,9 @@ gplot
 ::: tableScroller
 ```{r}
 #| label: tbl-mphCompare
-#| tbl-cap: Mph Group Frequency
+#| tbl-cap: "The membership distribution of trips taken by the estimated average speed"
+#| tbl-cap-location: top
 #| tidy: true
-
 
 transformData(
 conn = dbconn, 
@@ -3605,21 +3609,20 @@ group_cols = c("mphR", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = gt::md("How many members<br>grouped by trip speed?"), 
+title = gt::md("How fast do members travel?"), 
 groupName = "mphR", 
 location = n,
 label_n = "n",
 note_list = list("membership status", "observation count"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/speed.db`"),
-noteColumns = TRUE,
 isStub = TRUE,
-stub_label = " ",
-stub_note = "estimated average speed traveled per trip (mph)"
-) |>
-gt::cols_label(member_casual = " ") |>
-gt::cols_align(columns = n, align = "right") |>
-gt::cols_align(columns = member_casual, align = "left") 
+stub_label = "Speed",
+stub_note = "estimated average speed traveled per trip (mph)",
+row_index = 1,
+noteRows = TRUE
+) |>       
+gt::cols_label(member_casual = " ", n = " ")
 
 ```
 :::
