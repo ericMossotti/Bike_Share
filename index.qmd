@@ -235,7 +235,7 @@ dbList
 # Tidying
 
 ::: p-2
-The starting observation count was 5,719,877. Then 1,388,170 incomplete observations were then removed by the initial processing script.
+The starting occurrences was 5,719,877. Then 1,388,170 incomplete observations were then removed by the initial processing script.
 :::
 
 ::: {.d-grid .gap-0}
@@ -487,7 +487,7 @@ gt_undupes
 ::: {.mb-2 .mt-2}
 To ensure the accurate removal of duplicates, the count of distinct n-values (representing the number of occurrences) for the un-duplicated table was computed, confirming the expected 18 unique instances. Subsequently, the total number of observations in the dataset was recorded, initially standing at 4,331,707. After removing the identified duplicate observations, the correct count of observations was 4,331,689. In summary, 18 additional observations were successfully removed, aligning with the expected number of duplicates identified earlier. These steps are documented in @tbl-observationHistory for reference.
 
-By carefully analyzing the count of distinct n-values and the total observation count before and after reduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
+By carefully analyzing the count of distinct n-values and the total occurrences before and after reduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
 :::
 
 ::: {.d-grid .gap-0}
@@ -810,7 +810,7 @@ doWeights = TRUE
 tabler (
 title = gt::md("How often do<br>members travel?"),
 note_list = list(
-"membership status", "observation count"),
+"membership status", "occurrences"),
 location_list = c("member_casual", "n"),
 source_note = gt::md("**Source**: `db/membership.db`"),
 noteRows = TRUE,
@@ -1008,14 +1008,14 @@ doWeights = TRUE
 ) |>
 tabler( 
 title = gt::md("How often were the bicycle<br>types chosen?"), 
-note_list = list("bicycle type","observation count"),
+note_list = list("bicycle type","occurrences"),
 location_list = list("rideable_type", "n"),
 source_note = gt::md("**Source**: `db/bType.db`"),
-noteRows = TRUE,
-hide_column_labels = TRUE,
-row_index = 1
-) 
-#gt::cols_align(columns = rideable_type, align = "left") 
+noteColumns = TRUE,
+#label_parameter = "mphR",
+#align_parameter = "right"
+) |>
+gt::cols_label(rideable_type = "Type")
 
 ```
 :::
@@ -1074,10 +1074,10 @@ group_cols = c("rideable_type", "member_casual"),
 doWeights = TRUE
 ) |>
 tabler(
-title = gt::md("Which bicycles do members choose?"), 
+title = gt::md("Which bicycles do members tend to choose?"), 
 groupName = "rideable_type", 
 #location = n,
-note_list =  list("membership status", "observation count"),
+note_list =  list("membership status", "occurrences"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/bType.db`"),
 noteRows = TRUE,
@@ -1089,17 +1089,9 @@ stub_note = "bicycle type"
 ) |>       
 gt::cols_label(member_casual = " ", n = " ")
 
-
 ```
 
-#### [Chi-Squared]{.panel-tabset-label}
-
-```{r}
-#| label: chisquareScriptCycles
-#| code-summary: The script I used to process the Chi-Squared test result. This code is reposted with all the chi-square tables in this report.  
-#| file: "Scripts/chisqTest.R"
-#| eval: false 
-```
+#### [Chi-Square]{.panel-tabset-label}
 
 ```{r}
 #| label: bikesChiResult
@@ -1117,11 +1109,12 @@ chiResult <- chisqTest(data = data_tibble, variable = "rideable_type", by = "mem
 
 ```{r}
 #| label: tbl-btypeChiSquare
-#| tbl-cap: Bicycle type membership distributions
+#| tbl-cap: "Testing indepdence of bicycle choice and membership variables"
+#| tbl-cap-location: top
 #| tidy: true
 
 chi_table <- tabler(
-title = "Chi-Squared: Bicycle Type",
+title = gt::md("Chi-Square:<br>The statistical signficance of bicycle choice on member travel"),
 source_note = gt::md("**Source**: `db/bType.db`"),
 label = list(
 rideable_type = "Bicycle Type"),
@@ -1152,15 +1145,17 @@ glm(formula = member_casual ~ rideable_type, weights = n, family = binomial)
 
 ```{r}
 #| label: tbl-btypeModel
+#| tbl-cap: "Modeling the probability of member travel by the choice of bicycle."
+#| tbl-cap-location: top
 #| tidy: true
 
 regression_tbl <- model |>
 gtsummary::tbl_regression(
-label = list(rideable_type = "Cycle Type"), conf.int = FALSE, exponentiate = TRUE)
+label = list(rideable_type = "Bicycle Choice"), conf.int = FALSE, exponentiate = TRUE)
 
 regression_tbl |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Bicycle Type"),
+title = gt::md("Binary Logistic Regression:<br>The likelihood of member bicycle choices"),
 source_note = gt::md("**Source**: `db/bType_wb.db`"),
 isBinary = TRUE)
 
@@ -1390,13 +1385,14 @@ doWeights = TRUE
 ) |>
 tabler( 
 title = gt::md("For how long<br>do people travel?"), 
-note_list = list("trip duration", "observation count"),
+note_list = list("trip duration", "occurrences"),
 location_list = list("mins", "n"),
 source_note = gt::md("**Source**: `db/duration.db`"),
-noteRows = TRUE,
-hide_column_labels = TRUE,
-row_index = 1
-)
+noteColumns = TRUE,
+#label_parameter = "mphR",
+#align_parameter = "right"
+) |>
+gt::cols_label(mins = "Minutes")
 
 ```
 :::
@@ -1451,6 +1447,39 @@ axis.text = ggplot2::element_text(size = 8)
 
 ```
 
+#### [Density]{.panel-tabset-label}
+
+```{r}
+#| label: fig-durationDensity
+#| fig-cap: "Visualizing the probability-density distribution between duration and membership variables."
+#| fig-cap-location: top
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/duration.db",
+select_cols = c("trip_time", "member_casual")) |>
+plotter(
+title = "How are travel durations distributed across membership groups?",
+x_label = paste0("Minutes"),
+x_col = trip_time, 
+group_col = member_casual,
+geomType = "column",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isDensity = TRUE,
+is_colGroup = TRUE,
+breaks = seq(0, 100, by = 5),
+limits = c(0, 100)
+)
+
+gplot
+```
+
+
 #### [Frequency Table]{.panel-tabset-label}
 
 ::: tableScroller
@@ -1471,7 +1500,7 @@ tabler(
 title = gt::md("How long do members ride for?"), 
 groupName = "mins", 
 label_n = "n",
-note_list = list("membership status","observation count"),
+note_list = list("membership status","occurrences"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/duration.db`"),
 isStub = TRUE,
@@ -1490,7 +1519,9 @@ gt::cols_label(member_casual = " ", n = " ")
 
 ```{r}
 #| label: tbl-durationSummary
-#| tbl-cap: "Useful summary statistics."
+#| tbl-cap: "The mean with standard deviation, median with inter-quartile distance, and range with min and max of member travel duration."
+#| tbl-cap-location: top
+#| tidy: false
 
 gtTable <- dplyr::tbl(dbconn, "db/duration.db") |>
 dplyr::select(mins, member_casual) |>
@@ -1512,7 +1543,7 @@ gtsummary::all_continuous() ~ c(
 ) |>
 gtsummary::italicize_levels() |>
 tabler(
-title = gt::md("Summary Statistics:<br>Duration - Membership"),
+title = gt::md("Summary Stats:<br>Member travel duration"),
 source_note = gt::md("**Source**: `db/duration.db`"),
 isBinary = TRUE
 )
@@ -1521,37 +1552,99 @@ gtTable
 
 ```
 
-#### [Density]{.panel-tabset-label}
+
+#### [Histogram]{.panel-tabset-label}
 
 ```{r}
-#| label: fig-durationDensity
-#| code-summary: Density plot for duration by membership.
+#| label: durationQuartiles
+#| code-summary: "Create a data frame, then extract the desired quartile info to supplement histogram visualization for the data."
+#| tidy: true
+
+qdf_member <- 
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::select(trip_time, member_casual) |>
+dplyr::filter(member_casual == "member") |>
+dplyr::collect()
+
+qdf_casual <- 
+dplyr::tbl(dbconn, "db/duration.db") |>
+dplyr::select(trip_time, member_casual) |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::collect()
+
+quartiles_member <- 
+quantile(qdf_member$trip_time, probs = c(0.25, 0.5, 0.75))
+
+quartiles_casual <- 
+quantile(qdf_casual$trip_time, probs = c(0.25, 0.5, 0.75))
+
+```
+
+```{r}
+#| label: fig-durationCasualHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of casual travel duration."
+#| fig-cap-location: top
 #| tidy: true
 #| fig-dpi: 150
 
 gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/duration.db",
-select_cols = c("trip_time", "member_casual")) |>
+qdf_casual |>
 plotter(
-title = "Duration Group Density",
-x_label = paste0("Minutes"),
+title = "Casual Travel Duration:\nWhat is the quartile distribution?",
+x_label = "Minutes",
+y_label = "n",
 x_col = trip_time, 
-group_col = member_casual,
-geomType = "column",
+geomType = "column", 
+isHistogram = TRUE,
 angle = 45,
-color_col = "black",
-density_alpha = 0.75,
-isDensity = TRUE,
-is_colGroup = TRUE,
+color_col = "transparent",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+limits = c(0,100),
 breaks = seq(0, 100, by = 5),
-limits = c(0, 100)
+binwidth = 2.5,
+#binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles_casual
 )
 
 gplot
+
 ```
 
+```{r}
+#| label: fig-durationMemberHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of member travel duration."
+#| fig-cap-location: top
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+qdf_member |>
+plotter(
+title = "Member Travel Duration:\nWhat is the quartile distribution?",
+x_label = "Minutes",
+y_label = "n",
+x_col = trip_time, 
+geomType = "column", 
+isHistogram = TRUE,
+angle = 45,
+color_col = "transparent",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+limits = c(0,100),
+breaks = seq(0, 100, by = 5),
+binwidth = 2.5,
+#binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles_member
+)
+
+gplot
+
+```
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
 ```{r}
@@ -1570,7 +1663,8 @@ weights = n)
 
 ```{r}
 #| label: tbl-modeldurationQ
-#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tbl-cap: "Modeling the probability of member travel by the duration."
+#| tbl-cap-location: top
 #| tidy: true
 
 model |>
@@ -1579,53 +1673,11 @@ label = list(quartile = "Duration Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Duration & Membership"),
+title = gt::md("Binary Logistic Regression:<br>The likelihood of member travel durations"),
 source_note = gt::md("**Source**: `db/duration_wq.db`"),
 isBinary = TRUE)
 ```
 
-#### [Histogram Plot]{.panel-tabset-label}
-
-```{r}
-#| label: durationQuantile
-#| code-summary: Create a data frame, then extract the desired quartile info to supplement histogram visualization for ... data.
-#| tidy: true
-
-qdf <- dplyr::tbl(dbconn, "db/duration.db") |>
-dplyr::select(trip_time) |>
-dplyr::collect()
-
-quartiles <- quantile(qdf$trip_time, probs = c(0.25, 0.5, 0.75))
-```
-
-```{r}
-#| label: fig-durationHistogram
-#| tidy: true
-#| fig-dpi: 150
-
-gplot <- 
-qdf |>
-plotter(
-title = "Duration",
-x_label = "Duration",
-y_label = "n",
-x_col = trip_time, 
-geomType = "column", 
-isHistogram = TRUE,
-angle = 45,
-color_col = "transparent",
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red",
-limits = c(0,100),
-breaks = seq(0, 100, by = 5),
-binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-quartiles = quartiles
-)
-
-gplot
-```
 :::
 :::
 
@@ -1823,13 +1875,14 @@ doWeights = TRUE
 ) |>
 tabler(
 title = gt::md("Which months do people<br>tend to travel?"),
-note_list = list("month of year", "observation count"),
+note_list = list("month of year", "occurrences"),
 location_list = c("abbMonths", "n"),
 source_note = gt::md("**Source**: `db/moy.db`"),
-noteRows = TRUE,
-hide_column_labels = TRUE,
-row_index = 1
-)
+noteColumns = TRUE,
+#label_parameter = "mphR",
+#align_parameter = "right"
+) |>
+gt::cols_label(abbMonths = "Months")
 
 ```
 :::
@@ -1890,7 +1943,7 @@ title = gt::md("Which months do members prefer?"),
 groupName = "abbMonths", 
 location = n,
 label_n = "n",
-note_list = list("membership status", "observation count"),
+note_list = list("membership status", "occurrences"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/moy.db`"),
 isStub = TRUE,
@@ -1904,14 +1957,8 @@ gt::cols_label(member_casual = " ", n = " ")
 ```
 :::
 
-#### [Chi-Squared]{.panel-tabset-label}
+#### [Chi-Square]{.panel-tabset-label}
 
-```{r}
-#| label: chisquareScriptMonths
-#| code-summary: The script I used to process the Chi-Squared test result. This code is reposted with all the chi-square tables in this report.  
-#| file: "Scripts/chisqTest.R"
-#| eval: false 
-```
 
 ```{r}
 #| label: monthsChiResult
@@ -1930,10 +1977,12 @@ chiResult <- chisqTest(data = data_tibble, variable = "abbMonths", by = "member_
 
 ```{r}
 #| label: tbl-chiMonths
+#| tbl-cap: "Testing the independence between month and membership variables"
+#| tbl-cap-location: top
 #| tidy: true
 
 chi_table <- tabler(
-title = "Chi-Square: Month",
+title = "Chi-Square: The statistical signficance of the month on member travel",
 source_note = gt::md("**Source**: `db/moy.db`"),
 label = list(abbMonths = "Month"),
 by = member_casual,
@@ -1943,12 +1992,15 @@ chi_result = chiResult
 )
 
 chi_table
+
 ```
 
 #### [Density]{.panel-tabset-label}
 
 ```{r}
 #| label: fig-monthDensity
+#| fig-cap: "Visualizing the probability-density distribution of months by membership."
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -1956,7 +2008,7 @@ gplot <-
 dplyr::tbl(dbconn, "db/moy.db") |>
 dplyr::collect() |>
 plotter(
-title = "Month Group Density",
+title = "How is monthly travel distributed across membership groups?",
 x_label = paste0("Months"),
 x_col = started_at, 
 group_col = member_casual,
@@ -1970,6 +2022,104 @@ date_labels = "%b",
 )
 
 gplot
+
+```
+
+
+#### [Histogram]{.panel-tabset-label}
+
+```{r}
+#| label: durationQuartiles
+#| code-summary: "Create a data frame, then extract the desired quartile info to supplement histogram visualization for the data."
+#| tidy: true
+
+qdf_member <- 
+dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(started_at, member_casual) |>
+dplyr::filter(member_casual == "member") |>
+dplyr::collect()
+
+qdf_casual <- 
+dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::select(started_at, member_casual) |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::collect()
+
+quartiles_member <- 
+quantile(qdf_member$started_at, probs = c(0.25, 0.5, 0.75))
+
+quartiles_casual <- 
+quantile(qdf_casual$started_at, probs = c(0.25, 0.5, 0.75))
+
+```
+
+
+```{r}
+#| label: fig-monthCasualHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of monthly casual travel."
+#| fig-cap-location: top
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <-
+qdf_casual |>
+plotter(
+title = "Monthly Casual Travel:\nWhat is the quartile distribution?",
+x_label = "Months",
+y_label = "n",
+x_col = started_at, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 month", 
+date_labels = "%b", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles_casual,
+qformat = "%b-%d"
+)
+
+gplot
+
+```
+
+```{r}
+#| label: fig-monthMemberHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of monthly member travel."
+#| fig-cap-location: top
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+qdf_member |>
+plotter(
+title = "Monthly Member Travel:\nWhat is the quartile distribution?",
+x_label = "Months",
+y_label = "n",
+x_col = started_at, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 month", 
+date_labels = "%b", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles_member,
+qformat = "%b-%d"
+)
+
+gplot
+
 ```
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
@@ -1990,7 +2140,8 @@ weights = n)
 
 ```{r}
 #| label: tbl-modelMonthsQ
-#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tbl-cap: "Modeling the probability of monthly member travel."
+#| tbl-cap-location: top
 #| tidy: true
 
 model |>
@@ -1999,50 +2150,12 @@ label = list(quartile = "Months Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Months & Membership"),
+title = gt::md("Binary Logistic Regression:<br>The likelihood of monthly member travel"),
 source_note = gt::md("**Source**: `db/moy.db`"),
 isBinary = TRUE)
+
 ```
 
-#### [Histogram Plot]{.panel-tabset-label}
-
-```{r}
-#| label: fig-monthHistogram
-#| fig-dpi: 150
-#| tidy: true
-
-qdf <- dplyr::tbl(dbconn, "db/moy.db") |>
-dplyr::select(started_at) |>
-dplyr::collect()
-
-quartiles <- quantile(qdf$started_at, probs = c(0.25, 0.5, 0.75))
-
-gplot <- dplyr::tbl(dbconn, "db/moy.db") |>
-dplyr::select(started_at) |>
-dplyr::collect() |>
-plotter(
-title = "Months",
-x_label = "Months",
-y_label = "n",
-x_col = started_at, 
-geomType = "column", 
-isHistogram = TRUE,
-isTimeHist = TRUE,
-date_breaks = "1 month", 
-date_labels = "%b", 
-angle = 45,
-color_col = "black",
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red",
-binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-quartiles = quartiles,
-qformat = "%b-%d"
-)
-
-gplot
-```
 :::
 :::
 
@@ -2241,13 +2354,14 @@ doWeights = TRUE
 ) |>
 tabler( 
 title = gt::md("Which days do people<br>tend to travel?"),
-note_list = list("day of the week", "observation count"),
+note_list = list("day of the week", "occurrences"),
 location_list = list("abbDays", "n"),
 source_note = gt::md("**Source**: `db/dow.db`"),
-noteRows = TRUE,
-hide_column_labels = TRUE,
-row_index = 1
-)
+noteColumns = TRUE,
+#label_parameter = "mphR",
+#align_parameter = "right"
+) |>
+gt::cols_label(abbDays = "Days")
 
 ```
 :::
@@ -2307,7 +2421,7 @@ title = gt::md("Which days do members prefer?"),
 groupName = "abbDays", 
 location = n,
 label_n = "n",
-note_list = list("membership status", "observation count"),
+note_list = list("membership status", "occurrences"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/dow.db`"),
 isStub = TRUE,
@@ -2320,14 +2434,7 @@ gt::cols_label(member_casual = " ", n = " ")
 
 ```
 
-#### [Chi-Squared]{.panel-tabset-label}
-
-```{r}
-#| label: chisquareScriptDays
-#| code-summary: The script I used to process the Chi-Squared test result. This code is reposted with all the chi-square tables in this report.  
-#| file: "Scripts/chisqTest.R"
-#| eval: false 
-```
+#### [Chi-Square]{.panel-tabset-label}
 
 ```{r}
 #| label: daysChiResult
@@ -2347,10 +2454,12 @@ data = data_tibble, variable = "abbDays", by = "member_casual")
 
 ```{r}
 #| label: tbl-chiDays
+#| tbl-cap: "Testing the independence between month and membership variables"
+#| tbl-cap-location: top
 #| tidy: true
 
 tabler(
-title = "Chi-Square: Days of the Week",
+title = "Chi-Square: The statistical signficance of the hour of day on member travel",
 source_note = gt::md("**Source**: `db/moy.db`"),
 label = list(abbDays = "Day"),
 by = member_casual,
@@ -2365,7 +2474,8 @@ chi_result = chiResult
 
 ```{r}
 #| label: fig-dayDensity
-#| code-summary: Density by day of the week.
+#| fig-cap: "Visualizing the probability-density distribution of the day by membership variables."
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -2374,7 +2484,7 @@ dplyr::tbl(dbconn, "db/dow.db") |>
 dplyr::select(started_at, member_casual) |>
 dplyr::collect() |>
 plotter(
-title = "Weekday Group Density",
+title = "How is daily travel distributed across membership groups?",
 x_label = paste0("Day"),
 x_col = started_at, 
 group_col = member_casual,
@@ -2387,6 +2497,105 @@ date_breaks = "1 day",
 date_labels = "%a")
 
 gplot
+
+```
+
+
+#### [Histogram]{.panel-tabset-label}
+
+```{r}
+#| label: dayQuartiles
+#| code-summary: "Creates a data frame, then extract the desired quartile info to supplement histogram visualization for the data."
+#| tidy: true
+
+qdf_member <- 
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(started_at, member_casual) |>
+dplyr::filter(member_casual == "member") |>
+dplyr::collect()
+
+qdf_casual <- 
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(started_at, member_casual) |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::collect()
+
+quartiles_member <- 
+quantile(qdf_member$started_at, probs = c(0.25, 0.5, 0.75))
+
+quartiles_casual <- 
+quantile(qdf_casual$started_at, probs = c(0.25, 0.5, 0.75))
+
+```
+
+
+```{r}
+#| label: fig-daysCasualHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of daily casual travel."
+#| fig-cap-location: top
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+qdf_casual |>
+plotter(
+title = "Daily Casual Travel:\nWhat is the quartile distribution?",
+x_label = "Days",
+y_label = "n",
+x_col = started_at, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 day", 
+date_labels = "%a", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles_casual,
+qformat = "%a %I %p"
+) 
+
+gplot
+
+```
+
+
+```{r}
+#| label: fig-daysMemberHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of daily member travel."
+#| fig-cap-location: top
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+qdf_member |>
+plotter(
+title = "Daily Member Travel:\nWhat is the quartile distribution?",
+x_label = "Days",
+y_label = "n",
+x_col = started_at, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "1 day", 
+date_labels = "%a", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles_member,
+qformat = "%a %I %p"
+) 
+
+gplot
+
 ```
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
@@ -2409,7 +2618,8 @@ weights = n
 
 ```{r}
 #| label: tbl-modelDaysQ
-#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tbl-cap: "Modeling the probability of daily member travel."
+#| tbl-cap-location: top
 #| tidy: true
 
 model |>
@@ -2418,51 +2628,13 @@ label = list(quartile = "Weekday Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Week Days"),
+title = gt::md("Binary Logistic Regression:<br>The likelihood of daily member travel"),
 source_note = gt::md("**Source**: `db/dow_wq.db`"),
 isBinary = TRUE
 )
 
 ```
 
-#### [Histogram Plot]{.panel-tabset-label}
-
-```{r}
-#| label: fig-Hdays
-#| fig-dpi: 150
-#| tidy: true
-
-qdf <- dplyr::tbl(dbconn, "db/dow.db") |>
-dplyr::select(started_at) |>
-dplyr::collect()
-
-quartiles <- quantile(qdf$started_at, probs = c(0.25, 0.5, 0.75))
-
-gplot <- qdf |>
-plotter(
-title = "Days",
-x_label = "Days",
-y_label = "n",
-x_col = started_at, 
-geomType = "column", 
-isHistogram = TRUE,
-isTimeHist = TRUE,
-date_breaks = "1 day", 
-date_labels = "%a", 
-angle = 45,
-color_col = "black",
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red",
-binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-quartiles = quartiles,
-qformat = "%a %I %p"
-) 
-
-gplot
-
-```
 :::
 :::
 
@@ -2686,7 +2858,7 @@ doWeights = TRUE
 ) |>
 tabler( 
 title = gt::md("Which hours do people<br>tend to travel?"),
-note_list = list("hour of the day", "observation count"),
+note_list = list("hour of the day", "occurrences"),
 location_list = list("hr", "n"),
 source_note = gt::md("**Source**: `db/hod.db`"),
 noteRows = TRUE,
@@ -2759,7 +2931,7 @@ title = gt::md("Which hours do members prefer?"),
 groupName = "hr", 
 location = n,
 label_n = "n",
-note_list = list("membership status", "observation count"),
+note_list = list("membership status", "occurrences"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/hod.db`"),
 isStub = TRUE,
@@ -2773,14 +2945,7 @@ gt::cols_label(member_casual = " ", n = " ")
 ```
 :::
 
-#### [Chi-Squared]{.panel-tabset-label}
-
-```{r}
-#| label: chisquareScriptHours
-#| code-summary: The script I used to process the Chi-Squared test result. This code is reposted with all the chi-square tables in this report.  
-#| file: "Scripts/chisqTest.R"
-#| eval: false 
-```
+#### [Chi-Square]{.panel-tabset-label}
 
 ```{r}
 #| label: hoursChiResult
@@ -2801,11 +2966,12 @@ data = data_tibble, variable = "hr", by = "member_casual")
 
 ```{r}
 #| label: tbl-chiHours
-#| tbl-cap: Chi-Squared for aggregated hours data to the level of rounded hours.
+#| tbl-cap: "Testing the independence between hour and membership variables"
+#| tbl-cap-location: top
 #| tidy: true
 
 tabler(
-title = "Chi-Square: Hour of the Day",
+title = "Chi-Square: The statistical signficance of the hour of day on member travel",
 source_note = gt::md("**Source**: `db/hod.db`"),
 label = list(hr = "Hour"),
 by = member_casual,
@@ -2820,7 +2986,8 @@ chi_result = chiResult
 
 ```{r}
 #| label: fig-hourDensity
-#| fig-cap: Query, load, and plot the grouped densities 
+#| fig-cap: "Visualizing the probability-density distribution of the hour by membership."
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -2828,7 +2995,7 @@ gplot <-
 dplyr::tbl(dbconn, "db/hod.db") |>
 dplyr::collect() |>
 plotter(
-title = "Hour Group Density",
+title = "How is hourly distributed across membership groups?",
 x_label = paste0("Hours", "\n", "(12-hour clock)"),
 x_col = started_at_time, 
 group_col = member_casual,
@@ -2842,6 +3009,108 @@ date_labels = "%I %p",
 )
 
 gplot
+
+```
+
+
+#### [Histogram]{.panel-tabset-label}
+
+```{r}
+#| label: hourQuartiles
+#| code-summary: "Creates a data frame, then extract the desired quartile info to supplement histogram visualization for the data."
+#| tidy: true
+
+qdf_member <- 
+dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::select(started_at_time, member_casual) |>
+dplyr::filter(member_casual == "member") |>
+dplyr::collect()
+
+qdf_casual <- 
+dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::select(started_at_time, member_casual) |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::collect()
+
+quartiles_member <- 
+quantile(qdf_member$started_at_time, probs = c(0.25, 0.5, 0.75))
+
+quartiles_casual <- 
+quantile(qdf_casual$started_at_time, probs = c(0.25, 0.5, 0.75))
+
+```
+
+
+```{r}
+#| label: fig-hourCasualHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of hourly casual travel."
+#| fig-cap-location: top
+#| fig-dpi: 150
+#| tidy: true
+
+
+gplot <- 
+qdf_casual |>
+plotter(
+title = "Hourly Casual Travel:\nWhat is the quartile distribution?",
+x_label = paste0("Hours\n", "(12-hour clock)"),
+y_label = "n",
+x_col = started_at_time, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "2 hour", 
+date_labels = "%I %p", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles_casual,
+qformat = "%I:%M %p"
+) 
+
+gplot +
+ggplot2::theme(
+axis.text.x = ggplot2::element_text(size = ggplot2::rel(.9)))
+
+```
+
+```{r}
+#| label: fig-hourMemberHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of hourly member travel."
+#| fig-cap-location: top
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+qdf_member |>
+plotter(
+title = "Hourly Member Travel:\nWhat is the quartile distribution?",
+x_label = paste0("Hours\n", "(12-hour clock)"),
+y_label = "n",
+x_col = started_at_time, 
+geomType = "column", 
+isHistogram = TRUE,
+isTimeHist = TRUE,
+date_breaks = "2 hour", 
+date_labels = "%I %p", 
+angle = 45,
+color_col = "black",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+quartiles = quartiles_member,
+qformat = "%I:%M %p"
+) 
+
+gplot +
+ggplot2::theme(
+axis.text.x = ggplot2::element_text(size = ggplot2::rel(.9)))
 
 ```
 
@@ -2865,7 +3134,8 @@ weights = n
 
 ```{r}
 #| label: tbl-modelHourQ
-#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tbl-cap: "Modeling the probability of hourly member travel."
+#| tbl-cap-location: top
 #| tidy: true
 
 model |>
@@ -2874,56 +3144,11 @@ label = list(quartile = "Hour Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Hour"),
+title = gt::md("Binary Logistic Regression:<br>The likelihood of hourly member travel"),
 source_note = gt::md("**Source**: `db/hod_wq.db`"),
 isBinary = TRUE)
 ```
 
-#### [Histogram Plot]{.panel-tabset-label}
-
-::: column-body-outset-right
-```{r}
-#| label: fig-Histogram
-#| fig-dpi: 150
-#| tidy: true
-#| fig-cap-location: top
-#| fig-cap: Hourly histogram with quartile ranges
-
-qdf <- dplyr::tbl(dbconn, "db/hod.db") |>
-dplyr::select(started_at_time) |>
-dplyr::collect()
-
-quartiles <- quantile(qdf$started_at_time, probs = c(0.25, 0.5, 0.75))
-
-gplot <- qdf |>
-plotter(
-title = "Hours",
-x_label = paste0("Hours\n", "(12-hour clock)"),
-y_label = "n",
-x_col = started_at_time, 
-geomType = "column", 
-isHistogram = TRUE,
-isTimeHist = TRUE,
-date_breaks = "2 hour", 
-date_labels = "%I %p", 
-angle = 45,
-color_col = "black",
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red",
-binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-quartiles = quartiles,
-qformat = "%I:%M %p"
-) 
-
-gplot +
-ggplot2::theme(
-axis.text.x = ggplot2::element_text(size = ggplot2::rel(.9)))
-
-```
-:::
-:::
 :::
 :::
 
@@ -3129,17 +3354,17 @@ doWeights = TRUE
 ) |>
 tabler( 
 title = gt::md("How far do people travel?"),
-note_list = list("trip distance", "observation count"),
+note_list = list("distance (miles)", "occurrences"),
 location_list = list("milesR", "n"),
 source_note = gt::md("**Source**: `db/distance.db`"),
-noteRows = TRUE,
-hide_column_labels = TRUE,
-row_index = 1
-) 
-
+noteColumns = TRUE
+) |>
+gt::cols_label(milesR = "Miles")
 ```
 :::
 :::
+
+
 
 ### [Comparative Frequency Analysis]{.panel-tabset-label}
 
@@ -3203,7 +3428,7 @@ title = gt::md("How far do members travel?"),
 groupName = "milesR", 
 location = n,
 label_n = "n",
-note_list = list("membership status", "observation count"),
+note_list = list("membership status", "occurrences"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/distance.db`"),
 isStub = TRUE,
@@ -3221,7 +3446,8 @@ gt::cols_label(member_casual = " ", n = " ")
 
 ```{r}
 #| label: fig-distanceDensity
-#| fig-cap: Densities of miles to membership.
+#| fig-cap: "Visualizing the probability-density distribution of distance by membership."
+#| fig-cap-location: top
 #| fig-dpi: 150
 #| tidy: true
 
@@ -3230,7 +3456,7 @@ dplyr::tbl(dbconn, "db/distance.db") |>
 dplyr::select(miles, member_casual) |>
 dplyr::collect() |>
 plotter(
-title = "Distance Group Density",
+title = "How is travel distance distributed across membership groups?",
 x_label = "Miles",
 x_col = miles, 
 group_col = member_casual,
@@ -3243,6 +3469,138 @@ is_colGroup = TRUE,
 breaks = seq(0, 11, by = 1),
 limits = c(0.1, 11)
 )
+
+gplot
+
+```
+
+
+#### [Summary Stats]{.panel-tabset-label}
+
+```{r}
+#| label: tbl-distanceSummary
+#| tbl-cap: "The mean with standard deviation, median with inter-quartile distance, and range with min and max of member travel distance."
+#| tbl-cap-location: top
+#| tidy: false
+
+gTable <- 
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::select(miles, member_casual) |>
+dplyr::collect() |>
+gtsummary::tbl_summary(
+by = member_casual,
+type = miles ~ "continuous2",
+label = list(miles ~ "Distance (miles)"),
+digits = list(
+miles ~ c(2, 2)),
+statistic = 
+gtsummary::all_continuous() ~ c(
+"{median} ({p25}, {p75})", 
+"{mean} ({sd})", 
+"{min}, {max}")
+) |>
+gtsummary::italicize_levels() |>
+tabler(
+title = gt::md("Summary Stats:<br>Member travel distance"),
+source_note = gt::md("**Source**: `db/distance.db`"),
+isBinary = TRUE
+)
+
+gTable
+
+```
+
+
+#### [Histogram]{.panel-tabset-label}
+
+```{r}
+#| label: hourQuartiles
+#| code-summary: "Creates a data frame, then extract the desired quartile info to supplement histogram visualization for the data."
+#| tidy: true
+
+qdf_member <- 
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::select(miles, member_casual) |>
+dplyr::filter(member_casual == "member") |>
+dplyr::collect()
+
+qdf_casual <- 
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::select(miles, member_casual) |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::collect()
+
+quartiles_member <- 
+quantile(as.numeric(qdf_member$miles), probs = c(0.25, 0.5, 0.75))
+
+quartiles_casual <- 
+quantile(as.numeric(qdf_casual$miles), probs = c(0.25, 0.5, 0.75))
+
+```
+
+
+```{r}
+#| label: fig-distanceCasualHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of casual travel distance."
+#| fig-cap-location: top
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+qdf_casual |>
+plotter(
+title = "Casual Travel Distance:\nWhat is the quartile distribution?",
+x_label = "Miles",
+y_label = "n",
+x_col = miles, 
+geomType = "column", 
+isHistogram = TRUE,
+angle = 45,
+color_col = "transparent",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+#binwidth = 0.2,
+limits = c(0.1, 5),
+breaks = seq(0.1, 5, by = 0.5),
+quartiles = quartiles_casual
+) 
+
+gplot
+
+```
+
+
+```{r}
+#| label: fig-distanceMemberHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of member travel distance."
+#| fig-cap-location: top
+#| fig-dpi: 150
+#| tidy: true
+
+gplot <- 
+qdf_member |>
+plotter(
+title = "Casual Travel Distance:\nWhat is the quartile distribution?",
+x_label = "Miles",
+y_label = "n",
+x_col = miles, 
+geomType = "column", 
+isHistogram = TRUE,
+angle = 45,
+color_col = "transparent",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+#binwidth = 0.2,
+limits = c(0.1, 5),
+breaks = seq(1, 5, by = 1),
+quartiles = quartiles_member
+) 
 
 gplot
 
@@ -3267,7 +3625,8 @@ weights = n
 
 ```{r}
 #| label: tbl-modeldistanceQ
-#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
+#| tbl-cap: "Modeling the probability of member travel by distance."
+#| tbl-cap-location: top
 #| tidy: true
 
 model |>
@@ -3276,82 +3635,13 @@ label = list(quartile = "Distance Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression: <br> Distance"),
+title = gt::md("Binary Logistic Regression:<br>The likelihood of member travel distance"),
 source_note = gt::md("**Source**: `db/distance_wq.db`"),
 isBinary = TRUE
 )
 
 ```
 
-#### [Histogram Plot]{.panel-tabset-label}
-
-```{r}
-#| label: fig-distanceHistogram
-#| fig-dpi: 150
-#| tidy: true
-
-qdf <-
-dplyr::tbl(dbconn, "db/distance.db") |>
-dplyr::select(miles) |>
-dplyr::collect()
-
-quartiles <- quantile(as.numeric(qdf$miles), probs = c(0.25, 0.5, 0.75))
-
-gplot <- qdf |>
-plotter(
-title = "Distance",
-x_label = "Miles",
-y_label = "n",
-x_col = miles, 
-geomType = "column", 
-isHistogram = TRUE,
-angle = 45,
-color_col = "transparent",
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red",
-binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-limits = c(0.1, 5),
-breaks = seq(1, 5, by = 1),
-quartiles = quartiles) 
-
-gplot
-
-```
-
-#### [Summary Stats]{.panel-tabset-label}
-
-```{r}
-#| label: tbl-distanceSummary
-#| tbl-cap: "Useful summary statistics."
-
-gTable <- 
-dplyr::tbl(dbconn, "db/distance.db") |>
-dplyr::select(miles, member_casual) |>
-dplyr::collect() |>
-gtsummary::tbl_summary(
-by = member_casual,
-type = miles ~ "continuous2",
-label = list(miles ~ "Distance (miles)"),
-digits = list(
-miles ~ c(2, 2)),
-statistic = 
-gtsummary::all_continuous() ~ c(
-"{median} ({p25}, {p75})", 
-"{mean} ({sd})", 
-"{min}, {max}")
-) |>
-gtsummary::italicize_levels() |>
-tabler(
-title = gt::md("Summary Statistics:<br>Distance - Membership"),
-source_note = gt::md("**Source**: `db/distance.db`"),
-isBinary = TRUE
-)
-
-gTable
-
-```
 :::
 :::
 
@@ -3544,14 +3834,16 @@ group_cols = "mphR",
 doWeights = TRUE
 ) |>
 tabler(
-title = gt::md("How fast do people travel?"),
-note_list = list("trip speed (miles per hour)", "observation count"),
+title = gt::md("How fast<br>do people travel?"),
+note_list = list("travel speed (miles per hour)", "occurrences"),
 location_list = list("mphR", "n"),
 source_note = gt::md("**Source**: `db/speed.db`"),
-noteRows = TRUE,
-hide_column_labels = TRUE,
-row_index = 1
-)
+noteColumns = TRUE,
+label_parameter = "mphR",
+align_parameter = "right"
+) |>
+gt::cols_label(mphR = "Mph")
+
 
 ```
 :::
@@ -3613,7 +3905,7 @@ title = gt::md("How fast do members travel?"),
 groupName = "mphR", 
 location = n,
 label_n = "n",
-note_list = list("membership status", "observation count"),
+note_list = list("membership status", "occurrences"),
 location_list = list("member_casual", "n"),
 source_note = gt::md("**Source**: `db/speed.db`"),
 isStub = TRUE,
@@ -3631,7 +3923,8 @@ gt::cols_label(member_casual = " ", n = " ")
 
 ```{r}
 #| label: fig-speedDensity
-#| fig-cap: Density plot for speed by membership.
+#| fig-cap: "Visualizing the probability-density distribution of speed by membership."
+#| fig-cap-location: top
 #| tidy: true
 #| fig-dpi: 150
 
@@ -3640,8 +3933,8 @@ dplyr::tbl(dbconn, "db/speed.db") |>
 dplyr::select(mph, member_casual) |>
 dplyr::collect() |>
 plotter(
-title = "Speed Group Density",
-x_label = "MPH (miles per hour)",
+title = "How is the esimated average travel speed distributed across membership groups?",
+x_label = "Miles per Hour)",
 x_col = mph, 
 group_col = member_casual,
 geomType = "column",
@@ -3658,82 +3951,13 @@ gplot
 
 ```
 
-#### [Binary Logistic Regression]{.panel-tabset-label}
-
-```{r}
-#| label: modelspeedQ
-#| code-summary: Query ..._wq.db, process and create model R object for hour based on quartile range. 
-#| tidy: true
-
-model <- 
-dplyr::tbl(dbconn, "db/speed_wq.db") |>
-dplyr::collect() |> 
-glm(
-formula = member_casual ~ quartile, 
-family = binomial,
-weights = n)
-
-```
-
-```{r}
-#| label: tbl-modelspeedQ
-#| code-summary: Pipe model object to tbl_regression(), then further adjust output with tabler().  
-#| tidy: true
-
-model |>
-gtsummary::tbl_regression(
-label = list(quartile = "Speed Ranges"), 
-conf.int = FALSE, 
-exponentiate = TRUE) |>
-tabler(
-title = gt::md("Binary Logistic Regression: <br> Speed & Membership"),
-source_note = gt::md("**Source**: `db/speed_wq.db`"),
-isBinary = TRUE)
-
-```
-
-#### [Histogram Plot]{.panel-tabset-label}
-
-```{r}
-#| label: fig-speedHistogram
-#| tidy: true
-#| fig-dpi: 150
-
-qdf <-
-dplyr::tbl(dbconn, "db/speed.db") |>
-dplyr::select(mph) |>
-dplyr::collect()
-
-quartiles <- quantile(qdf$mph, probs = c(0.25, 0.5, 0.75))
-
-gplot <- qdf |>
-plotter(
-title = "Estimated Average Trip Speed",
-x_label = "Miles per Hour",
-y_label = "n",
-x_col = mph, 
-geomType = "column", 
-isHistogram = TRUE,
-angle = 45,
-color_col = "transparent",
-vline_color = "lightyellow",
-vline_size = 0.5,
-low = "blue",
-high = "red",
-binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-breaks = seq(1, 20, by = 2),
-limits = c(1, 20),
-quartiles = quartiles) 
-
-gplot
-
-```
-
 #### [Summary Stats]{.panel-tabset-label}
 
 ```{r}
 #| label: tbl-speedSummary
-#| tbl-cap: "Useful summary statistics."
+#| tbl-cap: "The mean with standard deviation, median with inter-quartile distance, and range with min and max of member travel speed."
+#| tbl-cap-location: top
+#| tidy: false
 
 dplyr::tbl(dbconn, "db/speed.db") |>
 dplyr::select(mph, member_casual) |>
@@ -3752,12 +3976,144 @@ gtsummary::all_continuous() ~ c(
 ) |>
 gtsummary::italicize_levels() |>
 tabler(
-title = gt::md("Summary Statistics:<br>Speed - Membership"),
+title = gt::md("Summary Stats:<br>Member travel speed"),
 source_note = gt::md("**Source**: `db/speed.db`"),
 isBinary = TRUE
 )
 
 ```
+
+
+
+#### [Histogram]{.panel-tabset-label}
+
+```{r}
+#| label: speedQuartiles
+#| code-summary: "Creates a data frame, then extract the desired quartile info to supplement histogram visualization for the data."
+#| tidy: true
+
+qdf_member <- 
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::select(mph, member_casual) |>
+dplyr::filter(member_casual == "member") |>
+dplyr::collect()
+
+qdf_casual <- 
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::select(mph, member_casual) |>
+dplyr::filter(member_casual == "casual") |>
+dplyr::collect()
+
+quartiles_member <- 
+quantile(qdf_member$mph, probs = c(0.25, 0.5, 0.75))
+
+quartiles_casual <- 
+quantile(qdf_casual$mph, probs = c(0.25, 0.5, 0.75))
+
+```
+
+
+```{r}
+#| label: fig-speedCasualHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of casual travel speed."
+#| fig-cap-location: top
+#| tidy: true
+#| fig-dpi: 150
+
+
+gplot <- 
+qdf_casual |>
+plotter(
+title = "Casual Travel Speed:\nWhat is the quartile distribution?",
+x_label = "Miles per Hour",
+y_label = "n",
+x_col = mph, 
+geomType = "column", 
+isHistogram = TRUE,
+angle = 45,
+color_col = "transparent",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+#binwidth = 0.5,
+breaks = seq(1, 20, by = 2),
+limits = c(1, 20),
+quartiles = quartiles_casual
+) 
+
+gplot
+
+```
+
+```{r}
+#| label: fig-speedMemberHistogram
+#| fig-cap: "A more detailed look that illustrates the quartile distribution of member travel speed."
+#| fig-cap-location: top
+#| tidy: true
+#| fig-dpi: 150
+
+gplot <- 
+qdf_member |>
+plotter(
+title = "Casual Travel Speed:\nWhat is the quartile distribution?",
+x_label = "Miles per Hour",
+y_label = "n",
+x_col = mph, 
+geomType = "column", 
+isHistogram = TRUE,
+angle = 45,
+color_col = "transparent",
+vline_color = "lightyellow",
+vline_size = 0.5,
+low = "blue",
+high = "red",
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
+#binwidth = 0.5,
+breaks = seq(1, 20, by = 2),
+limits = c(1, 20),
+quartiles = quartiles_member
+) 
+
+gplot
+```
+
+#### [Binary Logistic Regression]{.panel-tabset-label}
+
+```{r}
+#| label: modelspeedQ
+#| code-summary: Query, process, and create model R object for hour based on quartile range. 
+#| tidy: true
+
+model <- 
+dplyr::tbl(dbconn, "db/speed_wq.db") |>
+dplyr::collect() |> 
+glm(
+formula = member_casual ~ quartile, 
+family = binomial,
+weights = n)
+
+```
+
+```{r}
+#| label: tbl-modelspeedQ
+#| tbl-cap: "Modeling the probability of member travel by speed."
+#| tbl-cap-location: top
+#| tidy: true
+
+model |>
+gtsummary::tbl_regression(
+label = list(quartile = "Speed Ranges"), 
+conf.int = FALSE, 
+exponentiate = TRUE) |>
+tabler(
+title = gt::md("Binary Logistic Regression:<br>The likelihood of member travel speed"),
+source_note = gt::md("**Source**: `db/speed_wq.db`"),
+isBinary = TRUE)
+
+```
+
 :::
 :::
 
