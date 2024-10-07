@@ -9,7 +9,7 @@ bibliography: references.bib
 repo: https://github.com/ericMossotti/Bike_Share
 source: index.qmd
 abstract-title: "Objective"
-abstract: "Communicating reproducible, data-driven insights."
+abstract: "Communicating reproducible, data-driven insight into the questions relating but not limited to, increasing annual membership subscriptions."
 description-meta: "Communicate reproducible, data-driven insights."
 
 code-links:
@@ -384,7 +384,7 @@ A crucial question arises: How can one identify and handle duplicate data? This 
 While all values in the **ride_id** column were found to be unique, not all observations were truly distinct. To verify the uniqueness of each observation, additional columns such as **start_time**, **end_time**, **start_station**, and **end_station** were utilized. These columns provide more granular information, including the precise starting and ending times down to the second, as well as the starting and ending locations. It was assumed that observations with identical starting and ending date-times and stations, despite having different rider IDs, were potentially erroneous duplicates.
 :::
 
-::: {.tableScroller}
+::: tableScroller
 ```{r}
 #| label: tbl-duplicates
 #| tbl-cap: Duplicates Table
@@ -438,7 +438,7 @@ Although the cause of such duplication errors is unknown, it could be assumed th
 In @tbl-duplicates, duplicate observations are listed and grouped by color for visual clarity. In contrast, @tbl-unduplicated presents the data after removing the extra copy of each duplicate observation while preserving the unique observations. Of the duplicates identified, each had one extra copy. It was noted that the number of rows in the duplicates table is 36. Each duplicated observation has one duplicate, where **n** (the count) is always 2. Therefore, the expected number of observations to be removed was 18. A complication arose in determining how to remove not all observations but only the extra duplicate observation from each group.
 :::
 
-::: {.tableScroller}
+::: tableScroller
 ```{r}
 #| label: tbl-unduplicated
 #| tbl-cap: Un-duplicated Table
@@ -626,7 +626,7 @@ Outlier and additional transformations
 :::
 :::
 
-# Exploratory Analysis
+# Exploratory Analysis {#eda}
 
 ::: {#offcanvas8979 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
@@ -690,7 +690,6 @@ Scripts used frequently in this section
 <!-- -->
 
 -   @tbl-memberTotals and @fig-totalMemberFrequency give an idea of the overall member to casual travel distribution.
-
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
@@ -762,9 +761,7 @@ kableExtra::kable()
 :::
 :::
 
-
 ::: panel-tabset
-
 ### [Overall]{.panel-tabset-label}
 
 ::: plot-container
@@ -836,17 +833,17 @@ row_index = 1
 
 -   Likewise, @tbl-btypeGroups and @fig-btypeGroups summarize the choice of bicycle with the addtion of a grouped sum by the membership status.
 
--   @tbl-btypeChiSquare presents a Chi-Square analysis of bicycle type usage among casual users and members. 
-  
+-   @tbl-btypeChiSquare presents a Chi-Square analysis of bicycle type usage among casual users and members.
+
     -   Members show a higher preference for classic bikes *(65%)* compared to casual users *(59%)*. Casual users have a higher proportion of electric bike usage *(41%)* compared to members *(35%)*.
 
-    -   There is a statistically significant association between bicycle type and membership status *(p < 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between bicycle type and membership status. This suggests that the choice of bicycle type is not independent of membership status.
+    -   There is a statistically significant association between bicycle type and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between bicycle type and membership status. This suggests that the choice of bicycle type is not independent of membership status.
 
-    -   The large $\chi^2$ value (14762.37) with just 1 degree of freedom (calculated as ***[rows - 1] * [columns - 1])*** results in the very small p-value *(< 0.001)*. This combination strongly suggests that the difference in bicycle preference between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+    -   The large $\chi^2$ value (14762.37) with just 1 degree of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value *(\< 0.001)*. This combination strongly suggests that the difference in bicycle preference between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
 
 -   @tbl-btypeModel presents the results of a binary logistic regression analyzing the relationship between bicycle type and membership status. The analysis compares classic bikes and electric bikes, with classic bikes serving as the reference category.
 
-    -   The odds of membership for users of electric bikes were *0.76* times the odds for users of classic bikes. The difference in membership likelihood between electric and classic bike users is highly statistically significant *(p < 0.001)*.
+    -   The odds of membership for users of electric bikes were *0.76* times the odds for users of classic bikes. The difference in membership likelihood between electric and classic bike users is highly statistically significant *(p \< 0.001)*.
 :::
 
 ::: {.btn-group role="group" aria-label="third"}
@@ -959,7 +956,6 @@ kableExtra::kable()
 ::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
-
 ```{r}
 #| label: fig-btypeTotal
 #| fig-cap: "The overall distribution of trips taken by bicycle choice"
@@ -988,7 +984,7 @@ gplot
 
 ```
 
-:::{.table-container .column-margin}
+::: {.table-container .column-margin}
 ```{r}
 #| label: tbl-btypeTotal
 #| tbl-cap: "The overall distribution of bicycle choice"
@@ -1017,7 +1013,6 @@ gt::cols_label(rideable_type = "Type")
 ### [Comparative]{.panel-tabset-label}
 
 ::: panel-tabset
-
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -1108,7 +1103,7 @@ chiResult <- chisqTest(data = data_tibble, variable = "rideable_type", by = "mem
 #| tidy: true
 
 chi_table <- tabler(
-title = gt::md("Chi-Square:<br>The statistical signficance of bicycle choice on member travel"),
+title = gt::md("Chi-Square:<br>The signficance of bicycle choice and membership"),
 source_note = gt::md("**Source**: `db/bType.db`"),
 label = list(
 rideable_type = "Bicycle Type"),
@@ -1148,7 +1143,7 @@ label = list(rideable_type = "Bicycle Choice"), conf.int = FALSE, exponentiate =
 
 regression_tbl |>
 tabler(
-title = gt::md("Binary Logistic Regression:<br>The likelihood of member bicycle choices"),
+title = gt::md("Binary Logistic Regression:<br>Modeling the likelihood of members' bicycle choices"),
 source_note = gt::md("**Source**: `db/bType_wb.db`"),
 isBinary = TRUE)
 
@@ -1164,7 +1159,7 @@ isBinary = TRUE)
 
 -   @tbl-triptimeTotals and @fig-triptimeTotals give an idea of the overall travel duration distribution. The data were rounded to the nearest minute for these figures.
 
--   Likewise, @tbl-triptimeCompare and @fig-triptimeCompare summarize the travel duration distribution, where frequencies were summed by membership status. 
+-   Likewise, @tbl-triptimeCompare and @fig-triptimeCompare summarize the travel duration distribution, where frequencies were summed by membership status.
 
 -   @tbl-durationSummary sheds light on the variability, range, and quartile information about the duration data.
 
@@ -1181,10 +1176,10 @@ isBinary = TRUE)
     -   Both groups seem to have their peak density around 5-10 minutes, with members peaking slightly earlier than casual users.
 
     -   There's significant overlap between the two distributions, indicating that while there are differences, there is also considerable similarity in duration patterns between casual users and members.
-    
+
 -   @tbl-modeldurationQ presents the results of a binary logistic regression model, analyzing the relationship between ride duration and membership status. The analysis divides ride duration into quartiles, with ***Q1 (1.02 - 5.73 minutes)*** serving as the reference category.
 
-    -   Compared to *Q1*, the odds of being a member versus a casual rider varied significantly across the other duration quartiles (*p < 0.001* for all comparisons).
+    -   Compared to *Q1*, the odds of being a member versus a casual rider varied significantly across the other duration quartiles (*p \< 0.001* for all comparisons).
 
     -   In ***Q2 (5.73 - 9.55 minutes)***, the odds of membership were 0.38 times as high as in *Q1*. This indicates a substantial decrease (62%) in the likelihood of membership for slightly longer rides.
 
@@ -1374,9 +1369,10 @@ title = NULL,
 note_list = list("trip duration", "occurrences"),
 location_list = list("mins", "n"),
 source_note = gt::md("**Source**: `db/duration.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(mins = "Minutes")
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 
 ```
 :::
@@ -1384,7 +1380,6 @@ gt::cols_label(mins = "Minutes")
 ### [Comparative]{.panel-tabset-label}
 
 ::: panel-tabset
-
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -1469,7 +1464,6 @@ gt::cols_label(member_casual = " ", n = " ")
 ```{r}
 #| label: fig-durationDensity
 #| fig-cap: "Visualizing the probability-density distribution between duration and membership variables."
-#| fig-cap-location: bottom
 #| tidy: true
 #| fig-dpi: 150
 
@@ -1479,7 +1473,7 @@ conn = dbconn,
 path = "db/duration.db",
 select_cols = c("trip_time", "member_casual")) |>
 plotter(
-title = "How are travel durations distributed across membership groups?",
+title = "Visualizing relative frequency\n across travel duration groups",
 x_label = paste0("Minutes"),
 x_col = trip_time, 
 group_col = member_casual,
@@ -1562,15 +1556,13 @@ quantile(qdf_casual$trip_time, probs = c(0.25, 0.5, 0.75))
 ```{r}
 #| label: fig-durationCasualHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of casual travel duration."
-#| fig-cap-location: bottom
 #| tidy: true
-#| fig-column: column-body-outset
-#| fig-dpi: 300
+#| fig-dpi: 150
 
 gplot <- 
 qdf_casual |>
 plotter(
-title = "Casual Travel Duration:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of casuals' travel duration"),
 x_label = "Minutes",
 y_label = "n",
 x_col = trip_time, 
@@ -1603,7 +1595,7 @@ gplot
 gplot <- 
 qdf_member |>
 plotter(
-title = "Member Travel Duration:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of members' travel duration"),
 x_label = "Minutes",
 y_label = "n",
 x_col = trip_time, 
@@ -1643,7 +1635,7 @@ weights = n)
 
 ```{r}
 #| label: tbl-modeldurationQ
-#| tbl-cap: "Modeling the probability of member travel by the duration."
+#| tbl-cap: "Modeling the probability of members' travel by the duration."
 #| tidy: true
 
 model |>
@@ -1652,7 +1644,7 @@ label = list(quartile = "Duration Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression:<br>The likelihood of member travel durations"),
+title = gt::md("Binary Logistic Regression:<br>Modeling the likelihood of members' travel durations"),
 source_note = gt::md("**Source**: `db/duration_wq.db`"),
 isBinary = TRUE
 )
@@ -1667,38 +1659,35 @@ isBinary = TRUE
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
--   @tbl-monthTotals and @fig-monthTotals shows the overall monthly travel distribution. 
+-   @tbl-monthTotals and @fig-monthTotals shows the overall monthly travel distribution.
 
+-   Similarly, @tbl-monthCompare and @fig-monthCompare summarize the monthly travel, where frequencies were summed by membership status.
 
--   Similarly, @tbl-monthCompare and @fig-monthCompare summarize the monthly travel, where frequencies were summed by membership status. 
+-   In @tbl-chiMonths presentes a Chi-Square of monthly travel among members and casual users.
 
--   In @tbl-chiMonths presentes a Chi-Square of monthly travel among members and casual users. 
+    -   Members exhibit higher usage during the months of Jan - Mar and Oct - Dec.
 
-    -   Members exhibit higher usage during the months of Jan - Mar and Oct - Dec. 
-    
-    -   Both groups prefer the months of Apr - Sep, where casuals show a higher interest, proportionally for their respective group. 
-    
-    -   There is a statistically significant association between monthly travel and membership status *(p < 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between monthly travel and membership status. The frequency of monthly travel is not likely to be independent of membership status.
-    
-    -   The large $\chi^2$ value (71802.26) with 11 degrees of freedom (calculated as ***[rows - 1] * [columns - 1])*** results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+    -   Both groups prefer the months of Apr - Sep, where casuals show a higher interest, proportionally for their respective group.
 
--   To visualize the full monthly dataset as a histogram with illustrated, colored-coded quartiles as dotted lines, see @fig-monthHistogram (the solid yellow line represents the mean).
+    -   There is a statistically significant association between monthly travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between monthly travel and membership status. The frequency of monthly travel is not likely to be independent of membership status.
+
+    -   The large $\chi^2$ value (71802.26) with 11 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
 
 -   Two plots, @fig-monthCasualHistogram and @fig-monthMemberHistogram, present a highly granular view of the monthly data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help understand the variability.
 
 -   To visualize monthly users through the lens of their respective concentrations, see @fig-monthDensity. The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
-  
-    -   The casual group has higher peaks near the middle of the distribution. 
-    
-    -   The member group has higher peaks near the left and right sides of the distribution. 
-    
-    -   Both of the groups exhibit somewhat normal, multi-modal distributions.
-    
-    -   Both groups overlap the other signficantly, suggesting similarity in travel patterns. 
 
--   @tbl-modelMonthsQ presents the results of a binary logistic regression analyzing the relationship between months of the year and membership status. The analysis divides the year into quartiles, with ***Q1 (January 01 - May 20)*** serving as the reference category. 
-    
-    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p < 0.001 for all comparisons).
+    -   The casual group has higher peaks near the middle of the distribution.
+
+    -   The member group has higher peaks near the left and right sides of the distribution.
+
+    -   Both of the groups exhibit somewhat normal, multi-modal distributions.
+
+    -   Both groups overlap the other signficantly, suggesting similarity in travel patterns.
+
+-   @tbl-modelMonthsQ presents the results of a binary logistic regression analyzing the relationship between months of the year and membership status. The analysis divides the year into quartiles, with ***Q1 (January 01 - May 20)*** serving as the reference category.
+
+    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons).
 
     -   In ***Q2 (May 20 - Jul 21)***, the odds of membership were 0.57 times as high as in Q1. This indicates a substantial decrease (43%) in the likelihood of membership during late spring and early summer.
 
@@ -1829,7 +1818,6 @@ kableExtra::kable()
 :::
 
 ::: panel-tabset
-
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -1848,7 +1836,7 @@ doWeights = TRUE
 ) |>
 plotter(
 x_col = abbMonths, 
-y_col = n, 
+y_col = n,
 geomType = "column", 
 title = paste0("Which months do people tend to ride?"),
 x_label = paste0("Months","\n","(2023)"),
@@ -1857,7 +1845,7 @@ y_label = "n")
 gplot
 ```
 
-:::{.table-container .column-margin}
+::: {.table-container .column-margin}
 ```{r}
 #| label: tbl-monthTotals
 #| tbl-cap: "The overall distribution of trips taken by month"
@@ -1876,9 +1864,10 @@ title = NULL,
 note_list = list("month of year", "occurrences"),
 location_list = c("abbMonths", "n"),
 source_note = gt::md("**Source**: `db/moy.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(abbMonths = "Months")
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 
 ```
 :::
@@ -1886,7 +1875,6 @@ gt::cols_label(abbMonths = "Months")
 ### [Comparative]{.panel-tabset-label}
 
 ::: panel-tabset
-
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -1975,7 +1963,7 @@ chiResult <- chisqTest(data = data_tibble, variable = "abbMonths", by = "member_
 #| tidy: true
 
 chi_table <- tabler(
-title = "Chi-Square: The statistical signficance of the month on member travel",
+title = gt::md("Chi-Square:<br>The signficance of monthly travel on membership"),
 source_note = gt::md("**Source**: `db/moy.db`"),
 label = list(abbMonths = "Month"),
 by = member_casual,
@@ -2001,7 +1989,7 @@ gplot <-
 dplyr::tbl(dbconn, "db/moy.db") |>
 dplyr::collect() |>
 plotter(
-title = "How is monthly travel distributed across membership groups?",
+title = "Visualizing relative frequency\nacross monthly travel groups",
 x_label = paste0("Months"),
 x_col = started_at, 
 group_col = member_casual,
@@ -2055,7 +2043,7 @@ quantile(qdf_casual$started_at, probs = c(0.25, 0.5, 0.75))
 gplot <-
 qdf_casual |>
 plotter(
-title = "Monthly Casual Travel:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of casuals' monthly travel"),
 x_label = "Months",
 y_label = "n",
 x_col = started_at, 
@@ -2089,7 +2077,7 @@ gplot
 gplot <- 
 qdf_member |>
 plotter(
-title = "Monthly Member Travel:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of members' monthly travel"),
 x_label = "Months",
 y_label = "n",
 x_col = started_at, 
@@ -2140,7 +2128,7 @@ label = list(quartile = "Months Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression:<br>The likelihood of monthly member travel"),
+title = gt::md("Binary Logistic Regression:<br>Modeling the likelihood of monthly member travel"),
 source_note = gt::md("**Source**: `db/moy.db`"),
 isBinary = TRUE)
 
@@ -2154,19 +2142,35 @@ isBinary = TRUE)
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
--   @tbl-wkdayTotals and @fig-wkdayTotals give an aggregated distribution of ridership frequency by the day of the week.
+-   @tbl-wkdayTotals and @fig-wkdayTotals show an aggregated distribution of the overall daily travel.
 
--   @tbl-wkdayCompare and @fig-wkdayCompare summarize the duration distribution by membership.
+-   Similarly, @tbl-wkdayCompare and @fig-wkdayCompare summarize the duration distribution, grouping sums by membership status.
 
--   In @tbl-chiDays, the null hypothesis is rejected. The type of bicycle and the rider's membership status can be considered dependent variables.
+-   In @tbl-chiDays, present a Chi-Square of daily travel among members and casual users.
 
--   To visualize weekly users through the lens of their respective concentrations, see @fig-dayDensity. The plot looks a little different because I am directly plotting the x-axis using the original date-time data types. I think this maintains a more accurate view of the data.
+    -   Members show higher usage Mon - Thu compared to casual users. The pattern is flatter compared to casual users.
 
--   To visualize the full daily dataset as a histogram with illustrated, colored-coded quartiles as dotted lines, see @fig-daysCasualHistogram and @fig-daysMemberHistogram (the solid yellow line represents the mean).
+    -   Casual users show higher usage Fri - Sun compared to members. Their preferences fall within the weekend.
+
+    -   There is a statistically significant association between daily travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between daily travel and membership status. The frequency of monthly travel is not likely to be independent of membership status.
+
+    -   The large $\chi^2$ value (76305.71) with 6 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+
+-   To visualize daily users through the lens of their respective concentrations, see @fig-dayDensity The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
+
+    -   The casual group has higher peaks near the left and right sides of the distribution. Their highest peak appears to be on Saturday.
+
+    -   The member group has higher peaks near the middle of the distribution. They also show less day-to-day variability during weekdays compared to casual users.
+
+    -   On weekdays, both groups show a bimodal distribution, with two peaks each day. On weekends, there is a unimodal distribution.
+
+    -   Both groups overlap the other signficantly, suggesting similarity in travel patterns.
+
+-   Two plots, @fig-dayCasualHistogram and @fig-dayMemberHistogram, present a highly granular view of the daily data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
 
 -   @tbl-modelDaysQ presents the results of a binary logistic regression analyzing the relationship between days of the week and membership status. The analysis divides the week into quartiles, with Q1 (Sunday 12:00 am - Monday 11:40 am) serving as the reference category.
 
-    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p < 0.001 for all comparisons).
+    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons).
 
     -   Q2 (Monday 11:40 am - Wednesday 05:14 am): The odds of membership were 1.52 times higher than in Q1. This suggests a substantial increase in the likelihood of members riding during the early part of the work week.
 
@@ -2342,17 +2346,16 @@ title = NULL,
 note_list = list("day of the week", "occurrences"),
 location_list = list("abbDays", "n"),
 source_note = gt::md("**Source**: `db/dow.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(abbDays = "Days")
-
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 ```
 :::
 
 ### [Comparative]{.panel-tabset-label}
 
 ::: panel-tabset
-
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -2441,7 +2444,7 @@ data = data_tibble, variable = "abbDays", by = "member_casual")
 #| tidy: true
 
 tabler(
-title = "Chi-Square: The statistical signficance of the hour of day on member travel",
+title = gt::md("Chi-Square:<br>The signficance of daily travel on membership"),
 source_note = gt::md("**Source**: `db/moy.db`"),
 label = list(abbDays = "Day"),
 by = member_casual,
@@ -2466,7 +2469,7 @@ dplyr::tbl(dbconn, "db/dow.db") |>
 dplyr::select(started_at, member_casual) |>
 dplyr::collect() |>
 plotter(
-title = "How is daily travel distributed across membership groups?",
+title = "Visualizing relative frequency\nacross daily travel groups",
 x_label = paste0("Day"),
 x_col = started_at, 
 group_col = member_casual,
@@ -2510,7 +2513,7 @@ quantile(qdf_casual$started_at, probs = c(0.25, 0.5, 0.75))
 ```
 
 ```{r}
-#| label: fig-daysCasualHistogram
+#| label: fig-dayCasualHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of daily casual travel."
 #| fig-cap-location: bottom
 #| fig-dpi: 150
@@ -2519,7 +2522,7 @@ quantile(qdf_casual$started_at, probs = c(0.25, 0.5, 0.75))
 gplot <- 
 qdf_casual |>
 plotter(
-title = "Daily Casual Travel:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of casuals' daily travel"),
 x_label = "Days",
 y_label = "n",
 x_col = started_at, 
@@ -2544,7 +2547,7 @@ gplot
 ```
 
 ```{r}
-#| label: fig-daysMemberHistogram
+#| label: fig-dayMemberHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of daily member travel."
 #| fig-cap-location: bottom
 #| fig-dpi: 150
@@ -2553,7 +2556,7 @@ gplot
 gplot <- 
 qdf_member |>
 plotter(
-title = "Daily Member Travel:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of members' daily travel"),
 x_label = "Days",
 y_label = "n",
 x_col = started_at, 
@@ -2606,7 +2609,7 @@ label = list(quartile = "Weekday Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression:<br>The likelihood of daily member travel"),
+title = gt::md("Binary Logistic Regression:<br>Modeling the likelihood of daily member travel"),
 source_note = gt::md("**Source**: `db/dow_wq.db`"),
 isBinary = TRUE
 )
@@ -2621,19 +2624,33 @@ isBinary = TRUE
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
--   @tbl-hourTotals and @fig-hourTotals give an aggregated distribution of ridership frequency by the hour of the day.
+-   @tbl-hourTotals and @fig-hourTotals give an aggregated distribution of the overall hourly travel distribution.
 
--   @tbl-hourMembership and @fig-hourCompare summarize the hourly distribution by membership.
+-   Similarly, @tbl-hourMembership and @fig-hourCompare summarize the distribution, grouping the sums by membership.
 
--   @tbl-chiHours, the null hypothesis is rejected. The type of bicycle and the rider's membership status can be considered dependent variables.
+-   @tbl-chiHours presents a Chi-Square of hourly travel among members and casual users.
 
--   To visualize monthly users through the lens of their respective concentrations, see @fig-hourDensity. The plot looks a little different because I am directly plotting the x-axis using the original date-time data types. I think this maintains a more accurate view of the data.
+    -   Compared to casual users, members show relatively higher service usage at intervals \[5:30am - 9:30am\] and \[4:30pm - 6:30pm\].
 
--   To visualize the full duration dataset as a histogram with illustrated, colored-coded quartiles as dotted lines, see @fig-hourCasualHistogram and @fig-hourMemberHistogram (the solid yellow line represents the mean).
+    -   Casual users show relatively higher rates at intervals \[10:30am - 4:30pm\] and \[6:30pm - 5:30am\].
+
+    -   There is a statistically significant association between hourly travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between hourly travel and membership status. The frequency of hourly travel is not likely to be independent of membership status.
+
+    -   The large $\chi^2$ value (72733.38) with 23 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+
+-   To visualize hourly users through the lens of their respective concentrations, see @fig-hourDensity. The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
+
+    -   The member group parallels the daily bimodal patterns seen in daily density plot.
+
+    -   The casual group likewise, but to less extent parallels the bimodal patterns seen in the daily density plot.
+
+    -   The two groups, largely, are overlapping, with the highest densities for both falling around 5:00pm.
+
+-   Two plots, @fig-hourCasualHistogram and @fig-hourMemberHistogram, present a highly granular view of the hourly data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
 
 -   @tbl-modelHourQ presents the results of a binary logistic regression analyzing the relationship between hour of the day and membership status. The analysis divides the day into quartiles, with Q1 (12:00 am - 10:59 am) serving as the reference category.
 
-    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p < 0.001 for all comparisons).
+    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons).
 
     -   Specifically, the odds of membership were 1.44 times as high in Q2 (10:59 am - 03:24 pm), 1.04 times as high in Q3 (03:24 pm - 06:05 pm), and 0.97 times as high in Q4 (06:05 pm - 11:59 pm).
 
@@ -2780,7 +2797,6 @@ kableExtra::kable()
 :::
 
 ::: panel-tabset
-
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -2844,7 +2860,6 @@ row_index = 1
 ### [Comparative]{.panel-tabset-label}
 
 ::: panel-tabset
-
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -2940,7 +2955,7 @@ data = data_tibble, variable = "hr", by = "member_casual")
 #| tidy: true
 
 tabler(
-title = "Chi-Square: The statistical signficance of the hour of day on member travel",
+title = gt::md("Chi-Square:<br>The signficance of hourly travel on membership"),
 source_note = gt::md("**Source**: `db/hod.db`"),
 label = list(hr = "Hour"),
 by = member_casual,
@@ -2964,7 +2979,7 @@ gplot <-
 dplyr::tbl(dbconn, "db/hod.db") |>
 dplyr::collect() |>
 plotter(
-title = "How is hourly distributed across membership groups?",
+title = "Visualizing relative frequency\nacross hourly travel groups",
 x_label = paste0("Hours", "\n", "(12-hour clock)"),
 x_col = started_at_time, 
 group_col = member_casual,
@@ -3019,7 +3034,7 @@ quantile(qdf_casual$started_at_time, probs = c(0.25, 0.5, 0.75))
 gplot <- 
 qdf_casual |>
 plotter(
-title = "Hourly Casual Travel:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of casuals' hourly travel"),
 x_label = paste0("Hours\n", "(12-hour clock)"),
 y_label = "n",
 x_col = started_at_time, 
@@ -3055,7 +3070,7 @@ axis.text.x = ggplot2::element_text(size = ggplot2::rel(.9)))
 gplot <- 
 qdf_member |>
 plotter(
-title = "Hourly Member Travel:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of members' hourly travel"),
 x_label = paste0("Hours\n", "(12-hour clock)"),
 y_label = "n",
 x_col = started_at_time, 
@@ -3110,7 +3125,7 @@ label = list(quartile = "Hour Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression:<br>The likelihood of hourly member travel"),
+title = gt::md("Binary Logistic Regression:<br>Modeling the likelihood of hourly member travel"),
 source_note = gt::md("**Source**: `db/hod_wq.db`"),
 isBinary = TRUE)
 ```
@@ -3123,19 +3138,25 @@ isBinary = TRUE)
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
--   @tbl-milesTotals and @fig-milesTotals give an aggregated distribution of ridership frequency by the miles traveled in a trip.
+-   @tbl-milesTotals and @fig-milesTotals show the overall distribution of distances traveled.
 
--   @tbl-milesCompare and @fig-membershipMiles summarize the hourly distribution by membership.
+-   @tbl-milesCompare and @fig-membershipMiles likewise summarize the distance distribution by membership status.
 
--   To visualize users through the lens of their respective concentrations, see @fig-distanceDensity.
+-   To visualize monthly users through the lens of their respective concentrations, see @fig-distanceDensity. The y-axis shows the density (a measure of relative frequency).
 
--   @tbl-distanceSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
+    -   The member group has a narrower, taller spike in between 0.1 and 1 mile distances. There is less of a concentration than the casual group between the 1-3 mile distances.
 
--   To visualize the full distance dataset as a histogram with illustrated, colored-coded quartiles as dotted lines, see @fig-distanceHistogram (the solid yellow line represents the mean).
+    -   The casual group displays a broader spike with much overlap to the member group, but peaks closer to the 1 mile mark than for members. There is greater concentration than members between the 1-3 miles distances, but less around the 0.1-1 mile distance.
+
+    -   Both groups overlap nearly completely from around the 3 miles mark and onwards.
+
+-   @tbl-distanceSummary sheds light on the variability, range, and quartile information about the distance to membership data.
+
+-   Two plots, @fig-distanceCasualHistogram and @fig-distanceMemberHistogram, present a highly granular view of the distance data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
 
 -   @tbl-modeldistanceQ presents the odds ratios for membership status across distance quartiles, with Q1 serving as the reference category.
 
-    -   Compared to Q1, the odds of being a member versus a casual rider were significantly lower in all other quartiles (p < 0.001 for all comparisons).
+    -   Compared to Q1, the odds of being a member versus a casual rider were significantly lower in all other quartiles (p \< 0.001 for all comparisons).
 
     -   Specifically, the odds of membership were 0.63 times as high in Q2, 0.59 times as high in Q3, and 0.65 times as high in Q4.
 
@@ -3264,13 +3285,11 @@ kableExtra::kable()
 :::
 
 ::: panel-tabset
-
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
 #| label: fig-milesTotals
 #| fig-cap: "The overall distribution of trips taken by the estimated distance traveled"
-#| fig-cap-location: bottom
 #| fig-dpi: 150
 #| tidy: true
 
@@ -3318,16 +3337,20 @@ title = NULL,
 note_list = list("distance (miles)", "occurrences"),
 location_list = list("milesR", "n"),
 source_note = gt::md("**Source**: `db/distance.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(milesR = "Miles")
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1,
+label_parameter = "milesR",
+align_parameter = "right"
+
+)
+
 ```
 :::
 
 ### [Comparative]{.panel-tabset-label}
 
 ::: panel-tabset
-
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -3413,7 +3436,7 @@ dplyr::tbl(dbconn, "db/distance.db") |>
 dplyr::select(miles, member_casual) |>
 dplyr::collect() |>
 plotter(
-title = "How is travel distance distributed across membership groups?",
+title = "Visualizing relative frequency\nacross travel distance groups",
 x_label = "Miles",
 x_col = miles, 
 group_col = member_casual,
@@ -3502,7 +3525,7 @@ quantile(as.numeric(qdf_casual$miles), probs = c(0.25, 0.5, 0.75))
 gplot <- 
 qdf_casual |>
 plotter(
-title = "Casual Travel Distance:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of casuals' travel distance"),
 x_label = "Miles",
 y_label = "n",
 x_col = miles, 
@@ -3535,7 +3558,7 @@ gplot
 gplot <- 
 qdf_member |>
 plotter(
-title = "Casual Travel Distance:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of members' travel distance"),
 x_label = "Miles",
 y_label = "n",
 x_col = miles, 
@@ -3577,7 +3600,7 @@ weights = n
 
 ```{r}
 #| label: tbl-modeldistanceQ
-#| tbl-cap: "Modeling the probability of member travel by distance."
+#| tbl-cap: "Modeling the probability of members' travel by distance."
 #| tidy: true
 
 model |>
@@ -3586,7 +3609,7 @@ label = list(quartile = "Distance Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression:<br>The likelihood of member travel distance"),
+title = gt::md("Binary Logistic Regression:<br>Modeling the likelihood of members' travel distance"),
 source_note = gt::md("**Source**: `db/distance_wq.db`"),
 isBinary = TRUE
 )
@@ -3601,21 +3624,25 @@ isBinary = TRUE
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
--   @tbl-mphTotals and @fig-mphTotals, give an aggregated distribution of ridership frequency by the hour of the day.
+-   @tbl-mphTotals and @fig-mphTotals show the overall distribution of travel speeds.
 
--   @tbl-mphCompare and @fig-mphCompare, summarize the trip speed distribution by membership.
+-   @tbl-mphCompare and @fig-mphCompare summarize the travel speed distribution by membership.
 
--   To visualize monthly users through the lens of their respective concentrations, see @fig-speedDensity.
+-   To visualize travel speed patterns through the lens of their respective concentrations, see @fig-speedDensity. The y-axis shows the density (a measure of relative frequency).
+
+    -   The member group has a narrower, taller spike centering around 7mph. There is higher concentration than the casual group between \~ 5-15mph.
+
+    -   The casual group has a broader, shorter spike centering closer to 6mph. There is higher concentration than the member group between \~ 1-5mph.
+
+    -   There is a lot of overlap, and both groups have a unimodal distribution.
 
 -   @tbl-speedSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
 
--   To visualize the full speed dataset as a histogram with illustrated, colored-coded quartiles as dotted lines, see @fig-speedCasualHistogram and @fig-speedMemberHistogram (the solid yellow line represents the mean).
-
-    -   The plot looks a little different because I am directly plotting the x-axis using the original date-time data types. I think this maintains a more accurate view of the data.
+-   Two plots, @fig-speedCasualHistogram and @fig-speedMemberHistogram, present a highly granular view of the travel speed data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
 
 -   @tbl-modelspeedQ presents the odds ratios for membership status across speed quartiles, with Q1 serving as the reference category.
 
-    -   Compared to Q1, the odds of being a member versus a casual rider were significantly higher in all other quartiles (p < 0.001 for all comparisons).
+    -   Compared to Q1, the odds of being a member versus a casual rider were significantly higher in all other quartiles (p \< 0.001 for all comparisons).
 
     -   Specifically, the odds of membership were 2.09 times higher in Q2, 2.50 times higher in Q3, and 2.69 times higher in Q4.
 
@@ -3735,7 +3762,6 @@ kableExtra::kable()
 :::
 
 ::: panel-tabset
-
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -3784,12 +3810,12 @@ title = NULL,
 note_list = list("travel speed (miles per hour)", "occurrences"),
 location_list = list("mphR", "n"),
 source_note = gt::md("**Source**: `db/speed.db`"),
-noteColumns = TRUE,
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1,
 label_parameter = "mphR",
 align_parameter = "right"
-) |>
-gt::cols_label(mphR = "Mph")
-
+)
 
 ```
 :::
@@ -3797,7 +3823,6 @@ gt::cols_label(mphR = "Mph")
 ### [Comparative]{.panel-tabset-label}
 
 ::: panel-tabset
-
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -3877,8 +3902,8 @@ dplyr::tbl(dbconn, "db/speed.db") |>
 dplyr::select(mph, member_casual) |>
 dplyr::collect() |>
 plotter(
-title = "How is the esimated average travel speed distributed across membership groups?",
-x_label = "Miles per Hour)",
+title = "Visualizing relative frequency\nacross travel speed groups",
+x_label = "Miles per Hour",
 x_col = mph, 
 group_col = member_casual,
 geomType = "column",
@@ -3960,11 +3985,10 @@ quantile(qdf_casual$mph, probs = c(0.25, 0.5, 0.75))
 #| tidy: true
 #| fig-dpi: 150
 
-
 gplot <- 
 qdf_casual |>
 plotter(
-title = "Casual Travel Speed:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of casuals' travel speed"),
 x_label = "Miles per Hour",
 y_label = "n",
 x_col = mph, 
@@ -3990,14 +4014,13 @@ gplot
 ```{r}
 #| label: fig-speedMemberHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of member travel speed."
-#| fig-cap-location: bottom
 #| tidy: true
 #| fig-dpi: 150
 
 gplot <- 
 qdf_member |>
 plotter(
-title = "Casual Travel Speed:\nWhat is the quartile distribution?",
+title = paste0("The quartile", "\n", "distribution of members' travel speed"),
 x_label = "Miles per Hour",
 y_label = "n",
 x_col = mph, 
@@ -4038,7 +4061,7 @@ weights = n)
 
 ```{r}
 #| label: tbl-modelspeedQ
-#| tbl-cap: "Modeling the probability of member travel by speed."
+#| tbl-cap: "Modeling the probability of members' travel by speed."
 #| tidy: true
 
 model |>
@@ -4047,7 +4070,7 @@ label = list(quartile = "Speed Ranges"),
 conf.int = FALSE, 
 exponentiate = TRUE) |>
 tabler(
-title = gt::md("Binary Logistic Regression:<br>The likelihood of member travel speed"),
+title = gt::md("Binary Logistic Regression:<br>Modeling the likelihood of members' travel speed"),
 source_note = gt::md("**Source**: `db/speed_wq.db`"),
 isBinary = TRUE)
 
@@ -4434,6 +4457,8 @@ To improve membership, addressing factors deterring individuals from becoming an
 
 ## Updated Database Tables List
 
+:::tableScroller
+
 ```{r}
 #| label: tbl-dbList2
 #| code-summary: "Revisiting the list of db tables, with many more tables added. All of these tables are stored within the data/data.db file."
@@ -4457,6 +4482,7 @@ gt::cols_align(align = "left")
 dbList2
 
 ```
+:::
 
 ![Notice the size difference from the previous image. The database is still represented in db folder as one file..](images/dbFiles_end.png){.column-margin}
 
