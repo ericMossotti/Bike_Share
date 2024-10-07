@@ -11,6 +11,7 @@ plotter <- function(data,
                     group_col = NULL,
                     color_col = NULL,
                     title = NULL,
+                    subtitle = NULL,
                     x_label = NULL,
                     y_label = NULL,
                     geomType = NULL,
@@ -595,7 +596,7 @@ plotter <- function(data,
     }
     # For the rest of the otherwise likely duplicated plot settings ----
     plot <- plot +
-        ggplot2::labs(title = title, x = x_label, y = y_label) +
+        ggplot2::labs(title = title, subtitle = subtitle, x = x_label, y = y_label) +
         ggplot2::theme(
             panel.background = ggplot2::element_rect(fill = bg_color, color = NA),
             plot.background = ggplot2::element_rect(fill = bg_color, color = NA),
