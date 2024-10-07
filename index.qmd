@@ -1576,7 +1576,6 @@ high = "red",
 limits = c(0,100),
 breaks = seq(0, 100, by = 5),
 binwidth = 2.5,
-#binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
 quartiles = quartiles_casual
 )
 
@@ -3537,7 +3536,6 @@ vline_size = 0.5,
 low = "blue",
 high = "red",
 binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-#binwidth = 0.2,
 limits = c(0.1, 5),
 breaks = seq(0.1, 5, by = 0.5),
 quartiles = quartiles_casual
