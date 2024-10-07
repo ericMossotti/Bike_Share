@@ -626,7 +626,7 @@ Outlier and additional transformations
 :::
 :::
 
-# Exploratory Analysis {#eda}
+# Exploratory Analysis
 
 ::: {#offcanvas8979 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::: offcanvas-header
