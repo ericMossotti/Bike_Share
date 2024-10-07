@@ -129,17 +129,6 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
   }
 }
 
-.panel-tabset > ul > li > a {
-  color: #6c757d !important;
-  &:hover {
-    color: #495057 !important;
-  }
-  
-  &.active {
-    color: #ffab00 !important;
-  }
-}
-
 
 .callout {
   background-color: rgba(0,0,0,.05) !important;
