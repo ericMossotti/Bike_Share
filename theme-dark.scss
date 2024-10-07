@@ -38,8 +38,62 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
   color: $heading-4 !important; /* Third sub-level */
 }
 
+//#eda > .
 
 /*-- scss:classes --*/
+
+.flex-container {
+  //display: flex;
+  //align-items: center;
+  //justify-content: center;
+}
+
+.plot-container {
+ 
+
+}
+
+.table-container {
+  display: flex;
+  justify-content: center;
+  overflow-y: auto; 
+  //margin: 0px;
+  //margin-top: 5rem;
+  //margin-bottom: 5rem;
+  max-height: 50vh;
+
+}
+
+
+.table-container table {
+//  width: 100%;
+//  height: 100%;
+}
+
+.gt_table {
+  //width: 100%;
+  //height: 100%;
+  //display: flex;
+  //font-size: 13px !important;
+  //margin: 0 !important;
+
+}
+
+.table-caption > figcaption {
+ // margin-left: 0 !important;
+//  margin-right: 0 !important;
+}
+
+.quarto-float-tbl > figcaption {
+  //font-size: 0.7rem !important;
+  text-align: left !important;
+}
+
+.quarto-float-fig > figcaption {
+  //font-size: 0.7rem !important;
+  text-align: left !important;
+}
+
 
 .gt_sourcenote > code {
   background-color: rgba(25,25,25,0.5) !important;
@@ -59,56 +113,33 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
   text-align: left !important;
 }
 
-
-// Custom styles for Quarto tab sets
+/* Custom styles for Quarto tab sets */
 .panel-tabset {
-
   box-shadow: $box-shadow-sm !important;
-  
   .nav-tabs {
     .nav-link {
-      // Styles for inactive tabs
-      color: #6c757d !important;  // Inactive text color
-    //  background-color: #f8f9fa;  // Inactive background color
-    //  border: 1px solid #dee2e6;
-      
-      // Styles for hover state
-      &:hover {
-        color: #495057 !important;  // Hover text color
-        //background-color: #e9ecef;  // Hover background color
-      }
-      
-      // Styles for active tab
-      &.active {
-        color: #ff6666 !important;  // Active text color
-      //  background-color: #fff;  // Active background color
-      //  border-bottom-color: transparent;
-        
+        color: #6c757d !important;
         &:hover {
-          color: #ff668c !important;  // Active hover text color
-        }
+          color: #495057 !important;
+          }  
+      &.active {
+        color: #ff6666 !important;
       }
     }
   }
 }
 
-
-.header-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-content: center;
+.panel-tabset > ul > li > a {
+  color: #6c757d !important;
+  &:hover {
+    color: #495057 !important;
+  }
+  
+  &.active {
+    color: #ffab00 !important;
+  }
 }
 
-.heading-box {
-  background-color: transparent;
-  padding: 10px;
-  margin-right: 20px;
-  max-width: 15vw;
-  color: rgba(255,255,200);
-  align-content: center;
-  text-align: center;
-}
 
 .callout {
   background-color: rgba(0,0,0,.05) !important;
@@ -149,8 +180,8 @@ a {
 
 
 .tableScroller {
-    max-height: 60vh !important;
-    overflow-y: auto !important;
+    max-height: 60vh;
+    overflow-y: auto;
     //max-width: auto !important;
 }
 
