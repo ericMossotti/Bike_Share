@@ -387,7 +387,7 @@ While all values in the **ride_id** column were found to be unique, not all obse
 ::: tableScroller
 ```{r}
 #| label: tbl-duplicates
-#| tbl-cap: Duplicates Table
+#| tbl-cap: "Duplicates Table"
 
 gtDupes <- 
 dupeTable |>
@@ -397,27 +397,24 @@ rowname_col = "row",
 groupname_col = "started_at",
 row_group_as_column = TRUE
 ) |>
+gt::tab_style(style = list(
+    gt::cell_text(weight = "bold", align = "center"),
+    gt::cell_borders(sides = c("bottom"))
+    ),
+    locations = gt::cells_column_labels(gt::everything())) |>
 gt::tab_style(
-style = list(
-gt::cell_text(weight = "bold", align = "center"),
-gt::cell_borders(sides = c("bottom"))
-),
-locations = gt::cells_column_labels(gt::everything())
-) |>
-gt::tab_style(
-style = list(
-gt::cell_borders(sides = c("left", "right"), color = "transparent"),
-gt::cell_text(align = "center", v_align = "middle")
-),
-locations = gt::cells_body(gt::everything())
-) |>
+    style = list(gt::cell_borders(
+        sides = c("left", "right"), 
+        color = "transparent"), 
+        gt::cell_text(align = "center", v_align = "middle")), 
+    locations = gt::cells_body(gt::everything())) |> 
 gt::data_color(
-columns = start_station_name,
-target_columns = gt::everything(),
-method = "auto",
-palette = "basetheme::brutal"
-) |>
-gt::tab_header(title = "A view of duplicated observations", subtitle = "Grouping follows the starting date-time value") |>
+        columns = start_station_name,
+        target_columns = gt::everything(),
+        method = "auto",
+        palette = "basetheme::brutal") |> 
+gt::tab_header(title = "A view of duplicated observations", 
+               subtitle = "Grouping follows the starting date-time value") |>
 gt::tab_options(
 heading.title.font.weight = "bolder",
 heading.subtitle.font.weight = "lighter",
@@ -426,9 +423,11 @@ table.background.color = "transparent",
 table.font.color = "SeaShell",
 table.font.size = gt::pct(75),
 ) |>
-gt::tab_source_note(source_note = gt::md("**Source**: `db/data_complete.db`"))
+gt::tab_source_note(source_note = gt::md("**Source**: `db/data_complete.db`")
+                    )
 
 gtDupes
+
 ```
 :::
 
@@ -4457,8 +4456,7 @@ To improve membership, addressing factors deterring individuals from becoming an
 
 ## Updated Database Tables List
 
-:::tableScroller
-
+::: tableScroller
 ```{r}
 #| label: tbl-dbList2
 #| code-summary: "Revisiting the list of db tables, with many more tables added. All of these tables are stored within the data/data.db file."
