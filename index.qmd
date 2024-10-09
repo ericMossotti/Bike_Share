@@ -69,7 +69,7 @@ Import Processing Code
 ::: flex-code
 ```{r}
 #| label: importOrConnect
-#| code-summary: First, we decide whether to download and do the necessary initial processing steps or skip that if we have already done this and are just tinkering around with the project. 
+#| code-summary: "First, we decide whether to download and do the necessary initial processing steps or skip that if we have already done this and are just tinkering around with the project. "
 #| tidy: true
 
 # Does the database directory exist? If not, means we need to import data
@@ -118,7 +118,7 @@ The primary stakeholders in this analysis are Divvy, Lyft (the parent company of
 The raw 2023 dataset was imported from Divvy Data. [@divvyda]
 :::
 
-::: d-flex
+::: {.d-flex overflow-x="auto"}
 ::: column-screen-inset
 ```{r}
 #| label: tbl-raw
@@ -212,27 +212,30 @@ To streamline the process, reduce code duplication, and maintain consistent form
 
 ## Initial Database Table List
 
+:::table-container
 ```{r}
 #| label: tbl-dbList
-#| code-summary: These are the starting tables contained in the data/data.db file. Noting this as we will be adding many more tables in the later stages.
-#| tbl-cap: Initial DB Table List
+#| code-summary: "These are the starting tables contained in the data/data.db file.<br><br>Noting this as we will be adding many more tables in the later stages."
+#| tbl-cap: "The list of tables created in data.db so far."
 #| tidy: true
 
 dbList <- duckdb::dbListTables(dbconn) |>
 as.data.frame() |>
 tabler(
-title = "Database Tables",
+title = gt::md("Which tables have<br>been created so far?"),
 note_list = list(gt::md("Tables in `db/data.db` at this stage")),
 location_list = list("duckdb::dbListTables(dbconn)"),
 noteColumns = TRUE,
 source_note = gt::md("**Source**: `db/data.db`"),
-label_n = NULL
+label_n = NULL,
+align_parameter = "left"
 ) |>
-gt::cols_label("duckdb::dbListTables(dbconn)" = "Table Paths") |>
+gt::cols_label("duckdb::dbListTables(dbconn)" = "Paths") |>
 gt::cols_align(align = "left")
 
 dbList
 ```
+:::
 
 ![A view of the filesystem directory. Notice there are not separate files for tables. Technically, data.db, in this view, does not represent a table name, but the name of the database.](images/dbFiles_start.png){.column-margin}
 
@@ -279,7 +282,7 @@ nrow()
 
 ```{r}
 #| label: duplicates_gt
-#| code-summary: Create a table containing the duplicated observations.
+#| code-summary: "Create a table containing the duplicated observations."
 #| tidy: true
 
 # This is a separate table used to analyze the observations
@@ -298,7 +301,7 @@ dplyr::collect()
 
 ```{r}
 #| label: duplicateObs count
-#| code-summary: Record a count of distinct duplicates and total observations.
+#| code-summary: "Record a count of distinct duplicates and total observations."
 #| tidy: true
 
 distinctCopiesCount <- dupeTable |>
@@ -310,7 +313,7 @@ duplicateObs <- length(dupeTable[[1]])
 
 ```{r}
 #| label: undupedTable
-#| code-summary: Create a table of the now unduplicated observations seen earlier.
+#| code-summary: "Create a table of the now unduplicated observations seen earlier."
 #| tidy: true
 
 # The issue is, we need to get rid of not all of these rows, but just the extra duplicate observations.
@@ -339,7 +342,7 @@ as.integer()
 
 ```{r}
 #| label: count_correctDists count
-#| code-summary: Record a count of the correct observations.
+#| code-summary: "Record a count of the correct observations."
 #| tidy: true
 
 # For the correct count of obs
@@ -357,7 +360,7 @@ as.integer()
 
 ```{r}
 #| label: writeUnduplicated
-#| code-summary: Lastly, write the unduplicated data to the database.
+#| code-summary: "Lastly, write the unduplicated data to the database."
 #| tidy: true
 
 if (isFALSE(duckdb::dbExistsTable(dbconn, "db/data_unduped.db"))) {
@@ -561,6 +564,7 @@ as.integer()
 ```
 :::
 
+:::flex-code
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
@@ -581,8 +585,9 @@ count_incorrectDists,
 count_filtered
 ) |>
 gt::gt(rownames_to_stub = FALSE) |>
-gt::tab_header(title = "Tallying Observations", 
-subtitle = gt::md("Noting the change<br>in observations")) |>
+gt::tab_header(title = "Documenting transformation results", 
+subtitle = gt::md("Noting the change<br>in overall observations")) |>
+gt::cols_label("  " = "n") |>
 gt::tab_footnote(
 footnote = gt::md("Row counts throughout the cleaning steps."),
 locations = gt::cells_column_labels(columns = "  ")
@@ -618,6 +623,7 @@ gt::tab_source_note(source_note = gt::md("**Sources**: `db/data_original.db`, `d
 
 summaryProcessTable
 ```
+:::
 
 ::: {.d-grid .gap-0}
 ::: {.btn .btn-outline-success .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
@@ -716,7 +722,7 @@ Database Code
 ::: flex-code
 ```{r}
 #| label: writeMembership
-#| code-summary: Write ... to db/... .db
+#| code-summary: Write to .db
 #| tidy: true
 
 if (isFALSE(duckdb::dbExistsTable(dbconn, "db/membership.db"))) {
@@ -798,7 +804,6 @@ gplot
 #| tbl-cap-location: top
 #| tidy: true
 #| echo: false
-
 
 transformData(
 conn = dbconn, 
@@ -958,9 +963,8 @@ kableExtra::kable()
 ```{r}
 #| label: fig-btypeTotal
 #| fig-cap: "The overall distribution of trips taken by bicycle choice"
-#| fig-cap-location: bottom
 #| tidy: true
-#| fig-dpi: 150
+
 
 gplot <- 
 transformData(
@@ -1002,9 +1006,10 @@ title = NULL,
 note_list = list("bicycle type","occurrences"),
 location_list = list("rideable_type", "n"),
 source_note = gt::md("**Source**: `db/bType.db`"),
-noteColumns = TRUE
-) |>
-gt::cols_label(rideable_type = "Type")
+noteRows = TRUE,
+hide_column_labels = TRUE,
+row_index = 1
+)
 
 ```
 :::
@@ -1017,9 +1022,8 @@ gt::cols_label(rideable_type = "Type")
 ```{r}
 #| label: fig-btypeGroups
 #| fig-cap: "The membership distribution of bicycle choice"
-#| fig-cap-location: bottom
 #| tidy: true
-#| fig-dpi: 150
+
 
 gplot <- 
 transformData(
@@ -1122,7 +1126,7 @@ chi_table
 
 ```{r}
 #| label: btypeModel
-#| code-summary: Predicting the log-odds of being a member versus being a casual user based on ...
+#| code-summary: "Predicting the log-odds of being a member versus being a casual user."
 #| tidy: true
 
 model <- 
@@ -1212,7 +1216,7 @@ DB Operations
 ::: flex-code
 ```{r}
 #| label: write duration to duckdb
-#| code-summary: Write ... to the database.
+#| code-summary: Write to .db.
 #| tidy: true
 
 if (isFALSE(duckdb::dbExistsTable(dbconn, "db/duration.db"))) {
@@ -1315,8 +1319,6 @@ kableExtra::kable()
 ```{r}
 #| label: fig-triptimeTotals
 #| fig-cap: "The overall distribution of trip durations"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -1384,8 +1386,6 @@ row_index = 1
 ```{r}
 #| label: fig-triptimeCompare
 #| fig-cap: "The membership distribution of trip durations"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -1458,37 +1458,6 @@ gt::cols_label(member_casual = " ", n = " ")
 ```
 :::
 
-#### [Density]{.panel-tabset-label}
-
-```{r}
-#| label: fig-durationDensity
-#| fig-cap: "Visualizing the probability-density distribution between duration and membership variables."
-#| tidy: true
-#| fig-dpi: 150
-
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/duration.db",
-select_cols = c("trip_time", "member_casual")) |>
-plotter(
-title = "Visualizing relative frequency\n across travel duration groups",
-x_label = paste0("Minutes"),
-x_col = trip_time, 
-group_col = member_casual,
-geomType = "column",
-angle = 45,
-color_col = "black",
-density_alpha = 0.75,
-isDensity = TRUE,
-is_colGroup = TRUE,
-breaks = seq(0, 100, by = 5),
-limits = c(0, 100)
-)
-
-gplot
-```
-
 #### [Summary Stats]{.panel-tabset-label}
 
 ```{r}
@@ -1556,7 +1525,6 @@ quantile(qdf_casual$trip_time, probs = c(0.25, 0.5, 0.75))
 #| label: fig-durationCasualHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of casual travel duration."
 #| tidy: true
-#| fig-dpi: 150
 
 gplot <- 
 qdf_casual |>
@@ -1586,9 +1554,8 @@ gplot
 ```{r}
 #| label: fig-durationMemberHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of member travel duration."
-#| fig-cap-location: bottom
 #| tidy: true
-#| fig-dpi: 150
+
 
 gplot <- 
 qdf_member |>
@@ -1613,6 +1580,37 @@ quartiles = quartiles_member
 
 gplot
 
+```
+
+#### [Density]{.panel-tabset-label}
+
+```{r}
+#| label: fig-durationDensity
+#| fig-cap: "Visualizing the probability-density distribution between duration and membership variables."
+#| tidy: true
+
+
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/duration.db",
+select_cols = c("trip_time", "member_casual")) |>
+plotter(
+title = "Visualizing relative frequency\n across travel duration groups",
+x_label = paste0("Minutes"),
+x_col = trip_time, 
+group_col = member_casual,
+geomType = "column",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isDensity = TRUE,
+is_colGroup = TRUE,
+breaks = seq(0, 100, by = 5),
+limits = c(0, 100)
+)
+
+gplot
 ```
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
@@ -1821,8 +1819,6 @@ kableExtra::kable()
 ```{r}
 #| label: fig-monthTotals
 #| fig-cap: "The overall distribution of trips taken by month"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- transformData(
@@ -1878,8 +1874,6 @@ row_index = 1
 ```{r}
 #| label: fig-monthCompare
 #| fig-cap: "The membership distribution of trips taken by month"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -1974,36 +1968,6 @@ chi_table
 
 ```
 
-#### [Density]{.panel-tabset-label}
-
-```{r}
-#| label: fig-monthDensity
-#| fig-cap: "Visualizing the probability-density distribution of months by membership."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-dplyr::tbl(dbconn, "db/moy.db") |>
-dplyr::collect() |>
-plotter(
-title = "Visualizing relative frequency\nacross monthly travel groups",
-x_label = paste0("Months"),
-x_col = started_at, 
-group_col = member_casual,
-geomType = "other",
-angle = 45,
-color_col = "black",
-density_alpha = 0.75,
-isTime = TRUE,
-date_breaks = "1 month",
-date_labels = "%b",
-)
-
-gplot
-
-```
-
 #### [Histogram]{.panel-tabset-label}
 
 ```{r}
@@ -2034,8 +1998,6 @@ quantile(qdf_casual$started_at, probs = c(0.25, 0.5, 0.75))
 ```{r}
 #| label: fig-monthCasualHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of monthly casual travel."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <-
@@ -2068,8 +2030,6 @@ gplot
 ```{r}
 #| label: fig-monthMemberHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of monthly member travel."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -2093,6 +2053,34 @@ high = "red",
 binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
 quartiles = quartiles_member,
 qformat = "%b-%d"
+)
+
+gplot
+
+```
+
+#### [Density]{.panel-tabset-label}
+
+```{r}
+#| label: fig-monthDensity
+#| fig-cap: "Visualizing the probability-density distribution of months by membership."
+#| tidy: true
+
+gplot <- 
+dplyr::tbl(dbconn, "db/moy.db") |>
+dplyr::collect() |>
+plotter(
+title = "Visualizing relative frequency\nacross monthly travel groups",
+x_label = paste0("Months"),
+x_col = started_at, 
+group_col = member_casual,
+geomType = "other",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isTime = TRUE,
+date_breaks = "1 month",
+date_labels = "%b",
 )
 
 gplot
@@ -2154,6 +2142,8 @@ isBinary = TRUE)
 
     -   The large $\chi^2$ value (76305.71) with 6 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
 
+-   Two plots, @fig-dayCasualHistogram and @fig-dayMemberHistogram, present a highly granular view of the daily data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
+
 -   To visualize daily users through the lens of their respective concentrations, see @fig-dayDensity The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
 
     -   The casual group has higher peaks near the left and right sides of the distribution. Their highest peak appears to be on Saturday.
@@ -2163,8 +2153,6 @@ isBinary = TRUE)
     -   On weekdays, both groups show a bimodal distribution, with two peaks each day. On weekends, there is a unimodal distribution.
 
     -   Both groups overlap the other signficantly, suggesting similarity in travel patterns.
-
--   Two plots, @fig-dayCasualHistogram and @fig-dayMemberHistogram, present a highly granular view of the daily data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
 
 -   @tbl-modelDaysQ presents the results of a binary logistic regression analyzing the relationship between days of the week and membership status. The analysis divides the week into quartiles, with Q1 (Sunday 12:00 am - Monday 11:40 am) serving as the reference category.
 
@@ -2299,8 +2287,6 @@ kableExtra::kable()
 ```{r}
 #| label: fig-wkdayTotals
 #| fig-cap: "The overall distribution of trips taken by day of the week"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 # Values were too similar to visualize differences, see coord_cartesion()
@@ -2359,8 +2345,6 @@ row_index = 1
 ```{r}
 #| label: fig-wkdayCompare
 #| fig-cap: "The membership distribution of trips taken by day of the week"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -2453,36 +2437,6 @@ chi_result = chiResult
 
 ```
 
-#### [Density]{.panel-tabset-label}
-
-```{r}
-#| label: fig-dayDensity
-#| fig-cap: "Visualizing the probability-density distribution of the day by membership variables."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-dplyr::tbl(dbconn, "db/dow.db") |>
-dplyr::select(started_at, member_casual) |>
-dplyr::collect() |>
-plotter(
-title = "Visualizing relative frequency\nacross daily travel groups",
-x_label = paste0("Day"),
-x_col = started_at, 
-group_col = member_casual,
-geomType = "other",
-angle = 45,
-color_col = "black",
-density_alpha = 0.75,
-isTime = TRUE,
-date_breaks = "1 day",
-date_labels = "%a")
-
-gplot
-
-```
-
 #### [Histogram]{.panel-tabset-label}
 
 ```{r}
@@ -2513,8 +2467,6 @@ quantile(qdf_casual$started_at, probs = c(0.25, 0.5, 0.75))
 ```{r}
 #| label: fig-dayCasualHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of daily casual travel."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -2547,8 +2499,6 @@ gplot
 ```{r}
 #| label: fig-dayMemberHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of daily member travel."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -2573,6 +2523,34 @@ binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
 quartiles = quartiles_member,
 qformat = "%a %I %p"
 ) 
+
+gplot
+
+```
+
+#### [Density]{.panel-tabset-label}
+
+```{r}
+#| label: fig-dayDensity
+#| fig-cap: "Visualizing the probability-density distribution of the day by membership variables."
+#| tidy: true
+
+gplot <- 
+dplyr::tbl(dbconn, "db/dow.db") |>
+dplyr::select(started_at, member_casual) |>
+dplyr::collect() |>
+plotter(
+title = "Visualizing relative frequency\nacross daily travel groups",
+x_label = paste0("Day"),
+x_col = started_at, 
+group_col = member_casual,
+geomType = "other",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isTime = TRUE,
+date_breaks = "1 day",
+date_labels = "%a")
 
 gplot
 
@@ -2636,6 +2614,8 @@ isBinary = TRUE
 
     -   The large $\chi^2$ value (72733.38) with 23 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
 
+-   Two plots, @fig-hourCasualHistogram and @fig-hourMemberHistogram, present a highly granular view of the hourly data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
+
 -   To visualize hourly users through the lens of their respective concentrations, see @fig-hourDensity. The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
 
     -   The member group parallels the daily bimodal patterns seen in daily density plot.
@@ -2643,8 +2623,6 @@ isBinary = TRUE
     -   The casual group likewise, but to less extent parallels the bimodal patterns seen in the daily density plot.
 
     -   The two groups, largely, are overlapping, with the highest densities for both falling around 5:00pm.
-
--   Two plots, @fig-hourCasualHistogram and @fig-hourMemberHistogram, present a highly granular view of the hourly data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
 
 -   @tbl-modelHourQ presents the results of a binary logistic regression analyzing the relationship between hour of the day and membership status. The analysis divides the day into quartiles, with Q1 (12:00 am - 10:59 am) serving as the reference category.
 
@@ -2682,7 +2660,7 @@ DB Operations
 ::: flex-code
 ```{r}
 #| label: writeHod
-#| code-summary: Write ... to the database.
+#| code-summary: Write to .db
 #| tidy: true
 
 if (isFALSE(duckdb::dbExistsTable(dbconn, "db/hod.db"))) {
@@ -2800,8 +2778,6 @@ kableExtra::kable()
 ```{r}
 #| label: fig-hourTotals
 #| fig-cap: "The overall distribution of trips taken by hour of the day"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- transformData(
@@ -2863,8 +2839,6 @@ row_index = 1
 ```{r}
 #| label: fig-hourCompare
 #| fig-cap: "The membership distribution of trips taken by hour of the day"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -2964,36 +2938,6 @@ chi_result = chiResult
 
 ```
 
-#### [Density]{.panel-tabset-label}
-
-```{r}
-#| label: fig-hourDensity
-#| fig-cap: "Visualizing the probability-density distribution of the hour by membership."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-dplyr::tbl(dbconn, "db/hod.db") |>
-dplyr::collect() |>
-plotter(
-title = "Visualizing relative frequency\nacross hourly travel groups",
-x_label = paste0("Hours", "\n", "(12-hour clock)"),
-x_col = started_at_time, 
-group_col = member_casual,
-geomType = "other",
-angle = 45,
-color_col = "black",
-density_alpha = 0.75,
-isTime = TRUE,
-date_breaks = "1 hour",
-date_labels = "%I %p",
-)
-
-gplot
-
-```
-
 #### [Histogram]{.panel-tabset-label}
 
 ```{r}
@@ -3024,8 +2968,6 @@ quantile(qdf_casual$started_at_time, probs = c(0.25, 0.5, 0.75))
 ```{r}
 #| label: fig-hourCasualHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of hourly casual travel."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 
@@ -3061,8 +3003,6 @@ axis.text.x = ggplot2::element_text(size = ggplot2::rel(.9)))
 ```{r}
 #| label: fig-hourMemberHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of hourly member travel."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -3091,6 +3031,34 @@ qformat = "%I:%M %p"
 gplot +
 ggplot2::theme(
 axis.text.x = ggplot2::element_text(size = ggplot2::rel(.9)))
+
+```
+
+#### [Density]{.panel-tabset-label}
+
+```{r}
+#| label: fig-hourDensity
+#| fig-cap: "Visualizing the probability-density distribution of the hour by membership."
+#| tidy: true
+
+gplot <- 
+dplyr::tbl(dbconn, "db/hod.db") |>
+dplyr::collect() |>
+plotter(
+title = "Visualizing relative frequency\nacross hourly travel groups",
+x_label = paste0("Hours", "\n", "(12-hour clock)"),
+x_col = started_at_time, 
+group_col = member_casual,
+geomType = "other",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isTime = TRUE,
+date_breaks = "1 hour",
+date_labels = "%I %p",
+)
+
+gplot
 
 ```
 
@@ -3140,6 +3108,10 @@ isBinary = TRUE)
 
 -   @tbl-milesCompare and @fig-membershipMiles likewise summarize the distance distribution by membership status.
 
+-   @tbl-distanceSummary sheds light on the variability, range, and quartile information about the distance to membership data.
+
+-   Two plots, @fig-distanceCasualHistogram and @fig-distanceMemberHistogram, present a highly granular view of the distance data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
+
 -   To visualize monthly users through the lens of their respective concentrations, see @fig-distanceDensity. The y-axis shows the density (a measure of relative frequency).
 
     -   The member group has a narrower, taller spike in between 0.1 and 1 mile distances. There is less of a concentration than the casual group between the 1-3 mile distances.
@@ -3148,13 +3120,9 @@ isBinary = TRUE)
 
     -   Both groups overlap nearly completely from around the 3 miles mark and onwards.
 
--   @tbl-distanceSummary sheds light on the variability, range, and quartile information about the distance to membership data.
-
--   Two plots, @fig-distanceCasualHistogram and @fig-distanceMemberHistogram, present a highly granular view of the distance data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
-
 -   @tbl-modeldistanceQ presents the odds ratios for membership status across distance quartiles, with Q1 serving as the reference category.
 
-    -   Compared to Q1, the odds of being a member versus a casual rider were significantly lower in all other quartiles (p \< 0.001 for all comparisons).
+    -   Compared to Q1, the odds of being a member versus a casual rider were significantly lower in all other quartiles (p < 0.001 for all comparisons).
 
     -   Specifically, the odds of membership were 0.63 times as high in Q2, 0.59 times as high in Q3, and 0.65 times as high in Q4.
 
@@ -3288,7 +3256,6 @@ kableExtra::kable()
 ```{r}
 #| label: fig-milesTotals
 #| fig-cap: "The overall distribution of trips taken by the estimated distance traveled"
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -3354,8 +3321,6 @@ align_parameter = "right"
 ```{r}
 #| label: fig-membershipMiles
 #| fig-cap: "The membership distribution of trips taken by the estimated distance traveled"
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -3420,37 +3385,6 @@ gt::cols_label(member_casual = " ", n = " ")
 ```
 :::
 
-#### [Density]{.panel-tabset-label}
-
-```{r}
-#| label: fig-distanceDensity
-#| fig-cap: "Visualizing the probability-density distribution of distance by membership."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
-#| tidy: true
-
-gplot <- 
-dplyr::tbl(dbconn, "db/distance.db") |>
-dplyr::select(miles, member_casual) |>
-dplyr::collect() |>
-plotter(
-title = "Visualizing relative frequency\nacross travel distance groups",
-x_label = "Miles",
-x_col = miles, 
-group_col = member_casual,
-geomType = "column",
-angle = 45,
-color_col = "black",
-density_alpha = 0.75,
-isDensity = TRUE,
-is_colGroup = TRUE,
-breaks = seq(0, 11, by = 1),
-limits = c(0.1, 11)
-)
-
-gplot
-
-```
 
 #### [Summary Stats]{.panel-tabset-label}
 
@@ -3516,8 +3450,6 @@ quantile(as.numeric(qdf_casual$miles), probs = c(0.25, 0.5, 0.75))
 ```{r}
 #| label: fig-distanceCasualHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of casual travel distance."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -3548,8 +3480,6 @@ gplot
 ```{r}
 #| label: fig-distanceMemberHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of member travel distance."
-#| fig-cap-location: bottom
-#| fig-dpi: 150
 #| tidy: true
 
 gplot <- 
@@ -3573,6 +3503,36 @@ limits = c(0.1, 5),
 breaks = seq(1, 5, by = 1),
 quartiles = quartiles_member
 ) 
+
+gplot
+
+```
+
+#### [Density]{.panel-tabset-label}
+
+```{r}
+#| label: fig-distanceDensity
+#| fig-cap: "Visualizing the probability-density distribution of distance by membership."
+#| tidy: true
+
+gplot <- 
+dplyr::tbl(dbconn, "db/distance.db") |>
+dplyr::select(miles, member_casual) |>
+dplyr::collect() |>
+plotter(
+title = "Visualizing relative frequency\nacross travel distance groups",
+x_label = "Miles",
+x_col = miles, 
+group_col = member_casual,
+geomType = "column",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isDensity = TRUE,
+is_colGroup = TRUE,
+breaks = seq(0, 11, by = 1),
+limits = c(0.1, 11)
+)
 
 gplot
 
@@ -3625,6 +3585,10 @@ isBinary = TRUE
 
 -   @tbl-mphCompare and @fig-mphCompare summarize the travel speed distribution by membership.
 
+-   @tbl-speedSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
+
+-   Two plots, @fig-speedCasualHistogram and @fig-speedMemberHistogram, present a highly granular view of the travel speed data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
+
 -   To visualize travel speed patterns through the lens of their respective concentrations, see @fig-speedDensity. The y-axis shows the density (a measure of relative frequency).
 
     -   The member group has a narrower, taller spike centering around 7mph. There is higher concentration than the casual group between \~ 5-15mph.
@@ -3632,10 +3596,6 @@ isBinary = TRUE
     -   The casual group has a broader, shorter spike centering closer to 6mph. There is higher concentration than the member group between \~ 1-5mph.
 
     -   There is a lot of overlap, and both groups have a unimodal distribution.
-
--   @tbl-speedSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
-
--   Two plots, @fig-speedCasualHistogram and @fig-speedMemberHistogram, present a highly granular view of the travel speed data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
 
 -   @tbl-modelspeedQ presents the odds ratios for membership status across speed quartiles, with Q1 serving as the reference category.
 
@@ -3764,9 +3724,7 @@ kableExtra::kable()
 ```{r}
 #| label: fig-mphTotals
 #| fig-cap: "The overall distribution of trips taken by the estimated average speed"
-#| fig-cap-location: bottom
 #| tidy: true
-#| fig-dpi: 150
 
 gplot <- 
 transformData(
@@ -3825,9 +3783,7 @@ align_parameter = "right"
 ```{r}
 #| label: fig-mphCompare
 #| fig-cap: "The membership distribution of trips taken by the estimated average speed"
-#| fig-cap-location: bottom
 #| tidy: true
-#| fig-dpi: 150
 
 gplot <- 
 transformData(
@@ -3885,37 +3841,6 @@ gt::cols_label(member_casual = " ", n = " ")
 ```
 :::
 
-#### [Density]{.panel-tabset-label}
-
-```{r}
-#| label: fig-speedDensity
-#| fig-cap: "Visualizing the probability-density distribution of speed by membership."
-#| fig-cap-location: bottom
-#| tidy: true
-#| fig-dpi: 150
-
-gplot <- 
-dplyr::tbl(dbconn, "db/speed.db") |>
-dplyr::select(mph, member_casual) |>
-dplyr::collect() |>
-plotter(
-title = "Visualizing relative frequency\nacross travel speed groups",
-x_label = "Miles per Hour",
-x_col = mph, 
-group_col = member_casual,
-geomType = "column",
-angle = 45,
-color_col = "black",
-density_alpha = 0.75,
-isDensity = TRUE,
-is_colGroup = TRUE,
-breaks = seq(1, 20, by = 1),
-limits = c(1, 20)
-)
-
-gplot
-
-```
 
 #### [Summary Stats]{.panel-tabset-label}
 
@@ -3978,9 +3903,8 @@ quantile(qdf_casual$mph, probs = c(0.25, 0.5, 0.75))
 ```{r}
 #| label: fig-speedCasualHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of casual travel speed."
-#| fig-cap-location: bottom
 #| tidy: true
-#| fig-dpi: 150
+
 
 gplot <- 
 qdf_casual |>
@@ -4012,7 +3936,7 @@ gplot
 #| label: fig-speedMemberHistogram
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of member travel speed."
 #| tidy: true
-#| fig-dpi: 150
+
 
 gplot <- 
 qdf_member |>
@@ -4037,6 +3961,36 @@ quartiles = quartiles_member
 ) 
 
 gplot
+```
+
+#### [Density]{.panel-tabset-label}
+
+```{r}
+#| label: fig-speedDensity
+#| fig-cap: "Visualizing the probability-density distribution of speed by membership."
+#| tidy: true
+
+gplot <- 
+dplyr::tbl(dbconn, "db/speed.db") |>
+dplyr::select(mph, member_casual) |>
+dplyr::collect() |>
+plotter(
+title = "Visualizing relative frequency\nacross travel speed groups",
+x_label = "Miles per Hour",
+x_col = mph, 
+group_col = member_casual,
+geomType = "column",
+angle = 45,
+color_col = "black",
+density_alpha = 0.75,
+isDensity = TRUE,
+is_colGroup = TRUE,
+breaks = seq(1, 20, by = 1),
+limits = c(1, 20)
+)
+
+gplot
+
 ```
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
@@ -4075,7 +4029,7 @@ isBinary = TRUE)
 :::
 :::
 
-## Interpretation of EDA
+## Summarizing Tabsets
 
 The EDA (exploratory data analysis) sections employ various statistical methods to uncover patterns in user behavior and preferences. A chi-square analysis reveals a significant association between bicycle type and membership status (p \< 0.001). Binary logistic regression further quantifies this relationship, showing that electric bike users have lower odds of being members compared to classic bike users. @sec-btypes
 
@@ -4121,7 +4075,7 @@ Creating an EpiFlow
 ::: flex-code
 ```{r}
 #| label: createFlows dataframe
-#| code-summary: First, creates the frequency of trips taken to and from pairs of stations. We are only going to look deeper into the top 50 most traveled pairs.
+#| code-summary: "First, creates the frequency of trips taken to and from pairs of stations. We are only going to look deeper into the top 50 most traveled pairs."
 #| tidy: true
 
 flowData <- dplyr::tbl(dbconn, filtered_path) |>
@@ -4137,7 +4091,7 @@ dplyr::slice_head(n = 50)
 
 ```{r}
 #| label: location stats
-#| code-summary: Second, we need statistics but also to combine the statistics for every unique station name. 
+#| code-summary: "Second, we need statistics but also to combine the statistics for every unique station name." 
 #| tidy: true
 
 locationData <- dplyr::tbl(dbconn, filtered_path) |>
@@ -4442,7 +4396,7 @@ mapViewer(slicerVector[[4]])
 :::
 :::
 
-### Interpretation of the Geographic Data
+### Summarzing Geographic EDA
 
 ::: p-1
 For example, suppose the user selects *University Ave & 57th St* in the epiflow visualization. This intersection happens to be at the heart of the University of Chicago campus. The natural next question is: where does the traffic to and from this location typically flow? By selecting one of the other nodes highlighted with flows directing away from the previous node, the user can identify *Kimbark Ave and 53rd St*. As seen in the map view, this location is situated adjacent to the *Vue 53 Apartments* complex. By analyzing such connections between nodes, the user can gain insights into common routes and destinations originating from a particular point of interest, potentially revealing patterns related to student housing, campus facilities, or other points of interest in the vicinity.
@@ -4458,14 +4412,14 @@ To improve membership, addressing factors deterring individuals from becoming an
 ```{r}
 #| label: tbl-dbList2
 #| code-summary: "Revisiting the list of db tables, with many more tables added. All of these tables are stored within the data/data.db file."
-#| tbl-cap: "Database Table List: Post-Exploratory Analysis"
+#| tbl-cap: "The list of tables created by the end of the analysis."
 #| tidy: true
 
 dbList2 <- 
 duckdb::dbListTables(dbconn) |>
 as.data.frame() |>
 tabler(
-title = "Post-Exploratory Database Tables",
+title = gt::md("Which tables have<br>been created so far?"),
 note_list = list(gt::md("Tables in `db/data.db` at this stage")),
 location_list = list("duckdb::dbListTables(dbconn)"),
 noteColumns = TRUE,
@@ -4493,8 +4447,8 @@ These findings and recommendations are based on robust statistical analyses, inc
 ::: p-1
 -   Membership status significantly influences bike usage patterns:
 
-    -   Members prefer classic bikes (65%) over electric bikes (35%).
-    -   Casual users have a higher electric bike usage (41%) compared to members.
+    -   Members prefer classic bikes over electric bikes.
+    -   Casual users have a higher electric bike usage compared to members.
     -   Members typically take shorter, faster trips.
     -   Casual users tend to engage in longer, slower rides.
 
@@ -4518,7 +4472,6 @@ These findings and recommendations are based on robust statistical analyses, inc
 
 ## Recommendations
 
-::: p-1
 1.  Tailor marketing strategies to target potential members for short, frequent trips, especially for commuting purposes.
 
 2.  Optimize bike distribution to meet the demand for classic bikes among members and electric bikes among casual users.
@@ -4538,7 +4491,6 @@ These findings and recommendations are based on robust statistical analyses, inc
 9.  Utilize the epiflows visualization tool to identify and optimize popular routes and destinations.
 
 10. Continue to collect and analyze data to refine understanding of user behavior and preferences over time.
-:::
 
 ```{r}
 #| eval: false
