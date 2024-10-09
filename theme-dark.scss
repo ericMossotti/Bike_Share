@@ -1,11 +1,11 @@
 /*-- scss:defaults --*/
 $theme: "darkly" !default;
 
-// Base document colors
 $body-bg: #222 !default;
 $body-color: SeaShell !default;
-//$btn-border-width: 0px !default;
 $btn-close-color: #3366ff !default;
+
+/*-- user defined variables --*/
 
 $heading-1: #E0E0E0;
 $heading-2: #2eb8b8;
@@ -38,60 +38,26 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
   color: $heading-4 !important; /* Third sub-level */
 }
 
-//#eda > .
 
 /*-- scss:classes --*/
 
-
-
 .table-container {
   display: flex;
- // justify-content: center !important;
-  //flex-shrink: 1 !important;
+  justify-content: center;
+  flex-shrink: 1;
   overflow-y: auto; 
   overflow-x: auto;
   max-height: 50vh;
   margin-top: 1rem;
   margin-bottom: 1rem;
-  //scrollbar-width: 2px;
-  //scrollbar-gutter: auto;
-//  border: 0;
- // border-radius: 0;
- // scrollbar-color: Red transparent !important;
-
-
 }
 
-.quarto-float-tbl {
- // overflow-x: auto;
-  //overflow-y: auto;
-  //max-height: 60vh;
-  //margin-top: 1rem;
-  //margin-bottom: 1rem;
-//  scrollbar-width: 2px !important;
-//  scrollbar-gutter: auto !important;
-//  border: 0;
- // border-radius: 0;
-//  scrollbar-color: Green transparent !important;
-}
-
-
-.table-container table {
-}
-
-.gt_table {
-}
-
-.table-caption > figcaption {
-}
 
 .quarto-float-tbl > figcaption {
-  //font-size: 0.7rem !important;
   text-align: left !important;
 }
 
 .quarto-float-fig > figcaption {
-  //font-size: 0.7rem !important;
   text-align: left !important;
 }
 
