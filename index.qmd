@@ -215,7 +215,6 @@ To streamline the process, reduce code duplication, and maintain consistent form
 :::{.d-flex .justify-content-center .tableScroller}
 ```{r}
 #| label: tbl-dbList
-#| code-summary: "These are the starting tables contained in the data/data.db file.<br><br>Noting this as we will be adding many more tables in the later stages."
 #| tbl-cap: "The list of tables created in data.db so far."
 #| tidy: true
 
@@ -239,6 +238,7 @@ dbList
 
 :::{.column-margin}
 ![dbList_1](images/dbFiles_start.png){#fig-dbList_1}
+
 A view of the filesystem directory. Notice there are not separate files for tables. The file, data.db, in this view does not represent a table name but the name of the database.
 :::
 # Tidying
@@ -4411,7 +4411,6 @@ To improve membership, addressing factors deterring individuals from becoming an
 ::: {.d-flex .justify-content-center .tableScroller}
 ```{r}
 #| label: tbl-dbList2
-#| code-summary: "Revisiting the list of db tables, with many more tables added. All of these tables are stored within the data/data.db file."
 #| tbl-cap: "The list of tables created by the end of the analysis."
 #| tidy: true
 
@@ -4436,6 +4435,7 @@ dbList2
 
 ::: column-margin
 ![dbList_2](images/dbFiles_end.png){#fig-dbList_2}
+
 Notice the size difference from the previous image. The database is still represented in the data folder as one file.
 :::
 
