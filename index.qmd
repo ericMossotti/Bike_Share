@@ -55,17 +55,17 @@ knitr::opts_chunk$set(message = FALSE,
 
 # Intro
 
-::: {#offcanvas1 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas1 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {#offcanvasLabel .h5 .offcanvas-title}
 Import Processing Code
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: importOrConnect
@@ -105,8 +105,8 @@ source("Scripts/chisqTest.R")
 #| eval: false 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
 ## Stakeholders
 
@@ -118,7 +118,7 @@ The primary stakeholders in this analysis are Divvy, Lyft (the parent company of
 The raw 2023 dataset was imported from Divvy Data. [@divvyda]
 :::
 
-::: {.d-flex overflow-x="auto"}
+:::: {.d-flex overflow-x="auto"}
 ::: column-screen-inset
 ```{r}
 #| label: tbl-raw
@@ -167,19 +167,19 @@ footnotes.multiline = FALSE
 
 ```
 :::
-:::
+::::
 
-::: {#offcanvas100 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas100 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Glimpse
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: glimpseRaw
@@ -191,14 +191,14 @@ dplyr::collect() |>
 tibble::glimpse() 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: {.d-grid .gap-0}
+:::: {.d-grid .gap-0}
 ::: {.btn .btn-outline-warning .mb-3 .mt-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas100" aria-controls="offcanvas"}
 R console output of the raw data
 :::
-:::
+::::
 
 ## Design
 
@@ -212,7 +212,7 @@ To streamline the process, reduce code duplication, and maintain consistent form
 
 ## Initial Database Table List
 
-:::table-container
+:::{.d-flex .justify-content-center .tableScroller}
 ```{r}
 #| label: tbl-dbList
 #| code-summary: "These are the starting tables contained in the data/data.db file.<br><br>Noting this as we will be adding many more tables in the later stages."
@@ -237,15 +237,17 @@ dbList
 ```
 :::
 
-![A view of the filesystem directory. Notice there are not separate files for tables. Technically, data.db, in this view, does not represent a table name, but the name of the database.](images/dbFiles_start.png){.column-margin}
-
+:::{.column-margin}
+![dbList_1](images/dbFiles_start.png){#fig-dbList_1}
+A view of the filesystem directory. Notice there are not separate files for tables. The file, data.db, in this view does not represent a table name but the name of the database.
+:::
 # Tidying
 
 ::: p-2
 The starting occurrences was 5,719,877. Then 1,388,170 incomplete observations were then removed by the initial processing script.
 :::
 
-::: {.d-grid .gap-0}
+::::: {.d-grid .gap-0}
 ::: {.callout-warning icon="false" width="auto"}
 Code processing steps are accessible via buttons like the one below. Drop-down code summaries and tables therein add context and transparency regarding the presented findings to enhance the reader's understanding.
 :::
@@ -253,21 +255,21 @@ Code processing steps are accessible via buttons like the one below. Drop-down c
 ::: {.btn .btn-outline-danger .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
 Data processing documentation
 :::
-:::
+:::::
 
 ## Duplicates
 
-::: {#offcanvas2 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas2 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Code to Remove Duplicates
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: originalNobs
@@ -378,8 +380,8 @@ overwrite = TRUE)
 }
 ```
 :::
-:::
-:::
+::::
+::::::::
 
 ::: {.mt-2 .mb-2}
 A crucial question arises: How can one identify and handle duplicate data? This section covers the process of checking for duplicates and selectively removing them while exercising caution. It is essential to recognize that the presence of unique values in a single column does not necessarily guarantee the uniqueness of each observation or row.
@@ -496,25 +498,25 @@ To ensure the accurate removal of duplicates, the count of distinct n-values (re
 By carefully analyzing the count of distinct n-values and the total occurrences before and after reduplication, it was ensured that only the precise number of duplicate observations was removed, preserving the integrity of the unique data while eliminating the identified duplicates. This meticulous approach to data cleaning is crucial for maintaining data quality and reliability throughout the analysis process.
 :::
 
-::: {.d-grid .gap-0}
+:::: {.d-grid .gap-0}
 ::: {.btn .btn-outline-info .mt-4 .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas2" aria-controls="offcanvas"}
 Code used for handling duplicates in this section
 :::
-:::
+::::
 
 ## Outliers
 
-::: {#offcanvas33 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::: {#offcanvas33 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Transform and Filter the Database
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: filterDecisions
@@ -539,8 +541,8 @@ transFilter(conxn = dbconn, oldPath = "db/data_unduped.db", newPath = filtered_p
 #| eval: false
 ```
 :::
-:::
-:::
+:::::
+:::::::::
 
 Observations deemed erroneous or irrelevant for identifying usage trends among members and casual users were filtered out. Keeping track of these errors is a good practice, as they might provide insights into the differences in how members and casuals utilize the service.
 
@@ -564,7 +566,7 @@ as.integer()
 ```
 :::
 
-:::flex-code
+::: flex-code
 ```{r}
 #| label: tbl-observationHistory
 #| tbl-cap: Observation Processing History
@@ -625,25 +627,25 @@ summaryProcessTable
 ```
 :::
 
-::: {.d-grid .gap-0}
+:::: {.d-grid .gap-0}
 ::: {.btn .btn-outline-success .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas33" aria-controls="offcanvas"}
 Outlier and additional transformations
 :::
-:::
+::::
 
 # Exploratory Analysis
 
-::: {#offcanvas8979 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::::: {#offcanvas8979 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 EDA Scripts
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: tablerScript
@@ -679,25 +681,25 @@ EDA Scripts
 #| code-summary: Helpfully, this contributes to the Chi-Squared tables by allowing me to add the chi-squared statistic and degrees of freedom information in the footnotes.
 ```
 :::
-:::
-:::
+:::::::
+:::::::::::
 
-::: {.d-grid .gap-0}
+:::: {.d-grid .gap-0}
 ::: {.btn .btn-outline-warning .mt-3 .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas8979" aria-controls="offcanvas"}
 Scripts used frequently in this section
 :::
-:::
+::::
 
 ## Membership {#sec-membership}
 
-::: {.d-grid .gap-3}
+::::::: {.d-grid .gap-3}
 ::: {.callout-important .mb-3 icon="false"}
 <!-- -->
 
 -   @tbl-memberTotals and @fig-totalMemberFrequency give an idea of the overall member to casual travel distribution.
 :::
 
-::: {.btn-group role="group" aria-label="third"}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas771" aria-controls="offcanvas"}
 Database Operations
 :::
@@ -705,20 +707,20 @@ Database Operations
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas772" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+:::::::
 
-::: {#offcanvas771 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas771 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Database Code
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: writeMembership
@@ -736,20 +738,20 @@ overwrite = TRUE)
 }
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: {#offcanvas772 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas772 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: {layout="[[1]]"}
 ```{r}
 #| label: tbl-kableMembership
@@ -763,10 +765,10 @@ kableExtra::kable()
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: panel-tabset
+::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
 ::: plot-container
@@ -774,7 +776,7 @@ kableExtra::kable()
 #| label: fig-totalMemberFrequency
 #| fig-cap: "Plotting the overall membership distribution"
 #| tidy: true
-#| echo: false
+#| echo: true
 
 gplot <- 
 transformData(
@@ -825,11 +827,11 @@ row_index = 1
 
 ```
 :::
-:::
+:::::
 
 ## Cycle Types {#sec-btypes}
 
-::: {.d-grid .gap-3}
+::::::: {.d-grid .gap-3}
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
@@ -850,7 +852,7 @@ row_index = 1
     -   The odds of membership for users of electric bikes were *0.76* times the odds for users of classic bikes. The difference in membership likelihood between electric and classic bike users is highly statistically significant *(p \< 0.001)*.
 :::
 
-::: {.btn-group role="group" aria-label="third"}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas771" aria-controls="offcanvas"}
 Database Operations
 :::
@@ -858,20 +860,20 @@ Database Operations
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas772" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+:::::::
 
-::: {#offcanvas871 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::: {#offcanvas871 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: write bType to duckdb
@@ -915,20 +917,20 @@ overwrite = TRUE)
 
 ```
 :::
-:::
-:::
+:::::
+:::::::::
 
-::: {#offcanvas872 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas872 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: {layout="[[1,2]]"}
 ```{r}
 #| label: tbl-kableBtype
@@ -954,10 +956,10 @@ kableExtra::kable()
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: panel-tabset
+:::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -1016,7 +1018,7 @@ row_index = 1
 
 ### [Comparative]{.panel-tabset-label}
 
-::: panel-tabset
+:::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -1151,12 +1153,12 @@ source_note = gt::md("**Source**: `db/bType_wb.db`"),
 isBinary = TRUE)
 
 ```
-:::
-:::
+::::
+::::::
 
 ## Duration {#sec-duration}
 
-::: {.d-grid .gap-3}
+::::::: {.d-grid .gap-3}
 ::: {.callout-important .tableScroller .mb-3 icon="false" background-color="Black"}
 <!-- -->
 
@@ -1191,7 +1193,7 @@ isBinary = TRUE)
     -   In ***Q4 (16.13 - 475.22 minutes)***, the odds of membership were 0.06 times as high as in *Q1*. This represents an even more pronounced decrease (94%) in membership likelihood for the longest rides.
 :::
 
-::: {.btn-group role="group" aria-label="third"}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas671" aria-controls="offcanvas"}
 Database Operations
 :::
@@ -1199,20 +1201,20 @@ Database Operations
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas672" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+:::::::
 
-::: {#offcanvas671 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::: {#offcanvas671 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: write duration to duckdb
@@ -1271,20 +1273,20 @@ overwrite = TRUE)
 
 ```
 :::
-:::
-:::
+:::::
+:::::::::
 
-::: {#offcanvas672 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas672 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: {layout="[[1,2]]"}
 ```{r}
 #| label: tbl-kableDuration
@@ -1310,10 +1312,10 @@ kableExtra::kable()
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: panel-tabset
+:::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -1380,7 +1382,7 @@ row_index = 1
 
 ### [Comparative]{.panel-tabset-label}
 
-::: panel-tabset
+:::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -1646,12 +1648,12 @@ isBinary = TRUE
 )
 
 ```
-:::
-:::
+::::
+::::::
 
 ## Month {#sec-moy}
 
-::: {.d-grid .gap-3}
+::::::: {.d-grid .gap-3}
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
@@ -1692,7 +1694,7 @@ isBinary = TRUE
     -   In ***Q4 (Sep 18 - Dec 31)***, the odds of membership were 0.87 times as high as in Q1. While still lower than Q1, this represents a less pronounced decrease (13%) in membership likelihood during fall and early winter.
 :::
 
-::: {.btn-group role="group" aria-label="third"}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas571" aria-controls="offcanvas"}
 Database Operations
 :::
@@ -1700,20 +1702,20 @@ Database Operations
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas572" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+:::::::
 
-::: {#offcanvas571 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::: {#offcanvas571 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: writeMonths
@@ -1771,20 +1773,20 @@ overwrite = TRUE)
 
 ```
 :::
-:::
-:::
+:::::
+:::::::::
 
-::: {#offcanvas572 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas572 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: {layout="[[1,2]]"}
 ```{r}
 #| label: tbl-kableMoy
@@ -1810,10 +1812,10 @@ kableExtra::kable()
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: panel-tabset
+:::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -1868,7 +1870,7 @@ row_index = 1
 
 ### [Comparative]{.panel-tabset-label}
 
-::: panel-tabset
+:::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -2119,12 +2121,12 @@ source_note = gt::md("**Source**: `db/moy.db`"),
 isBinary = TRUE)
 
 ```
-:::
-:::
+::::
+::::::
 
 ## Day {#sec-dow}
 
-::: {.d-grid .gap-3}
+::::::: {.d-grid .gap-3}
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
@@ -2165,7 +2167,7 @@ isBinary = TRUE)
     -   Q4 (Friday 12:19 pm - Saturday 11:59 pm), the odds of membership were 0.80 times as high as in Q1. This represents a significant decrease in the likelihood of membership during the weekend period.
 :::
 
-::: {.btn-group role="group" aria-label="third"}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas471" aria-controls="offcanvas"}
 Database Operations
 :::
@@ -2173,20 +2175,20 @@ Database Operations
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas472" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+:::::::
 
-::: {#offcanvas471 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::: {#offcanvas471 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: writeDow
@@ -2251,20 +2253,20 @@ overwrite = TRUE)
 
 ```
 :::
-:::
-:::
+:::::
+:::::::::
 
-::: {#offcanvas472 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas472 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: {layout="[[1]]"}
 ```{r}
 #| label: tbl-kableDay
@@ -2278,10 +2280,10 @@ kableExtra::kable()
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: panel-tabset
+:::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -2339,7 +2341,7 @@ row_index = 1
 
 ### [Comparative]{.panel-tabset-label}
 
-::: panel-tabset
+:::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -2591,12 +2593,12 @@ isBinary = TRUE
 )
 
 ```
-:::
-:::
+::::
+::::::
 
 ## Hour {#sec-hod}
 
-::: {.d-grid .gap-3}
+::::::: {.d-grid .gap-3}
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
@@ -2635,7 +2637,7 @@ isBinary = TRUE
     -   There's a slight increase in membership likelihood during Q3 (late afternoon) compared to the reference period, while evening hours (Q4) show a slight decrease in membership likelihood.
 :::
 
-::: {.btn-group role="group" aria-label="third"}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas371" aria-controls="offcanvas"}
 Database Operations
 :::
@@ -2643,20 +2645,20 @@ Database Operations
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas372" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+:::::::
 
-::: {#offcanvas371 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::: {#offcanvas371 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: writeHod
@@ -2730,20 +2732,20 @@ overwrite = TRUE)
 
 ```
 :::
-:::
-:::
+:::::
+:::::::::
 
-::: {#offcanvas372 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas372 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: {layout="[[1,2],[3]]"}
 ```{r}
 #| label: tbl-hodKable
@@ -2769,10 +2771,10 @@ kableExtra::kable()
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: panel-tabset
+:::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -2833,7 +2835,7 @@ row_index = 1
 
 ### [Comparative]{.panel-tabset-label}
 
-::: panel-tabset
+:::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -3095,12 +3097,12 @@ title = gt::md("Binary Logistic Regression:<br>Modeling the likelihood of hourly
 source_note = gt::md("**Source**: `db/hod_wq.db`"),
 isBinary = TRUE)
 ```
-:::
-:::
+::::
+::::::
 
 ## Distance {#sec-distance}
 
-::: {.d-grid .gap-3}
+::::::: {.d-grid .gap-3}
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
@@ -3122,7 +3124,7 @@ isBinary = TRUE)
 
 -   @tbl-modeldistanceQ presents the odds ratios for membership status across distance quartiles, with Q1 serving as the reference category.
 
-    -   Compared to Q1, the odds of being a member versus a casual rider were significantly lower in all other quartiles (p < 0.001 for all comparisons).
+    -   Compared to Q1, the odds of being a member versus a casual rider were significantly lower in all other quartiles (p \< 0.001 for all comparisons).
 
     -   Specifically, the odds of membership were 0.63 times as high in Q2, 0.59 times as high in Q3, and 0.65 times as high in Q4.
 
@@ -3131,7 +3133,7 @@ isBinary = TRUE)
     -   Interestingly, the lowest odds of membership were observed in Q3, rather than Q4, suggesting a non-linear relationship between distance and membership likelihood.
 :::
 
-::: {.btn-group role="group" aria-label="third"}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas271" aria-controls="offcanvas"}
 Database Operations
 :::
@@ -3139,20 +3141,20 @@ Database Operations
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas272" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+:::::::
 
-::: {#offcanvas271 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::: {#offcanvas271 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: writeDistance
@@ -3208,20 +3210,20 @@ overwrite = TRUE)
 
 ```
 :::
-:::
-:::
+:::::
+:::::::::
 
-::: {#offcanvas272 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas272 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: {layout="[[1,2]]"}
 ```{r}
 #| label: tbl-dbhod
@@ -3247,10 +3249,10 @@ kableExtra::kable()
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: panel-tabset
+:::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -3315,7 +3317,7 @@ align_parameter = "right"
 
 ### [Comparative]{.panel-tabset-label}
 
-::: panel-tabset
+:::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -3384,7 +3386,6 @@ gt::cols_label(member_casual = " ", n = " ")
 
 ```
 :::
-
 
 #### [Summary Stats]{.panel-tabset-label}
 
@@ -3572,12 +3573,12 @@ isBinary = TRUE
 )
 
 ```
-:::
-:::
+::::
+::::::
 
 ## Speed {#sec-speed}
 
-::: {.d-grid .gap-3}
+::::::: {.d-grid .gap-3}
 ::: {.callout-important .tableScroller .mb-3 icon="false"}
 <!-- -->
 
@@ -3606,7 +3607,7 @@ isBinary = TRUE
     -   These results suggest a strong positive association between riding speed and membership status, with the likelihood of membership increasing monotonically across speed quartiles.
 :::
 
-::: {.btn-group role="group" aria-label="third"}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas171" aria-controls="offcanvas"}
 Database Operations
 :::
@@ -3614,20 +3615,20 @@ Database Operations
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas172" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+:::::::
 
-::: {#offcanvas171 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+::::::::: {#offcanvas171 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 DB Operations
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+::::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: writeSpeed
@@ -3676,20 +3677,20 @@ duckdb::dbWriteTable(conn = dbconn, name = "db/speed_wq.db", overwrite = TRUE)
 
 ```
 :::
-:::
-:::
+:::::
+:::::::::
 
-::: {#offcanvas172 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas172 .offcanvas .offcanvas-start tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: {layout="[[1,2]]"}
 ```{r}
 #| label: tbl-kableSpeed
@@ -3715,10 +3716,10 @@ kableExtra::kable()
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: panel-tabset
+:::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
 ```{r}
@@ -3777,7 +3778,7 @@ align_parameter = "right"
 
 ### [Comparative]{.panel-tabset-label}
 
-::: panel-tabset
+:::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
 
 ```{r}
@@ -3840,7 +3841,6 @@ gt::cols_label(member_casual = " ", n = " ")
 
 ```
 :::
-
 
 #### [Summary Stats]{.panel-tabset-label}
 
@@ -4026,8 +4026,8 @@ source_note = gt::md("**Source**: `db/speed_wq.db`"),
 isBinary = TRUE)
 
 ```
-:::
-:::
+::::
+::::::
 
 ## Summarizing Tabsets
 
@@ -4061,17 +4061,17 @@ The interactive nature of the epiflows allows users to click on individual nodes
 These stations represent the most active locations within the system. Fortunately, @sec-mapview explores a potential approach to gain insights into the typical high-traffic station locations and the underlying reasons behind their elevated activity levels.
 :::
 
-::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas13 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Creating an EpiFlow
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: createFlows dataframe
@@ -4137,20 +4137,20 @@ num_cases = "trips_toAndfrom")
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: {#offcanvas14 .offcanvas .offcanvas-end tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas14 .offcanvas .offcanvas-end tabindex="1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Tables
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: summaryFlowData
@@ -4172,8 +4172,8 @@ dplyr::arrange(desc(trips_toAndfrom))
 
 ```
 :::
-:::
-:::
+::::
+::::::::
 
 ::: {.article style="color: Black"}
 ```{r}
@@ -4186,8 +4186,8 @@ epiflows::vis_epiflows(ef_test)
 ```
 :::
 
-::: {.d-grid .gap-0}
-::: {.btn-group role="group" aria-label="third"}
+:::::: {.d-grid .gap-0}
+::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-primary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas13" aria-controls="offcanvas"}
 Code Steps
 :::
@@ -4195,8 +4195,8 @@ Code Steps
 ::: {.btn .btn-secondary type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas14" aria-controls="offcanvas"}
 Table Preview
 :::
-:::
-:::
+:::::
+::::::
 
 ### Checking the Map {#sec-mapview}
 
@@ -4204,17 +4204,17 @@ Table Preview
 This section was made possible thanks to the latitude and longitude coordinates data provided alongside the stations names. Coming from the epiflow diagram, this should help make the data less abstract. The accordion below expands and collapses four *OpenStreet* maps found in the callout section below. These maps were split for viewing logistics. They contain from the epiflow in the section above. These maps are interactive, so the default views are zoom-able and movable. The transparent burst buttons enable snappy zooming-in of the station groups.
 :::
 
-::: {#offcanvas20 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
-::: offcanvas-header
+:::::::: {#offcanvas20 .offcanvas .offcanvas-start tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
+::::: offcanvas-header
 ::: {.h5 .offcanvas-title}
 Code for Mapping
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
 :::
-:::
+:::::
 
-::: offcanvas-body
+:::: offcanvas-body
 ::: flex-code
 ```{r}
 #| label: mapData
@@ -4301,18 +4301,18 @@ source("Scripts/mapViewer.R")
 #| label: mapViewerScript
 ```
 :::
-:::
-:::
+::::
+::::::::
 
-::: {#accordionParent .accordion .mt-3 .mb-3}
-::: accordion-item
-::: {#headingOne .accordion-header}
+::::::::::::::::::::::: {#accordionParent .accordion .mt-3 .mb-3}
+::::::: accordion-item
+:::: {#headingOne .accordion-header}
 ::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne" style="background-color: #222"}
 Benson Ave & Church St ... Ellis Ave & 60th St
 :::
-:::
+::::
 
-::: {#collapseOne .accordion-collapse .collapse aria-labelledby="headingOne" data-bs-parent="#accordionParent"}
+:::: {#collapseOne .accordion-collapse .collapse aria-labelledby="headingOne" data-bs-parent="#accordionParent"}
 ::: accordion-body
 ```{r}
 #| label: fig-map1
@@ -4324,17 +4324,17 @@ randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[1]])
 ```
 :::
-:::
-:::
+::::
+:::::::
 
-::: accordion-item
-::: {#headingTwo .accordion-header}
+::::::: accordion-item
+:::: {#headingTwo .accordion-header}
 ::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo" style="background-color: #222"}
 Greenview Ave & Fullteron Ave ... Loomis Ave & Lexington St
 :::
-:::
+::::
 
-::: {#collapseTwo .accordion-collapse .collapse aria-labelledby="headingTwo" data-bs-parent="#accordionParent"}
+:::: {#collapseTwo .accordion-collapse .collapse aria-labelledby="headingTwo" data-bs-parent="#accordionParent"}
 ::: accordion-body
 ```{r}
 #| label: fig-map2
@@ -4347,17 +4347,17 @@ randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[2]])
 ```
 :::
-:::
-:::
+::::
+:::::::
 
-::: accordion-item
-::: {#headingThree .accordion-header}
+::::::: accordion-item
+:::: {#headingThree .accordion-header}
 ::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree" style="background-color: #222"}
 Michigan Ave & Oak St ... State St & 33rd St
 :::
-:::
+::::
 
-::: {#collapseThree .accordion-collapse .collapse aria-labelledby="headingThree" data-bs-parent="#accordionParent"}
+:::: {#collapseThree .accordion-collapse .collapse aria-labelledby="headingThree" data-bs-parent="#accordionParent"}
 ::: accordion-body
 ```{r}
 #| label: fig-map3
@@ -4370,17 +4370,17 @@ randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[3]])
 ```
 :::
-:::
-:::
+::::
+:::::::
 
-::: accordion-item
-::: {#headingFour .accordion-header}
+::::::: accordion-item
+:::: {#headingFour .accordion-header}
 ::: {.accordion-button .collapsed type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour" style="background-color: #222"}
 Street Dr & Grand Ave ... Woodlawn Ave & 55th St
 :::
-:::
+::::
 
-::: {#collapseFour .accordion-collapse .collapse aria-labelledby="headingFour" data-bs-parent="#accordionParent"}
+:::: {#collapseFour .accordion-collapse .collapse aria-labelledby="headingFour" data-bs-parent="#accordionParent"}
 ::: accordion-body
 ```{r}
 #| label: fig-map4
@@ -4392,9 +4392,9 @@ randomColors <- sample(colorfulPal, n_colors)
 mapViewer(slicerVector[[4]])
 ```
 :::
-:::
-:::
-:::
+::::
+:::::::
+:::::::::::::::::::::::
 
 ### Summarzing Geographic EDA
 
@@ -4408,7 +4408,7 @@ To improve membership, addressing factors deterring individuals from becoming an
 
 ## Updated Database Tables List
 
-::: tableScroller
+::: {.d-flex .justify-content-center .tableScroller}
 ```{r}
 #| label: tbl-dbList2
 #| code-summary: "Revisiting the list of db tables, with many more tables added. All of these tables are stored within the data/data.db file."
@@ -4434,7 +4434,10 @@ dbList2
 ```
 :::
 
-![Notice the size difference from the previous image. The database is still represented in db folder as one file..](images/dbFiles_end.png){.column-margin}
+::: column-margin
+![dbList_2](images/dbFiles_end.png){#fig-dbList_2}
+Notice the size difference from the previous image. The database is still represented in the data folder as one file.
+:::
 
 # Conclusion
 
