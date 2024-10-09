@@ -771,6 +771,32 @@ kableExtra::kable()
 ::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+```{r}
+#| label: fig-notaplot
+#| fig-cap: "-"
+#| echo: false
+
+# So the first open plot publishes correctly, don't use this code chunk
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/membership.db", 
+select_cols = "member_casual",
+group_cols = "member_casual", 
+doWeights = TRUE
+) |>
+plotter(
+x_col = member_casual, 
+y_col = n, 
+geomType = "column", 
+title = "Not a plot",
+x_label = "z", 
+y_label = "t")
+
+gplot
+
+```
+
 ::: plot-container
 ```{r}
 #| label: fig-totalMemberFrequency
