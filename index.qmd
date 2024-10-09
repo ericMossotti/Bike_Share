@@ -696,7 +696,7 @@ Scripts used frequently in this section
 ::: {.callout-important .mb-3 icon="false"}
 <!-- -->
 
--   @tbl-memberTotals and @fig-totalMemberFrequency give an idea of the overall member to casual travel distribution.
+-   @tbl-memberTotals and @fig-overallFreq give an idea of the overall member to casual travel distribution.
 :::
 
 ::::: {.btn-group role="group" aria-label="third"}
@@ -771,6 +771,33 @@ kableExtra::kable()
 ::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+::: plot-container
+```{r}
+#| label: fig-overallFreq
+#| fig-cap: "Plotting the overall membership distribution"
+#| tidy: true
+
+gplot <- 
+transformData(
+conn = dbconn, 
+path = "db/membership.db", 
+select_cols = "member_casual",
+group_cols = "member_casual", 
+doWeights = TRUE
+) |>
+plotter(
+x_col = member_casual, 
+y_col = n, 
+geomType = "column", 
+title = "How often do members travel?",
+x_label = "Rider Groups", 
+y_label = "n")
+
+gplot
+
+```
+:::
+
 ```{r}
 #| label: fig-notaplot
 #| fig-cap: "-"
@@ -797,33 +824,7 @@ gplot
 
 ```
 
-::: plot-container
-```{r}
-#| label: fig-totalMemberFrequency
-#| fig-cap: "Plotting the overall membership distribution"
-#| tidy: true
-#| echo: true
 
-gplot <- 
-transformData(
-conn = dbconn, 
-path = "db/membership.db", 
-select_cols = "member_casual",
-group_cols = "member_casual", 
-doWeights = TRUE
-) |>
-plotter(
-x_col = member_casual, 
-y_col = n, 
-geomType = "column", 
-title = "How often do members travel?",
-x_label = "Rider Groups", 
-y_label = "n")
-
-gplot
-
-```
-:::
 
 ::: {.table-container .column-margin}
 ```{r}
@@ -831,7 +832,6 @@ gplot
 #| tbl-cap: "Tabularizing membership distribution across all observations"
 #| tbl-cap-location: top
 #| tidy: true
-#| echo: false
 
 transformData(
 conn = dbconn, 
