@@ -170,7 +170,7 @@ tabler <- function(tbl_name,
                     gt::cell_text(align = "center", stretch = "semi-expanded")
                 ),
                 locations = list(
-                    gt::cells_column_labels(gt::everything()),
+#                    gt::cells_column_labels(gt::everything()),
                     gt::cells_title(groups = c("title", "subtitle"))
                 )
             ) |>
