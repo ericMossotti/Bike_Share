@@ -42,46 +42,47 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
 
 /*-- scss:classes --*/
 
-.flex-container {
-  //display: flex;
-  //align-items: center;
-  //justify-content: center;
-}
 
-.plot-container {
- 
-
-}
 
 .table-container {
   display: flex;
-  justify-content: center;
+ // justify-content: center !important;
+  //flex-shrink: 1 !important;
   overflow-y: auto; 
-  //margin: 0px;
-  //margin-top: 5rem;
-  //margin-bottom: 5rem;
+  overflow-x: auto;
   max-height: 50vh;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  //scrollbar-width: 2px;
+  //scrollbar-gutter: auto;
+//  border: 0;
+ // border-radius: 0;
+ // scrollbar-color: Red transparent !important;
 
+
+}
+
+.quarto-float-tbl {
+ // overflow-x: auto;
+  //overflow-y: auto;
+  //max-height: 60vh;
+  //margin-top: 1rem;
+  //margin-bottom: 1rem;
+//  scrollbar-width: 2px !important;
+//  scrollbar-gutter: auto !important;
+//  border: 0;
+ // border-radius: 0;
+//  scrollbar-color: Green transparent !important;
 }
 
 
 .table-container table {
-//  width: 100%;
-//  height: 100%;
 }
 
 .gt_table {
-  //width: 100%;
-  //height: 100%;
-  //display: flex;
-  //font-size: 13px !important;
-  //margin: 0 !important;
-
 }
 
 .table-caption > figcaption {
- // margin-left: 0 !important;
-//  margin-right: 0 !important;
 }
 
 .quarto-float-tbl > figcaption {
@@ -94,14 +95,8 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
   text-align: left !important;
 }
 
-
-.gt_sourcenote > code {
-  background-color: rgba(25,25,25,0.5) !important;
-  color: SeaShell !important;
-}
-
-.gt_footnote > code {
-  background-color: rgba(25,25,25,0.5) !important;
+.gt_table .gt_sourcenote .gt_from_md > code {
+  background-color: rgba(25,25,25,0.75) !important;
   color: SeaShell !important;
 }
 
@@ -111,6 +106,11 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
 
 .gt_footnote, .gt_sourcenote {
   text-align: left !important;
+}
+
+.gt_table .gt_footnote .gt_from_md > code {
+  background-color: rgba(25,25,25,0.75) !important;
+  color: SeaShell !important;
 }
 
 /* Custom styles for Quarto tab sets */
@@ -171,7 +171,6 @@ a {
 .tableScroller {
     max-height: 60vh;
     overflow-y: auto;
-    //max-width: auto !important;
 }
 
 
@@ -265,14 +264,15 @@ pre code {
 
 
 .code-fold {
-    background-color: transparent !important;
+  background-color: transparent !important;
+  margin-top: .5rem;
+  margin-bottom: .5rem;
 }
 
 .sourceCode {
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19) !important;
-    background-color: transparent !important; //rgba(0,0,5,.25)
+    background-color: transparent !important; 
     border: none !important;
-
 }
 
 .R, .r {
