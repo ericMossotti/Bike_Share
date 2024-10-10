@@ -211,50 +211,6 @@ plotter <- function(data,
                     size = vline_size,
                     linetype = "solid"
                 ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + (
-                        2 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - (
-                        2 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + (
-                        3 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - (
-                        3 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
@@ -317,50 +273,6 @@ plotter <- function(data,
                     color = vline_color,
                     size = vline_size,
                     linetype = "solid"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + (
-                        2 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - (
-                        2 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + (
-                        3 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - (
-                        3 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
                 ) +
                 ggplot2::facet_grid(rows = "member_casual") +
                 ggplot2::scale_x_continuous(
@@ -449,50 +361,6 @@ plotter <- function(data,
                     size = vline_size,
                     linetype = "solid"
                 ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + (
-                        2 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - (
-                        2 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + (
-                        3 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - (
-                        3 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
                 ggplot2::scale_x_continuous(
                     breaks = breaks,
                     limits = limits,
@@ -502,7 +370,7 @@ plotter <- function(data,
         # grouped, faceted, density, histogram ----
         else {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, #y = ..density..,
+                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }},
                                              fill = {{ group_col }})) +
                 ggplot2::geom_histogram(
                     binwidth = binwidth,
@@ -518,50 +386,6 @@ plotter <- function(data,
                     color = vline_color,
                     size = vline_size,
                     linetype = "solid"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + sd({{ x_col }}))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - sd({{ x_col }}))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + (
-                        2 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - (
-                        2 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} + (
-                        3 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
-                ) +
-                ggplot2::geom_vline(
-                    ggplot2::aes(xintercept = mean({{ x_col }} - (
-                        3 * sd({{ x_col }})
-                    ))),
-                    color = vline_color,
-                    size = vline_size,
-                    linetype = "dashed"
                 ) +
                 ggplot2::facet_grid(rows = "member_casual") +
                 ggplot2::scale_x_continuous(
@@ -581,7 +405,7 @@ plotter <- function(data,
         # grouped, non-faceted, density, non-histogram
         if (!isFALSE(isTime)) {
             plot <- data |>
-                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }}, #    y = ggplot2::after_stat(density),
+                ggplot2::ggplot(ggplot2::aes(x = {{ x_col }},
                                              fill = {{ group_col }})) +
                 ggplot2::geom_density(alpha = density_alpha, color = color_col) +
                 ggplot2::scale_x_datetime(
