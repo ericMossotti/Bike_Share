@@ -48,22 +48,16 @@ tabler <- function(tbl_name,
                       row_group_as_column = TRUE) |>
             gt::tab_header(title = title, subtitle = subtitle) |>
             gt::tab_stubhead(label = stub_label) |>
-            #gt::fmt_number(decimals = decimals, columns = value_columns) |>
             gt::tab_options(
                 table.background.color = bg_color,
                 table.font.color = font_color,
                 table.margin.left = 0,
                 table.margin.right = 0,
-                #table.border.right.color = "ivory",
-                #table.border.left.style = "ivory",
-                #table.border.top.color = "ivory",
-                #table.border.bottom.color = "ivory",
                 table_body.vlines.color = "transparent",
                 table_body.hlines.color = hline_color,
                 row.striping.include_table_body = TRUE,
                 row.striping.background_color = "gray10",
                 column_labels.font.weight = "bold",
-                #column_labels.border.bottom.color = hline_color,
                 column_labels.hidden = hide_column_labels
             ) |>
             gt::tab_source_note(source_note = {{ source_note }})
@@ -153,7 +147,6 @@ tabler <- function(tbl_name,
         tbl <- tbl_name |>
             gt::gt() |>
             gt::tab_header(title = title, subtitle = subtitle) |>
-            #gt::fmt_number(decimals = decimals, columns = value_columns) |>
             gt::tab_style(
                 style = list(
                     gt::cell_borders(sides = c("right", "left"), color = vline_color),
@@ -170,7 +163,6 @@ tabler <- function(tbl_name,
                     gt::cell_text(align = "center", stretch = "semi-expanded")
                 ),
                 locations = list(
-#                    gt::cells_column_labels(gt::everything()),
                     gt::cells_title(groups = c("title", "subtitle"))
                 )
             ) |>
@@ -191,47 +183,20 @@ tabler <- function(tbl_name,
         }
         tbl <- tbl |>
             gt::tab_options(
-                #table_body.border.top.width = gt::px(0.15),
-               # table_body.border.bottom.width = gt::px(0.15),
                 table.background.color = bg_color,
                 table.font.color = font_color,
                 table.margin.left = 0,
                 table.margin.right = 0,
-                #table.margin.top = 0,
-                #table.margin.bottom = 0,
-                #table.border.right.color = "ivory",
-                #table.border.left.color = "ivory",
-                #table.border.top.color = "ivory",
-                #table.border.bottom.color = "ivory",
-                #table.border.left.width = gt::px(0.15),
-                #table.border.right.width = gt::px(0.15),
-                #table.border.top.width = gt::px(0.15),
-                #table.border.bottom.width = gt::px(0.15),
                 table_body.vlines.color = "transparent",
                 table_body.hlines.color = "transparent",
                 column_labels.vlines.color = vline_color,
                 column_labels.hidden = hide_column_labels,
-                #column_labels.padding = gt::px(1),
                 heading.border.lr.color = "transparent",
-                #heading.padding = gt::px(10),
-                #column_labels.border.lr.color = "ivory",
                 container.padding.x = 0,
                 container.padding.y = 0,
-                #  table.border.bottom.color = "transparent",
-                #  table.border.top.color = "transparent",
-                #column_labels.border.top.width = gt::px(0.15),
-                #column_labels.border.bottom.width = gt::px(0.15),
                 row.striping.include_table_body = TRUE,
                 row.striping.background_color = "gray10",
                 column_labels.font.weight = "bold",
-                #footnotes.border.lr.color = "ivory",
-               # footnotes.border.lr.width = gt::px(0.15),
-               #ihtml.active = TRUE,
-               #ihtml.use_highlight = TRUE,
-               #ihtml.use_compact_mode = TRUE,
-               #ihtml.use_sorting = TRUE,
-               #ihtml.use_resizers = TRUE,
-               #ihtml.use_search = TRUE
             ) |>
             gt::tab_source_note(source_note = source_note)
     }
