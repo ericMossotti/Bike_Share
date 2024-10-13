@@ -58,7 +58,7 @@ knitr::opts_chunk$set(message = FALSE,
 :::::::: {#offcanvas1 .offcanvas .offcanvas-end tabindex="-1" aria-labelledby="offcanvas" style="width: auto"}
 ::::: offcanvas-header
 ::: {#offcanvasLabel .h5 .offcanvas-title}
-Import Processing Code
+Download Files and DB Creation
 :::
 
 ::: {.btn-close type="button" data-bs-dismiss="offcanvas" ariaLabel="Close"}
@@ -68,24 +68,64 @@ Import Processing Code
 :::: offcanvas-body
 ::: flex-code
 ```{r}
+#| label: dl_toDirectory
+#| file: "Scripts/dl_toDirectory.R"
+#| code-summary: "A view the `dl_toDirectory.R` script used below."
+#| eval: false
+```
+
+```{r}
+#| label: csv_toDB
+#| file: "Scripts/csv_toDB.R"
+#| code-summary: "A view of the `csv_toDB.R` script used below."
+#| eval: false
+```
+
+```{r}
 #| label: importOrConnect
-#| code-summary: "First, we decide whether to download and do the necessary initial processing steps or skip that if we have already done this and are just tinkering around with the project. "
+#| code-summary: "Execute initial download and removal of incomplete observations, then<br>store original data and complete data separately.<br><br>Or, just connect to existing db,<br>then source frequently used scripts used later." 
 #| tidy: true
 
-# Does the database directory exist? If not, means we need to import data
 if (exists("dbconn") == FALSE &&
     dir.exists("db") == FALSE) {
   
-  source("Scripts/importClean.R")
-  
-  # Else connect to the existing, persistent db  
+  source("Scripts/dl_toDirectory.R")
+
+  dl_toDirectory (
+    durls = sprintf(
+      "https://divvy-tripdata.s3.amazonaws.com/%d-divvy-tripdata.zip",
+      202301:202312),
+    tmpzip_dir = "tempZips", 
+    tmpzip_paths = sprintf(
+      "tempZips/%d-divvy-tripdata.zip",
+      202301:202312),
+    tmpfile_dir = "tempFiles",
+    tmpfile_paths = sprintf(
+      "tempFiles/%d-divvy-tripdata.csv",
+      202301:202312),
+    tmpfile_names = sprintf(
+      "%d-divvy-tripdata.csv",
+      202301:202312)
+  )
+
+  source("Scripts/csv_toDB.R")
+
+  csv_toDB (
+      tmpfile_dir = "tempFiles",
+      tmpfile_paths = sprintf(
+      "tempFiles/%d-divvy-tripdata.csv",
+      202301:202312),
+      db_dir = "db", 
+      database_path = "db/data.db", 
+      original_path = "db/original_data.db", 
+      complete_path = "db/complete_data.db"
+  )
 } else {
-  
   database_path <- "db/data.db"
   original_path <- "db/original_data.db"
   complete_path <- "db/complete_data.db"
   filtered_path <- "db/filtered_data.db"
-  
+
   dbconn <- DBI::dbConnect(duckdb::duckdb(), 
                            dbdir = database_path, 
                            read_only = FALSE)
@@ -98,12 +138,6 @@ source("Scripts/chisqTest.R")
 
 ```
 
-```{r}
-#| label: importProcessScript
-#| code-summary: This then would be executed if conditions were met. Usually, this would only execute if there is no db folder and associated files.
-#| file: "Scripts/importClean.R"
-#| eval: false 
-```
 :::
 ::::
 ::::::::
@@ -112,7 +146,19 @@ source("Scripts/chisqTest.R")
 
 The primary stakeholders in this analysis are Divvy, Lyft (the parent company of Divvy), and the City of Chicago Department of Transportation. The analysis aims to provide these stakeholders with data-driven insights to enhance the Divvy bike-sharing service, better serving the residents of Chicago and its users. The initial rationale behind Divvy's implementation included improving air quality, promoting economic recovery, and reducing traffic congestion within the city. [@aboutdi]
 
-## Source
+## Data Import
+
+::::: {.d-grid .gap-0}
+::: {.callout-warning icon="false" width="auto"}
+Code processing steps are accessible via buttons like the one below. Drop-down code summaries and tables therein add context and transparency regarding the presented findings to enhance the reader's understanding.
+:::
+
+::: {.btn .btn-outline-danger .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
+Data import scripts and initial analysis setup decision
+:::
+:::::
+
+## Source 
 
 ::: p-1
 The raw 2023 dataset was imported from Divvy Data. [@divvyda]
@@ -218,21 +264,26 @@ To streamline the process, reduce code duplication, and maintain consistent form
 #| tbl-cap: "The list of tables created in data.db so far."
 #| tidy: true
 
-dbList <- duckdb::dbListTables(dbconn) |>
-as.data.frame() |>
+# Since we already know the paths, we'll manually define these 
+# Otherwise, might have to delete db folder and start over
+
+dbList <- list(
+  Paths = c("db/original_data.db", "db/complete_data.db")
+  ) |>
+  as.data.frame()
+
+dbList |>
 tabler(
 title = gt::md("Which tables have<br>been created so far?"),
 note_list = list(gt::md("Tables in `db/data.db` at this stage")),
-location_list = list("duckdb::dbListTables(dbconn)"),
+location_list = list("Paths"),
 noteColumns = TRUE,
 source_note = gt::md("**Source**: `db/data.db`"),
 label_n = NULL,
 align_parameter = "left"
 ) |>
-gt::cols_label("duckdb::dbListTables(dbconn)" = "Paths") |>
 gt::cols_align(align = "left")
 
-dbList
 ```
 :::
 
@@ -241,21 +292,9 @@ dbList
 
 A view of the filesystem directory. Notice there are not separate files for tables. The file, data.db, in this view does not represent a table name but the name of the database.
 :::
+
 # Tidying
 
-::: p-2
-The starting occurrences was 5,719,877. Then 1,388,170 incomplete observations were then removed by the initial processing script.
-:::
-
-::::: {.d-grid .gap-0}
-::: {.callout-warning icon="false" width="auto"}
-Code processing steps are accessible via buttons like the one below. Drop-down code summaries and tables therein add context and transparency regarding the presented findings to enhance the reader's understanding.
-:::
-
-::: {.btn .btn-outline-danger .mb-3 type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas1" aria-controls="offcanvas"}
-Data processing documentation
-:::
-:::::
 
 ## Duplicates
 
@@ -430,7 +469,6 @@ table.font.size = gt::pct(75),
 ) |>
 gt::tab_source_note(source_note = gt::md("**Source**: `db/data_complete.db`")
                     )
-
 gtDupes
 
 ```
@@ -520,7 +558,7 @@ Transform and Filter the Database
 ::: flex-code
 ```{r}
 #| label: filterDecisions
-#| code-summary: If you happen to be re-using this code - this is so you do not have to re-download or re-filter after making further adjustments.
+#| code-summary: "If you happen to be re-using this code - <br>this is so you do not have to re-download<br>or re-filter after making further adjustments."
 #| tidy: true
 
 filtered_path <- "db/filtered_data.db"
@@ -536,7 +574,7 @@ transFilter(conxn = dbconn, oldPath = "db/data_unduped.db", newPath = filtered_p
 ::: flex-code
 ```{r}
 #| label: filterScript
-#| code-summary: This would execute if the if-else conditions were met to filter the db/data.db database table
+#| code-summary: "This would execute if the conditions were met<br>to filter the db/data.db database table"
 #| file: "Scripts/transFilter.R"
 #| eval: false
 ```
@@ -566,10 +604,10 @@ as.integer()
 ```
 :::
 
-::: flex-code
+::: {.d-flex .justify-content-center}
 ```{r}
 #| label: tbl-observationHistory
-#| tbl-cap: Observation Processing History
+#| tbl-cap: "Documenting observation count history."
 
 # To see the history of obs in our dataset.
 summaryProcessTable <- tidyr::tribble(
@@ -690,15 +728,24 @@ Scripts used frequently in this section
 :::
 ::::
 
-## Membership {#sec-membership}
+## Key Calculations Info
 
-::::::: {.d-grid .gap-3}
-::: {.callout-important .mb-3 icon="false"}
-<!-- -->
+:::{.callout-note title="Chi-Square"}
 
--   @tbl-memberTotals and @fig-overallFreq give an idea of the overall member to casual travel distribution.
+$\chi^2 = \sum \[(\O - \E)^2 / \E\]$
+
+$\E$ = (row total \* column total) / grand total
+
+$\O$ = Observed frequency
+$\E$ = Expected frequency
+$\sum$ = Sum over all cells in the table
+
+χ² = Σ [(O - E)² / E]
 :::
 
+## Membership {#sec-membership}
+
+::::::: {.d-grid .mt-3}
 ::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas771" aria-controls="offcanvas"}
 Database Operations
@@ -771,6 +818,10 @@ kableExtra::kable()
 ::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+:::p-3
+@tbl-memberTotals and @fig-overallFreq give an idea of the overall member to casual travel distribution.
+:::
+
 ::: plot-container
 ```{r}
 #| label: fig-overallFreq
@@ -829,27 +880,8 @@ row_index = 1
 
 ## Cycle Types {#sec-btypes}
 
-::::::: {.d-grid .gap-3}
-::: {.callout-important .tableScroller .mb-3 icon="false"}
-<!-- -->
 
--   @tbl-btypeTotal and @fig-btypeTotal present the overall frequency distribution for choice of bicycle.
-
--   Likewise, @tbl-btypeGroups and @fig-btypeGroups summarize the choice of bicycle with the addtion of a grouped sum by the membership status.
-
--   @tbl-btypeChiSquare presents a Chi-Square analysis of bicycle type usage among casual users and members.
-
-    -   Members show a higher preference for classic bikes *(65%)* compared to casual users *(59%)*. Casual users have a higher proportion of electric bike usage *(41%)* compared to members *(35%)*.
-
-    -   There is a statistically significant association between bicycle type and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between bicycle type and membership status. This suggests that the choice of bicycle type is not independent of membership status.
-
-    -   The large $\chi^2$ value (14762.37) with just 1 degree of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value *(\< 0.001)*. This combination strongly suggests that the difference in bicycle preference between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
-
--   @tbl-btypeModel presents the results of a binary logistic regression analyzing the relationship between bicycle type and membership status. The analysis compares classic bikes and electric bikes, with classic bikes serving as the reference category.
-
-    -   The odds of membership for users of electric bikes were *0.76* times the odds for users of classic bikes. The difference in membership likelihood between electric and classic bike users is highly statistically significant *(p \< 0.001)*.
-:::
-
+::::::: {.d-grid .mt-3}
 ::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas771" aria-controls="offcanvas"}
 Database Operations
@@ -960,6 +992,10 @@ kableExtra::kable()
 :::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+:::p-3
+@tbl-btypeTotal and @fig-btypeTotal present the overall frequency distribution for choice of bicycle.
+:::
+
 ```{r}
 #| label: fig-btypeTotal
 #| fig-cap: "The overall distribution of trips taken by bicycle choice"
@@ -1019,6 +1055,11 @@ row_index = 1
 :::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
 
+:::p-3
+Likewise, @tbl-btypeGroups and @fig-btypeGroups summarize the choice of bicycle with the addtion of a grouped sum by the membership status.
+:::
+
+
 ```{r}
 #| label: fig-btypeGroups
 #| fig-cap: "The membership distribution of bicycle choice"
@@ -1051,13 +1092,12 @@ gplot
 
 ```
 
-::: {.tbl-container .column-margin}
+::: {.table-container .column-margin}
 ```{r}
 #| label: tbl-btypeGroups
 #| tbl-cap: "The membership<br>distribution of bicycle choice"
 #| tbl-cap-location: top
 #| tidy: true
-#| echo: false
 
 transformData(
 conn = dbconn, 
@@ -1085,6 +1125,14 @@ gt::cols_label(member_casual = " ", n = " ")
 :::
 
 #### [Chi-Square]{.panel-tabset-label}
+
+:::p-3
+@tbl-btypeChiSquare presents a Chi-Square analysis of bicycle type usage among casual users and members. In summary, members show a higher preference for classic bikes *(65%)* compared to casual users *(59%)*. Casual users have a higher proportion of electric bike usage *(41%)* compared to members *(35%)*.
+
+There is a statistically significant association between bicycle type and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between bicycle type and membership status. This suggests that the choice of bicycle type is not independent of membership status.
+
+The large $\chi^2$ value (14762.37) with just 1 degree of freedom (calculated as ***\[rows - 1\]*** \* *\[columns - 1\])*** results in the very small p-value *(\< 0.001)*. This combination strongly suggests that the difference in bicycle preference between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+:::
 
 ```{r}
 #| label: bikesChiResult
@@ -1124,6 +1172,12 @@ chi_table
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
+:::p-3
+@tbl-btypeModel presents the results of a binary logistic regression analyzing the relationship between bicycle type and membership status. The analysis compares classic bikes and electric bikes, with classic bikes serving as the reference category.
+
+The odds of membership for users of electric bikes were *0.76* times the odds for users of classic bikes. The difference in membership likelihood between electric and classic bike users is highly statistically significant *(p \< 0.001)*.
+:::
+
 ```{r}
 #| label: btypeModel
 #| code-summary: "Predicting the log-odds of being a member versus being a casual user."
@@ -1135,6 +1189,7 @@ glm(formula = member_casual ~ rideable_type, weights = n, family = binomial)
 
 ```
 
+::: {.table-container}
 ```{r}
 #| label: tbl-btypeModel
 #| tbl-cap: "Modeling the probability of member travel by the choice of bicycle."
@@ -1151,46 +1206,13 @@ source_note = gt::md("**Source**: `db/bType_wb.db`"),
 isBinary = TRUE)
 
 ```
+:::
 ::::
 ::::::
 
 ## Duration {#sec-duration}
 
-::::::: {.d-grid .gap-3}
-::: {.callout-important .tableScroller .mb-3 icon="false" background-color="Black"}
-<!-- -->
-
--   @tbl-triptimeTotals and @fig-triptimeTotals give an idea of the overall travel duration distribution. The data were rounded to the nearest minute for these figures.
-
--   Likewise, @tbl-triptimeCompare and @fig-triptimeCompare summarize the travel duration distribution, where frequencies were summed by membership status.
-
--   @tbl-durationSummary sheds light on the variability, range, and quartile information about the duration data.
-
--   To accompany the summary table, two plots, @fig-durationCasualHistogram and @fig-durationMemberHistogram, present a highly granular view of the duration dataset (the solid yellow line represents the mean). Quartile ranges are likewise shown to help understand the variability.
-
--   Supplementing the histogram, @fig-durationDensity shows a density plot comparing the duration of trips for ***casual*** users and ***members***. The x-axis represents time in minutes, limited to a range of 0 to 100 for presentation purposes, while the y-axis shows the density (a measure of relative frequency).
-
-    -   Both groups exhibit right-skewed distributions, with a peak near the left side and a long tail extending to the right. This suggests that for both groups, a shorter duration is more common, while a longer duration occurs less frequently but can extend quite far.
-
-    -   The **member** group (darker blue) has a higher and narrower peak compared to the **casual** group (lighter blue). This indicates that members tend to have more concentrated distribution of a session duration around their most common length.
-
-    -   The **casual** group appears to have a slightly fatter tail, extending further to the right than the *member* group. This suggests that casual users might occasionally have longer sessions than members, even if it's less common.
-
-    -   Both groups seem to have their peak density around 5-10 minutes, with members peaking slightly earlier than casual users.
-
-    -   There's significant overlap between the two distributions, indicating that while there are differences, there is also considerable similarity in duration patterns between casual users and members.
-
--   @tbl-modeldurationQ presents the results of a binary logistic regression model, analyzing the relationship between ride duration and membership status. The analysis divides ride duration into quartiles, with ***Q1 (1.02 - 5.73 minutes)*** serving as the reference category.
-
-    -   Compared to *Q1*, the odds of being a member versus a casual rider varied significantly across the other duration quartiles (*p \< 0.001* for all comparisons).
-
-    -   In ***Q2 (5.73 - 9.55 minutes)***, the odds of membership were 0.38 times as high as in *Q1*. This indicates a substantial decrease (62%) in the likelihood of membership for slightly longer rides.
-
-    -   In ***Q3 (9.55 - 16.13 minutes)***, the odds of membership were 0.08 times as high as in *Q1*. This shows a dramatic decrease (92%) in membership likelihood for medium-length rides.
-
-    -   In ***Q4 (16.13 - 475.22 minutes)***, the odds of membership were 0.06 times as high as in *Q1*. This represents an even more pronounced decrease (94%) in membership likelihood for the longest rides.
-:::
-
+::::::: {.d-grid .mt-3}
 ::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas671" aria-controls="offcanvas"}
 Database Operations
@@ -1316,6 +1338,10 @@ kableExtra::kable()
 :::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+:::p-2
+@tbl-triptimeTotals and @fig-triptimeTotals give an idea of the overall travel duration distribution. The data were rounded to the nearest minute for these figures.
+:::
+
 ```{r}
 #| label: fig-triptimeTotals
 #| fig-cap: "The overall distribution of trip durations"
@@ -1382,6 +1408,10 @@ row_index = 1
 
 :::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
+
+:::p-2
+Likewise, @tbl-triptimeCompare and @fig-triptimeCompare summarize the travel duration distribution, where frequencies were summed by membership status.
+:::
 
 ```{r}
 #| label: fig-triptimeCompare
@@ -1460,6 +1490,10 @@ gt::cols_label(member_casual = " ", n = " ")
 
 #### [Summary Stats]{.panel-tabset-label}
 
+:::p-3
+@tbl-durationSummary sheds light on the variability, range, and quartile information about the duration data.
+:::
+
 ```{r}
 #| label: tbl-durationSummary
 #| tbl-cap: "The mean with standard deviation, median with inter-quartile distance, and range with min and max of member travel duration."
@@ -1495,6 +1529,10 @@ gtTable
 ```
 
 #### [Histogram]{.panel-tabset-label}
+
+:::p-3
+To accompany the summary table, two plots, @fig-durationCasualHistogram and @fig-durationMemberHistogram, present a highly granular view of the duration dataset (the solid yellow line represents the mean). Quartile ranges are likewise shown to help understand the variability.
+:::
 
 ```{r}
 #| label: durationQuartiles
@@ -1584,6 +1622,14 @@ gplot
 
 #### [Density]{.panel-tabset-label}
 
+:::p-3
+Supplementing the histogram, @fig-durationDensity shows a density plot comparing the duration of trips for ***casual*** users and ***members***. The x-axis represents time in minutes, limited to a range of 0 to 100 for presentation purposes, while the y-axis shows the density (a measure of relative frequency).
+
+The **member** group (darker blue) has a higher and narrower peak compared to the **casual** group (lighter blue). This indicates that members tend to have more concentrated distribution of a session duration around their most common length. The **casual** group appears to have a slightly fatter tail, extending further to the right than the *member* group. This suggests that casual users might occasionally have longer sessions than members, even if it's less common.
+
+Both groups exhibit right-skewed distributions, with a peak near the left side and a long tail extending to the right. This suggests that for both groups, a shorter duration is more common, while a longer duration occurs less frequently but can extend quite far. They seem to have their peak density around 5-10 minutes, with members peaking slightly earlier than casual users. There is significant overlap between the two distributions, indicating that while there are differences, there is also considerable similarity in duration patterns between casual users and members.
+:::
+
 ```{r}
 #| label: fig-durationDensity
 #| fig-cap: "Visualizing the probability-density distribution between duration and membership variables."
@@ -1615,6 +1661,12 @@ gplot
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
+:::p-3
+@tbl-modeldurationQ presents the results of a binary logistic regression model, analyzing the relationship between ride duration and membership status. The analysis divides ride duration into quartiles, with ***Q1 (1.02 - 5.73 minutes)*** serving as the reference category.
+
+Compared to *Q1*, the odds of being a member versus a casual rider varied significantly across the other duration quartiles ( *p \< 0.001* for all comparisons). With ***Q2 (5.73 - 9.55 minutes)***, the odds of membership were 0.38 times as high as with *Q1*. This indicates a substantial decrease (62%) in the likelihood of membership for slightly longer rides. With ***Q3 (9.55 - 16.13 minutes)***, the odds of membership were 0.08 times as high as in *Q1*. This shows a dramatic decrease (92%) in membership likelihood for medium-length rides. With ***Q4 (16.13 - 475.22 minutes)***, the odds of membership were 0.06 times as high as in *Q1*. This represents an even more pronounced decrease (94%) in membership likelihood for the longest rides.
+:::
+
 ```{r}
 #| label: modeldurationQ
 #| code-summary: Query, process, and create model R object for hour based on quartile range.
@@ -1629,6 +1681,7 @@ family = binomial,
 weights = n)
 ```
 
+::: table-container
 ```{r}
 #| label: tbl-modeldurationQ
 #| tbl-cap: "Modeling the probability of members' travel by the duration."
@@ -1646,52 +1699,13 @@ isBinary = TRUE
 )
 
 ```
+:::
 ::::
 ::::::
 
 ## Month {#sec-moy}
 
-::::::: {.d-grid .gap-3}
-::: {.callout-important .tableScroller .mb-3 icon="false"}
-<!-- -->
-
--   @tbl-monthTotals and @fig-monthTotals shows the overall monthly travel distribution.
-
--   Similarly, @tbl-monthCompare and @fig-monthCompare summarize the monthly travel, where frequencies were summed by membership status.
-
--   In @tbl-chiMonths presentes a Chi-Square of monthly travel among members and casual users.
-
-    -   Members exhibit higher usage during the months of Jan - Mar and Oct - Dec.
-
-    -   Both groups prefer the months of Apr - Sep, where casuals show a higher interest, proportionally for their respective group.
-
-    -   There is a statistically significant association between monthly travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between monthly travel and membership status. The frequency of monthly travel is not likely to be independent of membership status.
-
-    -   The large $\chi^2$ value (71802.26) with 11 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
-
--   Two plots, @fig-monthCasualHistogram and @fig-monthMemberHistogram, present a highly granular view of the monthly data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help understand the variability.
-
--   To visualize monthly users through the lens of their respective concentrations, see @fig-monthDensity. The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
-
-    -   The casual group has higher peaks near the middle of the distribution.
-
-    -   The member group has higher peaks near the left and right sides of the distribution.
-
-    -   Both of the groups exhibit somewhat normal, multi-modal distributions.
-
-    -   Both groups overlap the other signficantly, suggesting similarity in travel patterns.
-
--   @tbl-modelMonthsQ presents the results of a binary logistic regression analyzing the relationship between months of the year and membership status. The analysis divides the year into quartiles, with ***Q1 (January 01 - May 20)*** serving as the reference category.
-
-    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons).
-
-    -   In ***Q2 (May 20 - Jul 21)***, the odds of membership were 0.57 times as high as in Q1. This indicates a substantial decrease (43%) in the likelihood of membership during late spring and early summer.
-
-    -   In ***Q3 (Jul 21 - Sep 18)***, the odds of membership were 0.58 times as high as in Q1. This shows a similar decrease (42%) in membership likelihood during late summer and early fall, nearly identical to Q2.
-
-    -   In ***Q4 (Sep 18 - Dec 31)***, the odds of membership were 0.87 times as high as in Q1. While still lower than Q1, this represents a less pronounced decrease (13%) in membership likelihood during fall and early winter.
-:::
-
+::::::: {.d-grid .mt-3}
 ::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas571" aria-controls="offcanvas"}
 Database Operations
@@ -1816,6 +1830,10 @@ kableExtra::kable()
 :::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+:::p-3
+@tbl-monthTotals and @fig-monthTotals shows the overall monthly travel distribution.
+:::
+
 ```{r}
 #| label: fig-monthTotals
 #| fig-cap: "The overall distribution of trips taken by month"
@@ -1870,6 +1888,10 @@ row_index = 1
 
 :::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
+
+:::p-3
+Similarly, @tbl-monthCompare and @fig-monthCompare summarize the monthly travel, where frequencies were summed by membership status.
+:::
 
 ```{r}
 #| label: fig-monthCompare
@@ -1934,6 +1956,14 @@ gt::cols_label(member_casual = " ", n = " ")
 
 #### [Chi-Square]{.panel-tabset-label}
 
+:::p-3
+@tbl-chiMonths presents a Chi-Square of monthly travel among members and casual users. In summary, members exhibit higher usage for periods Jan - Mar and Oct - Dec. Both groups prefer the months of Apr - Sep, where casuals show a higher interest, proportionally for their respective group.
+
+There is a statistically significant association between monthly travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between monthly travel and membership status. The frequency of monthly travel is not likely to be independent of membership status.
+
+The large $\chi^2$ value (71802.26) with 11 degrees of freedom (calculated as ***\[rows - 1\] * \[columns - 1\])*** results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+:::
+
 ```{r}
 #| label: monthsChiResult
 #| code-summary: Save the chi-square statistic and degrees of freedom values in a tibble format to add to the gtsummary table.
@@ -1969,6 +1999,10 @@ chi_table
 ```
 
 #### [Histogram]{.panel-tabset-label}
+
+:::p-3
+Two plots, @fig-monthCasualHistogram and @fig-monthMemberHistogram, present a highly granular view of the monthly data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help understand the variability.
+:::
 
 ```{r}
 #| label: monthlyQuartiles
@@ -2061,6 +2095,12 @@ gplot
 
 #### [Density]{.panel-tabset-label}
 
+:::p-3
+To visualize monthly users through the lens of their respective concentrations, see @fig-monthDensity. The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
+
+The casual group has higher peaks near the middle of the distribution. The member group has higher peaks near the left and right sides of the distribution. Both of the groups exhibit somewhat normal, multi-modal distributions. They overlap each other significantly, suggesting similarity in travel patterns.
+:::
+
 ```{r}
 #| label: fig-monthDensity
 #| fig-cap: "Visualizing the probability-density distribution of months by membership."
@@ -2089,6 +2129,12 @@ gplot
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
 
+:::p-3
+@tbl-modelMonthsQ presents the results of a binary logistic regression analyzing the relationship between months of the year and membership status. The analysis divides the year into quartiles, with ***Q1 (January 01 - May 20)*** serving as the reference category. Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons).
+
+With ***Q2 (May 20 - Jul 21)***, the odds of membership were 0.57 times as high as in Q1. This indicates a substantial decrease (43%) in the likelihood of membership during late spring and early summer. With ***Q3 (Jul 21 - Sep 18)***, the odds of membership were 0.58 times as high as in Q1. This shows a similar decrease (42%) in membership likelihood during late summer and early fall, nearly identical to Q2. And with ***Q4 (Sep 18 - Dec 31)***, the odds of membership were 0.87 times as high as in Q1. While still lower than Q1, this represents a less pronounced decrease (13%) in membership likelihood during fall and early winter.
+:::
+
 ```{r}
 #| label: modelMonthsQ
 #| code-summary: Query , process and create model R object for hour based on quartile range. 
@@ -2103,6 +2149,7 @@ family = binomial,
 weights = n)
 ```
 
+:::table-container
 ```{r}
 #| label: tbl-modelMonthsQ
 #| tbl-cap: "Modeling the probability of monthly member travel."
@@ -2119,52 +2166,13 @@ source_note = gt::md("**Source**: `db/moy.db`"),
 isBinary = TRUE)
 
 ```
+:::
 ::::
 ::::::
 
 ## Day {#sec-dow}
 
-::::::: {.d-grid .gap-3}
-::: {.callout-important .tableScroller .mb-3 icon="false"}
-<!-- -->
-
--   @tbl-wkdayTotals and @fig-wkdayTotals show an aggregated distribution of the overall daily travel.
-
--   Similarly, @tbl-wkdayCompare and @fig-wkdayCompare summarize the duration distribution, grouping sums by membership status.
-
--   In @tbl-chiDays, present a Chi-Square of daily travel among members and casual users.
-
-    -   Members show higher usage Mon - Thu compared to casual users. The pattern is flatter compared to casual users.
-
-    -   Casual users show higher usage Fri - Sun compared to members. Their preferences fall within the weekend.
-
-    -   There is a statistically significant association between daily travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between daily travel and membership status. The frequency of monthly travel is not likely to be independent of membership status.
-
-    -   The large $\chi^2$ value (76305.71) with 6 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
-
--   Two plots, @fig-dayCasualHistogram and @fig-dayMemberHistogram, present a highly granular view of the daily data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
-
--   To visualize daily users through the lens of their respective concentrations, see @fig-dayDensity The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
-
-    -   The casual group has higher peaks near the left and right sides of the distribution. Their highest peak appears to be on Saturday.
-
-    -   The member group has higher peaks near the middle of the distribution. They also show less day-to-day variability during weekdays compared to casual users.
-
-    -   On weekdays, both groups show a bimodal distribution, with two peaks each day. On weekends, there is a unimodal distribution.
-
-    -   Both groups overlap the other signficantly, suggesting similarity in travel patterns.
-
--   @tbl-modelDaysQ presents the results of a binary logistic regression analyzing the relationship between days of the week and membership status. The analysis divides the week into quartiles, with Q1 (Sunday 12:00 am - Monday 11:40 am) serving as the reference category.
-
-    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons).
-
-    -   Q2 (Monday 11:40 am - Wednesday 05:14 am): The odds of membership were 1.52 times higher than in Q1. This suggests a substantial increase in the likelihood of members riding during the early part of the work week.
-
-    -   Q3 (Wednesday 05:14 am - Friday 12:19 pm), the odds of membership were 1.36 times higher than in Q1. This indicates a continued higher likelihood of membership during the latter part of the work week, though slightly lower than Q2.
-
-    -   Q4 (Friday 12:19 pm - Saturday 11:59 pm), the odds of membership were 0.80 times as high as in Q1. This represents a significant decrease in the likelihood of membership during the weekend period.
-:::
-
+::::::: {.d-grid .mt-3}
 ::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas471" aria-controls="offcanvas"}
 Database Operations
@@ -2284,6 +2292,10 @@ kableExtra::kable()
 :::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+:::p-3
+@tbl-wkdayTotals and @fig-wkdayTotals show an aggregated distribution of the overall daily travel.
+:::
+
 ```{r}
 #| label: fig-wkdayTotals
 #| fig-cap: "The overall distribution of trips taken by day of the week"
@@ -2341,6 +2353,10 @@ row_index = 1
 
 :::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
+
+:::p-3
+Similarly, @tbl-wkdayCompare and @fig-wkdayCompare summarize the duration distribution, grouping sums by membership status.
+:::
 
 ```{r}
 #| label: fig-wkdayCompare
@@ -2404,6 +2420,14 @@ gt::cols_label(member_casual = " ", n = " ")
 
 #### [Chi-Square]{.panel-tabset-label}
 
+:::p-3
+In @tbl-chiDays, present a Chi-Square of daily travel among members and casual users. Members show higher usage Mon - Thu compared to casual users. The pattern is more regular compared to casual users. Casual users show higher usage Fri - Sun compared to members. Their preferences fall within the weekend.
+
+There is a statistically significant association between daily travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between daily travel and membership status. The frequency of monthly travel is not likely to be independent of membership status.
+
+The large $\chi^2$ value (76305.71) with 6 degrees of freedom (calculated as ***\[rows - 1\] \* \[columns - 1\])*** results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+:::
+
 ```{r}
 #| label: daysChiResult
 #| code-summary: Save the chi-square statistic and degrees of freedom values in a tibble format to add to the gtsummary table.
@@ -2438,6 +2462,10 @@ chi_result = chiResult
 ```
 
 #### [Histogram]{.panel-tabset-label}
+
+:::p-3
+Two plots, @fig-dayCasualHistogram and @fig-dayMemberHistogram, present a highly granular view of the daily data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
+:::
 
 ```{r}
 #| label: dayQuartiles
@@ -2530,6 +2558,14 @@ gplot
 
 #### [Density]{.panel-tabset-label}
 
+:::p-3
+To visualize daily users through the lens of their respective concentrations, see @fig-dayDensity The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
+
+The casual group has higher peaks near the left and right sides of the distribution. Their highest peak appears to be on Saturday. The member group has higher peaks near the middle of the distribution. They also show less day-to-day variability during weekdays compared to casual users. 
+
+On weekdays, both groups show a bimodal distribution, with two peaks each day. On weekends, there is a unimodal distribution. They overlap each other significantly, suggesting similarity in travel patterns.
+:::
+
 ```{r}
 #| label: fig-dayDensity
 #| fig-cap: "Visualizing the probability-density distribution of the day by membership variables."
@@ -2557,6 +2593,15 @@ gplot
 ```
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
+
+:::p-3
+@tbl-modelDaysQ presents the results of a binary logistic regression analyzing the relationship between days of the week and membership status. The analysis divides the week into quartiles, with Q1 (Sunday 12:00 am - Monday 11:40 am) serving as the reference category. Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons).
+
+With Q2 (Monday 11:40 am - Wednesday 05:14 am), the odds of membership were 1.52 times higher than in Q1. This suggests a substantial increase in the likelihood of members riding during the early part of the work week. 
+
+With Q3 (Wednesday 05:14 am - Friday 12:19 pm), the odds of membership were 1.36 times higher than in Q1. This indicates a continued higher likelihood of membership during the latter part of the work week, though slightly lower than Q2. 
+With Q4 (Friday 12:19 pm - Saturday 11:59 pm), the odds of membership were 0.80 times as high as in Q1. This represents a significant decrease in the likelihood of membership during the weekend period.
+:::
 
 ```{r}
 #| label: modelDaysQ
@@ -2596,45 +2641,7 @@ isBinary = TRUE
 
 ## Hour {#sec-hod}
 
-::::::: {.d-grid .gap-3}
-::: {.callout-important .tableScroller .mb-3 icon="false"}
-<!-- -->
-
--   @tbl-hourTotals and @fig-hourTotals give an aggregated distribution of the overall hourly travel distribution.
-
--   Similarly, @tbl-hourMembership and @fig-hourCompare summarize the distribution, grouping the sums by membership.
-
--   @tbl-chiHours presents a Chi-Square of hourly travel among members and casual users.
-
-    -   Compared to casual users, members show relatively higher service usage at intervals \[5:30am - 9:30am\] and \[4:30pm - 6:30pm\].
-
-    -   Casual users show relatively higher rates at intervals \[10:30am - 4:30pm\] and \[6:30pm - 5:30am\].
-
-    -   There is a statistically significant association between hourly travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between hourly travel and membership status. The frequency of hourly travel is not likely to be independent of membership status.
-
-    -   The large $\chi^2$ value (72733.38) with 23 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
-
--   Two plots, @fig-hourCasualHistogram and @fig-hourMemberHistogram, present a highly granular view of the hourly data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
-
--   To visualize hourly users through the lens of their respective concentrations, see @fig-hourDensity. The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
-
-    -   The member group parallels the daily bimodal patterns seen in daily density plot.
-
-    -   The casual group likewise, but to less extent parallels the bimodal patterns seen in the daily density plot.
-
-    -   The two groups, largely, are overlapping, with the highest densities for both falling around 5:00pm.
-
--   @tbl-modelHourQ presents the results of a binary logistic regression analyzing the relationship between hour of the day and membership status. The analysis divides the day into quartiles, with Q1 (12:00 am - 10:59 am) serving as the reference category.
-
-    -   Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons).
-
-    -   Specifically, the odds of membership were 1.44 times as high in Q2 (10:59 am - 03:24 pm), 1.04 times as high in Q3 (03:24 pm - 06:05 pm), and 0.97 times as high in Q4 (06:05 pm - 11:59 pm).
-
-    -   These results reveal a non-linear relationship between time of day and membership status. The highest likelihood of membership occurs during $Q2$, corresponding to midday hours.
-
-    -   There's a slight increase in membership likelihood during Q3 (late afternoon) compared to the reference period, while evening hours (Q4) show a slight decrease in membership likelihood.
-:::
-
+::::::: {.d-grid .mt-3}
 ::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas371" aria-controls="offcanvas"}
 Database Operations
@@ -2775,6 +2782,10 @@ kableExtra::kable()
 :::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+:::p-3
+@tbl-hourTotals and @fig-hourTotals give an aggregated distribution of the overall hourly travel distribution.
+:::
+
 ```{r}
 #| label: fig-hourTotals
 #| fig-cap: "The overall distribution of trips taken by hour of the day"
@@ -2835,6 +2846,10 @@ row_index = 1
 
 :::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
+
+:::p-3
+Similarly, @tbl-hourMembership and @fig-hourCompare summarize the distribution, grouping the sums by membership.
+:::
 
 ```{r}
 #| label: fig-hourCompare
@@ -2904,6 +2919,15 @@ gt::cols_label(member_casual = " ", n = " ")
 
 #### [Chi-Square]{.panel-tabset-label}
 
+:::p-3
+@tbl-chiHours presents a Chi-Square of hourly travel among members and casual users. In summary: 
+
+Compared to casual users, members show relatively higher service usage at intervals \[5:30am - 9:30am\] and \[4:30pm - 6:30pm\]. Casual users show relatively higher rates at intervals \[10:30am - 4:30pm\] and \[6:30pm - 5:30am\].
+
+There is a statistically significant association between hourly travel and membership status *(p \< 0.001)*. The very low p-value indicates strong evidence against the null hypothesis of no association between hourly travel and membership status. The frequency of hourly travel is not likely to be independent of membership status.
+
+The large $\chi^2$ value (72733.38) with 23 degrees of freedom (calculated as ***\[rows - 1\]*** **\[columns - 1\])**\* results in the very small p-value. This combination strongly suggests that the difference in monthly preferences between casual users and members is not due to random chance. However, with such a large sample size (nearly 4 million total users), even small differences can produce statistically significant results.
+:::
 ```{r}
 #| label: hoursChiResult
 #| code-summary: Save the chi-square statistic and degrees of freedom values in a tibble format to add to the gtsummary table.
@@ -2939,6 +2963,10 @@ chi_result = chiResult
 ```
 
 #### [Histogram]{.panel-tabset-label}
+
+:::p-3
+Two plots, @fig-hourCasualHistogram and @fig-hourMemberHistogram, present a highly granular view of the hourly data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
+:::
 
 ```{r}
 #| label: hourQuartiles
@@ -3036,6 +3064,12 @@ axis.text.x = ggplot2::element_text(size = ggplot2::rel(.9)))
 
 #### [Density]{.panel-tabset-label}
 
+:::p-3
+To visualize hourly users through the lens of their respective concentrations, see @fig-hourDensity. The plot looks a little different because date-time data was used directly when plotting the x-axis. The y-axis shows the density (a measure of relative frequency).
+
+The member group parallels the daily bimodal patterns seen in daily density plot. The casual group likewise, but to less extent parallels the bimodal patterns seen in the daily density plot. The two groups, largely, are overlapping, with the highest densities for both falling around 5:00pm.
+:::
+
 ```{r}
 #| label: fig-hourDensity
 #| fig-cap: "Visualizing the probability-density distribution of the hour by membership."
@@ -3063,6 +3097,14 @@ gplot
 ```
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
+
+:::p-3
+@tbl-modelHourQ presents the results of a binary logistic regression analyzing the relationship between hour of the day and membership status. The analysis divides the day into quartiles, with Q1 (12:00 am - 10:59 am) serving as the reference category. In summary:
+
+Compared to Q1, the odds of being a member versus a casual rider varied significantly across the other time quartiles (p \< 0.001 for all comparisons). Specifically, the odds of membership were 1.44 times as high in Q2 (10:59 am - 03:24 pm), 1.04 times as high in Q3 (03:24 pm - 06:05 pm), and 0.97 times as high in Q4 (06:05 pm - 11:59 pm).
+
+These results reveal a non-linear relationship between time of day and membership status. The highest likelihood of membership occurs during $Q2$, corresponding to midday hours. There is a slight increase in membership likelihood during Q3 (late afternoon) compared to the reference period, while evening hours (Q4) show a slight decrease in membership likelihood.
+:::
 
 ```{r}
 #| label: modelHourQ
@@ -3100,37 +3142,7 @@ isBinary = TRUE)
 
 ## Distance {#sec-distance}
 
-::::::: {.d-grid .gap-3}
-::: {.callout-important .tableScroller .mb-3 icon="false"}
-<!-- -->
-
--   @tbl-milesTotals and @fig-milesTotals show the overall distribution of distances traveled.
-
--   @tbl-milesCompare and @fig-membershipMiles likewise summarize the distance distribution by membership status.
-
--   @tbl-distanceSummary sheds light on the variability, range, and quartile information about the distance to membership data.
-
--   Two plots, @fig-distanceCasualHistogram and @fig-distanceMemberHistogram, present a highly granular view of the distance data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
-
--   To visualize monthly users through the lens of their respective concentrations, see @fig-distanceDensity. The y-axis shows the density (a measure of relative frequency).
-
-    -   The member group has a narrower, taller spike in between 0.1 and 1 mile distances. There is less of a concentration than the casual group between the 1-3 mile distances.
-
-    -   The casual group displays a broader spike with much overlap to the member group, but peaks closer to the 1 mile mark than for members. There is greater concentration than members between the 1-3 miles distances, but less around the 0.1-1 mile distance.
-
-    -   Both groups overlap nearly completely from around the 3 miles mark and onwards.
-
--   @tbl-modeldistanceQ presents the odds ratios for membership status across distance quartiles, with Q1 serving as the reference category.
-
-    -   Compared to Q1, the odds of being a member versus a casual rider were significantly lower in all other quartiles (p \< 0.001 for all comparisons).
-
-    -   Specifically, the odds of membership were 0.63 times as high in Q2, 0.59 times as high in Q3, and 0.65 times as high in Q4.
-
-    -   These results indicate an inverse relationship between ride distance and membership status, with members generally associated with shorter ride distances.
-
-    -   Interestingly, the lowest odds of membership were observed in Q3, rather than Q4, suggesting a non-linear relationship between distance and membership likelihood.
-:::
-
+::::::: {.d-grid .mt-3}
 ::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas271" aria-controls="offcanvas"}
 Database Operations
@@ -3253,6 +3265,10 @@ kableExtra::kable()
 :::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+:::p-3
+@tbl-milesTotals and @fig-milesTotals show the overall distribution of distances traveled.
+:::
+
 ```{r}
 #| label: fig-milesTotals
 #| fig-cap: "The overall distribution of trips taken by the estimated distance traveled"
@@ -3317,6 +3333,10 @@ align_parameter = "right"
 
 :::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
+
+:::p-3
+@tbl-milesCompare and @fig-membershipMiles likewise summarize the distance distribution by membership status.
+:::
 
 ```{r}
 #| label: fig-membershipMiles
@@ -3387,6 +3407,10 @@ gt::cols_label(member_casual = " ", n = " ")
 
 #### [Summary Stats]{.panel-tabset-label}
 
+:::p-3
+@tbl-distanceSummary sheds light on the variability, range, and quartile information about the distance to membership data.
+:::
+
 ```{r}
 #| label: tbl-distanceSummary
 #| tbl-cap: "The mean with standard deviation, median with inter-quartile distance, and range with min and max of member travel distance."
@@ -3420,6 +3444,10 @@ gTable
 ```
 
 #### [Histogram]{.panel-tabset-label}
+
+:::p-3
+Two plots, @fig-distanceCasualHistogram and @fig-distanceMemberHistogram, present a highly granular view of the distance data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
+:::
 
 ```{r}
 #| label: distanceQuartiles
@@ -3509,6 +3537,13 @@ gplot
 
 #### [Density]{.panel-tabset-label}
 
+:::p-3
+To visualize monthly users through the lens of their respective concentrations, see @fig-distanceDensity. The y-axis shows the density (a measure of relative frequency).
+
+The member group has a narrower, taller spike in between the 0.1 and 1 mile distance. There is less of a concentration than the casual group between the 1-3 mile distance. The casual group displays a broader spike with much overlap to the member group, but peaks closer to the 1 mile mark than for members. There is greater concentration than members between the 1-3 miles distance, but less around the 0.1-1 mile distance. Both groups overlap nearly completely from around the 3 mile mark and onwards.
+
+:::
+
 ```{r}
 #| label: fig-distanceDensity
 #| fig-cap: "Visualizing the probability-density distribution of distance by membership."
@@ -3538,6 +3573,14 @@ gplot
 ```
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
+
+:::p-3
+@tbl-modeldistanceQ presents the odds ratios for membership status across distance quartiles, with Q1 serving as the reference category. In summary:
+
+Compared to Q1, the odds of being a member versus a casual rider were significantly lower in all other quartiles (p \< 0.001 for all comparisons). Specifically, the odds of membership were 0.63 times as high in Q2, 0.59 times as high in Q3, and 0.65 times as high in Q4.
+
+These results indicate an inverse relationship between ride distance and membership status, with members generally associated with shorter ride distances. Interestingly, the lowest odds of membership were observed in Q3, rather than Q4, suggesting a non-linear relationship between distance and membership likelihood.
+:::
 
 ```{r}
 #| label: modeldistanceQ
@@ -3576,35 +3619,7 @@ isBinary = TRUE
 
 ## Speed {#sec-speed}
 
-::::::: {.d-grid .gap-3}
-::: {.callout-important .tableScroller .mb-3 icon="false"}
-<!-- -->
-
--   @tbl-mphTotals and @fig-mphTotals show the overall distribution of travel speeds.
-
--   @tbl-mphCompare and @fig-mphCompare summarize the travel speed distribution by membership.
-
--   @tbl-speedSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
-
--   Two plots, @fig-speedCasualHistogram and @fig-speedMemberHistogram, present a highly granular view of the travel speed data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
-
--   To visualize travel speed patterns through the lens of their respective concentrations, see @fig-speedDensity. The y-axis shows the density (a measure of relative frequency).
-
-    -   The member group has a narrower, taller spike centering around 7mph. There is higher concentration than the casual group between \~ 5-15mph.
-
-    -   The casual group has a broader, shorter spike centering closer to 6mph. There is higher concentration than the member group between \~ 1-5mph.
-
-    -   There is a lot of overlap, and both groups have a unimodal distribution.
-
--   @tbl-modelspeedQ presents the odds ratios for membership status across speed quartiles, with Q1 serving as the reference category.
-
-    -   Compared to Q1, the odds of being a member versus a casual rider were significantly higher in all other quartiles (p \< 0.001 for all comparisons).
-
-    -   Specifically, the odds of membership were 2.09 times higher in Q2, 2.50 times higher in Q3, and 2.69 times higher in Q4.
-
-    -   These results suggest a strong positive association between riding speed and membership status, with the likelihood of membership increasing monotonically across speed quartiles.
-:::
-
+::::::: {.d-grid .mt-3}
 ::::: {.btn-group role="group" aria-label="third"}
 ::: {.btn .btn-dark type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas171" aria-controls="offcanvas"}
 Database Operations
@@ -3720,6 +3735,10 @@ kableExtra::kable()
 :::::: panel-tabset
 ### [Overall]{.panel-tabset-label}
 
+:::p-3
+@tbl-mphTotals and @fig-mphTotals show the overall distribution of travel speeds.
+:::
+
 ```{r}
 #| label: fig-mphTotals
 #| fig-cap: "The overall distribution of trips taken by the estimated average speed"
@@ -3778,6 +3797,10 @@ align_parameter = "right"
 
 :::: panel-tabset
 #### [Frequency]{.panel-tabset-label}
+
+:::p-3
+@tbl-mphCompare and @fig-mphCompare summarize the travel speed distribution by membership.
+:::
 
 ```{r}
 #| label: fig-mphCompare
@@ -3842,6 +3865,10 @@ gt::cols_label(member_casual = " ", n = " ")
 
 #### [Summary Stats]{.panel-tabset-label}
 
+:::p-3
+@tbl-speedSummary gives the reader some idea of the variability, range, and quartile information about the distance data.
+:::
+
 ```{r}
 #| label: tbl-speedSummary
 #| tbl-cap: "The mean with standard deviation, median with inter-quartile distance, and range with min and max of member travel speed."
@@ -3872,6 +3899,10 @@ isBinary = TRUE
 ```
 
 #### [Histogram]{.panel-tabset-label}
+
+:::p-3
+Two plots, @fig-speedCasualHistogram and @fig-speedMemberHistogram, present a highly granular view of the travel speed data (the solid yellow line represents the mean). Quartile ranges are likewise shown to help visualize the variability.
+:::
 
 ```{r}
 #| label: speedQuartiles
@@ -3963,6 +3994,12 @@ gplot
 
 #### [Density]{.panel-tabset-label}
 
+:::p-3
+To visualize travel speed patterns through the lens of their respective concentrations, see @fig-speedDensity. The y-axis shows the density (a measure of relative frequency).
+
+The member group has a narrower, taller spike centering around 7mph. There is higher concentration than the casual group between \~ 5-15mph. The casual group has a broader, shorter spike centering closer to 6mph. There is higher concentration than the member group between \~ 1-5mph. Alongside significant overlap, both groups exhibit a unimodal distribution.
+:::
+
 ```{r}
 #| label: fig-speedDensity
 #| fig-cap: "Visualizing the probability-density distribution of speed by membership."
@@ -3992,6 +4029,14 @@ gplot
 ```
 
 #### [Binary Logistic Regression]{.panel-tabset-label}
+
+:::p-3
+@tbl-modelspeedQ presents the odds ratios for membership status across speed quartiles, with Q1 serving as the reference category. In summary:
+
+Compared to Q1, the odds of being a member versus a casual rider were significantly higher in all other quartiles (p \< 0.001 for all comparisons). Specifically, the odds of membership were 2.09 times higher in Q2, 2.50 times higher in Q3, and 2.69 times higher in Q4.
+
+These results suggest a strong positive association between riding speed and membership status, with the likelihood of membership increasing monotonically across speed quartiles.
+:::
 
 ```{r}
 #| label: modelspeedQ
@@ -4073,7 +4118,7 @@ Creating an EpiFlow
 ::: flex-code
 ```{r}
 #| label: createFlows dataframe
-#| code-summary: "First, creates the frequency of trips taken to and from pairs of stations. We are only going to look deeper into the top 50 most traveled pairs."
+#| code-summary: "First, creates the frequency of trips taken to and from pairs of stations.<br>We are only going to look deeper into the top 50 most traveled pairs."
 #| tidy: true
 
 flowData <- dplyr::tbl(dbconn, filtered_path) |>
@@ -4336,7 +4381,6 @@ Greenview Ave & Fullteron Ave ... Loomis Ave & Lexington St
 ::: accordion-body
 ```{r}
 #| label: fig-map2
-#| echo: false
 #| fig-cap: "Greenview Ave & Fullteron Ave - Loomis Ave & Lexington St"
 #| tidy: true
 
@@ -4359,7 +4403,6 @@ Michigan Ave & Oak St ... State St & 33rd St
 ::: accordion-body
 ```{r}
 #| label: fig-map3
-#| echo: false
 #| fig-cap: "Michigan Ave & Oak St - State St & 33rd St"
 #| tidy: true
 
@@ -4406,7 +4449,7 @@ To improve membership, addressing factors deterring individuals from becoming an
 
 ## Updated Database Tables List
 
-::: {.d-flex .justify-content-center .tableScroller}
+::: {.table-container}
 ```{r}
 #| label: tbl-dbList2
 #| tbl-cap: "The list of tables created by the end of the analysis."
@@ -4436,6 +4479,43 @@ dbList2
 
 Notice the size difference from the previous image. The database is still represented in the data folder as one file.
 :::
+
+
+## Export the Final Database
+
+For future use, it might save a lot of time to not have to re-download the original data or recreate tables. 
+
+```{r}
+#| label: exporter
+#| code-summary: "A view of the data exporting script."
+#| file: "Scripts/dbExporter.R"
+#| eval: false
+```
+
+```{r}
+#| label: runExporter
+#| code-summary: "Execute above script with a custom SQL query string parameter to the `db_exported` directory."
+#| tidy: true
+#| output: false
+
+if(dir.exists("db_exported") == FALSE) {
+
+  source("Scripts/dbExporter.R")
+
+  queryString <- paste0(
+    "EXPORT DATABASE 'db_exported' (",
+    "FORMAT PARQUET, ",
+    "COMPRESSION ZSTD",
+    ")")
+            
+  dbExporter(
+    dbdir = "db/data.db",
+    query = queryString)
+
+}
+
+```
+
 
 # Conclusion
 
