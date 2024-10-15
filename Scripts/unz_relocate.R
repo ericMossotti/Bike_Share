@@ -7,9 +7,9 @@
 # There might well be existing libraries and methods in R that can do this, 
 # but I was not able to readily locate them. 
 # ----
-unz_relocate <- function (fPaths = tempfile_paths,
-                          zPaths = tempZipPaths,
-                          fNames = fileNames) {
+unz_relocate <- function (fPaths,
+                          zPaths,
+                          fNames) {
     for (i in seq(fPaths)) {
         utils::unzip(zPaths[i],
                      fNames[i])
