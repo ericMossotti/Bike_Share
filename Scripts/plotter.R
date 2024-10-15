@@ -338,7 +338,7 @@ plotter <- function(data,
                     size = 1
                 ) +
                 ggplot2::scale_color_manual(
-                    values = c("red", "green", "blue"),
+                    values = c("orange", "green", "purple"),
                     labels = c("25th", "50th", "75th")
                 )
         }
