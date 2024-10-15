@@ -1172,7 +1172,7 @@ gplot
 ::: {.table-container .column-margin}
 ```{r}
 #| label: tbl-btypeGroups
-#| tbl-cap: "The membership<br>distribution of bicycle choice"
+#| tbl-cap: "The membership distribution of bicycle choice"
 #| tbl-cap-location: top
 #| tidy: true
 
@@ -1658,7 +1658,7 @@ low = "blue",
 high = "red",
 limits = c(0,100),
 breaks = seq(0, 100, by = 5),
-binwidth = 2.5,
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
 quartiles = quartiles_casual
 )
 
@@ -1671,6 +1671,7 @@ gplot
 #| fig-cap: "A more detailed look that illustrates the quartile distribution of member travel duration."
 #| tidy: true
 
+# tried 2.5 for binwidth but not sure if want to keep 
 
 gplot <- 
 qdf_member |>
@@ -1689,7 +1690,7 @@ low = "blue",
 high = "red",
 limits = c(0,100),
 breaks = seq(0, 100, by = 5),
-binwidth = 2.5,
+binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
 quartiles = quartiles_member
 )
 
@@ -4028,7 +4029,6 @@ vline_size = 0.5,
 low = "blue",
 high = "red",
 binwidth = \(x) 2 * IQR(x) / (length(x)^(1/3)),
-#binwidth = 0.5,
 breaks = seq(1, 20, by = 2),
 limits = c(1, 20),
 quartiles = quartiles_casual
