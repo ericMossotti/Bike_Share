@@ -23,35 +23,46 @@ $box-shadow-sm: 0 .125rem .25rem rgba(black, .075);
 /*-- scss:ids --*/
 
 #toc-title {
-  color: $heading-1 !important;
+  color: Seashell !important;
 }
 
 #TOC > ul > li > a {
-  color: $heading-2 !important; /* First sub-level */
+  color: $heading-1 !important; /* First sub-level */
 }
 
 #TOC > ul > li > ul > li > a {
-  color: $heading-3 !important; /* Second sub-level */
+  color: $heading-2 !important; /* Second sub-level */
 }
 
 #TOC > ul > li > ul > li > ul > li > a {
-  color: $heading-4 !important; /* Third sub-level */
+  color: $heading-3 !important; /* Third sub-level */
 }
 
+#TOC > ul > li > ul > li > ul > li > ul > li > a {
+  color: $heading-4 !important; /* Fourth sub-level */
+}
+
+#TOC > ul > li > ul > li > ul > li > ul > li > ul > li > a {
+  color: $heading-5 !important; /* Fifth sub-level */
+}
 
 /*-- scss:classes --*/
+
+.math.inline .MathJax {
+  color: rgba(255, 255, 185,1) !important;
+}
+
 
 .table-container {
   display: flex;
   justify-content: center;
   flex-shrink: 1;
   overflow-y: auto; 
-  overflow-x: auto;
+  //overflow-x: auto;
   max-height: 50vh;
-  margin-top: 1rem;
+  //margin-top: 1rem;
   margin-bottom: 1rem;
 }
-
 
 .quarto-float-tbl > figcaption {
   text-align: left !important;
