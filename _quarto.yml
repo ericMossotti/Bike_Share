@@ -1,7 +1,9 @@
 project:
   type: website
   output-dir: docs
-  favicon: "favicon/favicon-32x32.png"
+  image: "images/bikeSharePng.png"
+  open-graph: true
+
   
 execute: 
   cache: false
